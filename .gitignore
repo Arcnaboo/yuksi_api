@@ -1,0 +1,77 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables
+*.env
+.env.*
+
+# Logs and databases
+*.log
+*.sqlite3
+db.sqlite3
+
+# PyInstaller
+*.spec
+build/
+dist/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# MyPy / Pylint / Pyre type checker
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Editor / IDE folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Project-specific
+# (Add your own API-specific ignores below if needed)
+# Example:
+# instance/
+# migrations/
+
+# Ignore compiled or temporary backend artifacts
+*.so
+*.dll
+*.dylib
+*.pyd
+
+# Ignore local configs and secrets
+config.local.json
+settings.local.py
