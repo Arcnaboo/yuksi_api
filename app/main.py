@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from .routes import auth, driver, jobs, payments, system, courier,geo
 from .utils.init_db import init_db
+from app.utils.config import APP_ENV, get_database_url
 
 tags_metadata = [
     {
@@ -23,7 +24,8 @@ app = FastAPI(
 
 @app.on_event("startup")
 def on_startup():
-    init_db()
+    print(f"[BOOT] APP_ENV={APP_ENV}")
+    print(f"[BOOT] DB_URL={(get_database_url()).split('@')[-1]}")  # host/db kısmını gösterir
 
 app.include_router(auth.router)
 app.include_router(driver.router)
