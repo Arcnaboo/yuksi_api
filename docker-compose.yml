@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:15
+    container_name: yuksi_db
+    environment:
+      POSTGRES_USER: yuksi
+      POSTGRES_PASSWORD: yuksi
+      POSTGRES_DB: yuksi
+      TZ: Europe/Istanbul
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # İlk kurulum SQL dosyası koymak istersen:
+      # - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yuksi -d yuksi"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # (İsteğe bağlı) GUI için Adminer
+  adminer:
+    image: adminer
+    container_name: yuksi_adminer
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
