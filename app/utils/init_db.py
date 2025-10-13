@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS files (
     is_deleted      BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE courier_documents (
+CREATE TABLE IF NOT EXISTS courier_documents (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id    UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
   file_id    UUID NOT NULL REFERENCES files(id)   ON DELETE RESTRICT,
