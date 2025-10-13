@@ -14,6 +14,19 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
     CREATE TYPE job_status AS ENUM ('pending','accepted','picked_up','arrived','delivered','cancelled');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+
+DO $$ BEGIN
+    CREATE TYPE courier_doc_type AS ENUM (
+        'VergiLevhasi',
+        'EhliyetOn',
+        'EhliyetArka',
+        'RuhsatOn',
+        'RuhsatArka',
+        'KimlikOn',
+        'KimlikArka'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
 # -----------------------------------------------------------
@@ -157,6 +170,27 @@ CREATE TABLE IF NOT EXISTS banners (
     active          BOOLEAN DEFAULT TRUE
 );
 
+CREATE TABLE IF NOT EXISTS files (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID,
+    image_url       TEXT,
+    size            INT,
+    mime_type       TEXT,
+    filename        TEXT,
+    key             TEXT,
+    uploaded_at     TIMESTAMPTZ DEFAULT NOW(),
+    delated_at      TIMESTAMPTZ,
+    is_deleted      BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE courier_documents (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id    UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  file_id    UUID NOT NULL REFERENCES files(id)   ON DELETE RESTRICT,
+  doc_type   courier_doc_type NOT NULL,
+  created_at TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, doc_type)
+);
 
 CREATE TABLE IF NOT EXISTS driver_onboarding (
     driver_id        UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,

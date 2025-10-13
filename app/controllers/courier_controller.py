@@ -27,6 +27,7 @@ def courier_register3(user_id: str, req):
         req.vehicleCapacity,
         req.stateId,
         req.vehicleYear,
+        req.documents,
     )
     if err:
         return {"success": False, "message": err, "data": {}}
@@ -37,3 +38,7 @@ def get_courier_profile(user_id: str):
     if not profile:
         return {"success": False, "message": "Courier not found", "data": {}}
     return {"success": True, "message": "Courier profile", "data": profile}
+
+def list_couriers():
+    couriers = svc.list_couriers()
+    return {"success": True, "message": "Courier list", "data": couriers}

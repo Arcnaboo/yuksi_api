@@ -171,19 +171,7 @@ def courier_register2(
 )
 def courier_register3(
     user_id: str = Path(..., description="Kullanıcının UUID değeri"),
-    req: CourierRegisterStep3Req = Body(
-        ...,
-        examples={
-            "car_medium_city": {
-                "summary": "Otomobil – orta kapasite – İstanbul",
-                "value": {"vehicleType": 0, "vehicleCapacity": 100, "stateId": 34, "vehicleYear": 2020},
-            },
-            "moto_small_ankara": {
-                "summary": "Motosiklet – küçük kapasite – Ankara",
-                "value": {"vehicleType": 1, "vehicleCapacity": 40, "stateId": 6, "vehicleYear": 2018},
-            },
-        },
-    ),
+    req: CourierRegisterStep3Req = Body(...),
 ):
     return ctrl.courier_register3(user_id, req)
 
@@ -239,3 +227,53 @@ def get_courier_profile(
     user_id: str = Path(..., description="The UUID of the courier user"),
 ):
     return ctrl.get_courier_profile(user_id)
+
+
+@router.get("/list",
+    summary="Get Courier List",
+    description="Fetches the profile information of a courier by user ID.",
+    responses={
+        200: {
+            "description": "Courier profile retrieved successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier profile",
+                                "data": [{
+                                    "userId": "6aef8f5c-27e0-4e8c-8b2d-36a78b6a0b0a",
+                                    "phone": "5551112233",
+                                    "firstName": "Test",
+                                    "lastName": "Test",
+                                    "email": "test@test.com",
+                                    "createdAt": "2023-10-01T12:34:56Z",
+                                    "countryId": 90,
+                                    "countryName": "Turkey",
+                                    "stateId": 34,
+                                    "stateName": "Istanbul",
+                                    "workingType": 1,
+                                    "vehicleType": 0,
+                                    "vehicleCapacity": 100,
+                                    "vehicleYear": 2020
+                                }]
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+def list_couriers():
+    return ctrl.list_couriers()

@@ -1,7 +1,14 @@
-# app/utils/config.py
 import os
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 from typing import Tuple
+from pathlib import Path
+from dotenv import load_dotenv
+
+_APP_DIR = Path(__file__).resolve().parents[2]  
+_DOTENV_PATH = _APP_DIR / ".env"
+print(f"[BOOT] dotenv path: {_DOTENV_PATH} exists={_DOTENV_PATH.exists()}")
+if _DOTENV_PATH.exists():
+    load_dotenv(dotenv_path=_DOTENV_PATH, override=True)  
 
 
 def get_app_env() -> str:
@@ -47,6 +54,15 @@ def get_uvicorn_bind() -> Tuple[str, int]:
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8000"))
     return host, port
+
+def get_filestack_api_key() -> str:
+    """Filestack API key alır, yoksa hata fırlatır."""
+    print("[BOOT] Filestack API Key alınıyor...")
+    print(f"[BOOT] FILESTACK_API_KEY={'set' if os.getenv('FILESTACK_API_KEY') else 'NOT set'}")
+    key = os.getenv("FILESTACK_API_KEY", "")
+    if not key:
+        raise RuntimeError("FILESTACK_API_KEY tanımlanmalı.")
+    return key
 
 
 

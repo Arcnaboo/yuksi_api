@@ -59,6 +59,7 @@ def courier_register_step3(
     vehicle_capacity: int,
     state_id: int,
     vehicle_year: int,
+    documents: Optional[List[Dict[str, Any]]] = None
 ) -> Optional[str]:
     with db_cursor() as cur:
         cur.execute("SELECT 1 FROM drivers WHERE id=%s", (driver_id,))
@@ -76,6 +77,41 @@ def courier_register_step3(
                  step=3""",
             (driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year),
         )
+        if documents:
+            allowed_types = {"VergiLevhasi", "EhliyetOn", "EhliyetArka", "RuhsatOn", "RuhsatArka", "KimlikOn", "KimlikArka"}
+            for doc in documents:
+                if isinstance(doc, dict):
+                    doc_type = doc.get("docType")
+                    file_id  = doc.get("fileId")
+                else:
+                    # Pydantic model (e.g., DocumentItem) or simple object
+                    doc_type = getattr(doc, "docType", None)
+                    file_id  = getattr(doc, "fileId", None)
+                # Normalize UUIDs to string for psycopg2
+                try:
+                    file_id_str = str(file_id)
+                except Exception:
+                    return "Invalid fileId format"
+                driver_id_str = str(driver_id)
+                if not doc_type or not file_id:
+                    return "Invalid document payload"
+                if doc_type not in allowed_types:
+                    return f"Invalid docType: {doc_type}"
+
+                # Dosya gerçekten var mı ve bu kullanıcıya mı ait?
+                cur.execute("SELECT 1 FROM files WHERE id=%s AND user_id=%s AND is_deleted=FALSE", (file_id_str, driver_id_str))
+                if cur.fetchone() is None:
+                    return f"Invalid fileId for user: {file_id}"
+
+                cur.execute(
+                    """
+                    INSERT INTO courier_documents (user_id, file_id, doc_type)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id, doc_type)
+                    DO UPDATE SET file_id = EXCLUDED.file_id
+                    """,
+                    (driver_id_str, file_id_str, doc_type),
+                )
     return None
 
 def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
@@ -117,7 +153,7 @@ def get_courier(driver_id: str) -> Dict[str, Any] | None:
     sql = """
     SELECT
       d.id,
-      d.firs_tname,
+      d.first_name,
       d.last_name,
       d.email,
       d.phone,
