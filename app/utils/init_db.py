@@ -205,6 +205,22 @@ CREATE TABLE IF NOT EXISTS driver_onboarding (
     updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS restaurants (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email           TEXT UNIQUE NOT NULL,
+    password_hash   TEXT NOT NULL,
+    phone           TEXT NOT NULL,
+    country_id      BIGINT,
+    name            TEXT NOT NULL,
+    contact_person  TEXT,
+    tax_number      TEXT,
+    address_line1   TEXT,
+    address_line2   TEXT,
+    state_id        BIGINT,
+    city_id         BIGINT,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
 ('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)
