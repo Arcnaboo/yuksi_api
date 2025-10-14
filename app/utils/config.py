@@ -28,12 +28,15 @@ def _with_sslmode_require(db_url: str) -> str:
 
 def get_database_url() -> str:
     """
-    dev => LOCAL_DATABASE_URL (yoksa localhost fallback)
+    dev => LOCAL_DATABASE_URL (yoksa DATABASE_URL fallback)
     prod => DATABASE_URL (+ sslmode=require ekler)
     """
     env = get_app_env()
     if env == "dev":
-        db_url = os.getenv("LOCAL_DATABASE_URL", "postgresql://yuksi:yuksi@localhost:5432/yuksi")
+        db_url = os.getenv("LOCAL_DATABASE_URL") or os.getenv("DATABASE_URL", "postgresql://yuksi:yuksi@localhost:5432/yuksi")
+        # Neon için SSL ekle
+        if "neon.tech" in db_url:
+            return _with_sslmode_require(db_url)
         return db_url
     else:
         db_url = os.getenv("DATABASE_URL", "")
@@ -61,7 +64,8 @@ def get_filestack_api_key() -> str:
     print(f"[BOOT] FILESTACK_API_KEY={'set' if os.getenv('FILESTACK_API_KEY') else 'NOT set'}")
     key = os.getenv("FILESTACK_API_KEY", "")
     if not key:
-        raise RuntimeError("FILESTACK_API_KEY tanımlanmalı.")
+        print("[BOOT][WARNING] FILESTACK_API_KEY not set, using dummy key")
+        return "dummy-key-for-testing"
     return key
 
 

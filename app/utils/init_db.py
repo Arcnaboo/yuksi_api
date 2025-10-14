@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS files (
     is_deleted      BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE courier_documents (
+CREATE TABLE IF NOT EXISTS courier_documents (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id    UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
   file_id    UUID NOT NULL REFERENCES files(id)   ON DELETE RESTRICT,
@@ -203,6 +203,22 @@ CREATE TABLE IF NOT EXISTS driver_onboarding (
     vehicle_year     INT,
     step             INT DEFAULT 0,
     updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS restaurants (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email           TEXT UNIQUE NOT NULL,
+    password_hash   TEXT NOT NULL,
+    phone           TEXT NOT NULL,
+    country_id      BIGINT,
+    name            TEXT NOT NULL,
+    contact_person  TEXT,
+    tax_number      TEXT,
+    address_line1   TEXT,
+    address_line2   TEXT,
+    state_id        BIGINT,
+    city_id         BIGINT,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 INSERT INTO banners (title,image_url,priority) VALUES
