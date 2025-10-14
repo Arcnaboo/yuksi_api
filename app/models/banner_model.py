@@ -5,3 +5,10 @@ class BannerReq(BaseModel):
     link: str = None    
     description: str = None
     images: list[str] = []
+
+class UpdateBannerReq(BaseModel):
+    id: int
+    title: str
+    link: str = None    
+    description: str = None
+    images: list[str] = []
