@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from fastapi import Request
-from app.models.paytr_model import PaytrConfig, PaymentRequest, CallbackData
+from app.models.paytr_models import PaytrConfig, PaymentRequest, CallbackData
 from app.services.paytr_service import PaytrService
 
 load_dotenv()
