@@ -75,3 +75,5 @@ Thumbs.db
 # Ignore local configs and secrets
 config.local.json
 settings.local.py
+pyproject.toml
+/UNKNOWN.egg-info/
