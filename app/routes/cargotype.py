@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from ..models.cargotype_model import CargoTypeReq, CargoTypeRes, CargoTypeListRes
 from ..controllers import cargotype_controller
 
-router = APIRouter(prefix="/api/CargoTypes", tags=["CargoTypes"])
+router = APIRouter(prefix="/api/CargoType", tags=["CargoTypes"])
 
 @router.get("",
             response_model= CargoTypeListRes)
