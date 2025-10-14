@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter
 from ..models.cargotype_model import CargoTypeReq, CargoTypeRes, CargoTypeListRes
 from ..controllers import cargotype_controller

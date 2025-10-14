@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype,paytr_route
+from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
 import asyncio
@@ -40,6 +40,7 @@ async def on_startup():
 app.include_router(system.router)
 
 app.include_router(auth.router)
+app.include_router(banner.router)
 app.include_router(cargotype.router)
 app.include_router(courier.router)
 app.include_router(driver.router)
@@ -47,6 +48,6 @@ app.include_router(file.router)
 app.include_router(geo.router)
 app.include_router(jobs.router)
 app.include_router(payments.router)
+app.include_router(paytr_route.router)
 app.include_router(restaurant.router)
 app.include_router(subsection.router)
-app.include_router(paytr_route.router)
