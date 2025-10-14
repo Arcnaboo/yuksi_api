@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Depends
 from ..models.driver_model import VehicleReq
 from ..controllers import auth_controller, driver_controller
 
-router = APIRouter(prefix="/driver")
+router = APIRouter(prefix="/driver", tags=["Driver"])
 
 @router.post("/vehicle")
 def save_vehicle(req: VehicleReq, driver=Depends(auth_controller.get_current_driver)):
