@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Form
 from ..controllers import auth_controller, payments_controller
 
-router = APIRouter(prefix="/payments")
+router = APIRouter(prefix="/payments", tags=["Payments"])
 
 @router.post("/start")
 def start(job_id: str = Form(...), driver=Depends(auth_controller.get_current_driver)):

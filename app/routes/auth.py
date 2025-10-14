@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from ..models.auth_model import RegisterReq, LoginReq
 from ..controllers import auth_controller
 
-router = APIRouter()
+router = APIRouter(prefix="/api/Auth", tags=["Auth"])
 
 @router.post("/register")
 def register(req: RegisterReq):
@@ -11,6 +11,11 @@ def register(req: RegisterReq):
 @router.post("/login")
 def login(req: LoginReq):
     return auth_controller.login(req.email, req.password)
+
+# TODO : implement token blacklisting for logout
+@router.get("/logout")
+def logout():
+    return {"success": True, "message": "Logged out", "data": {}}
 
 @router.get("/me")
 def me(driver=auth_controller.get_current_driver):

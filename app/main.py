@@ -37,12 +37,15 @@ async def on_startup():
         print(f"[BOOT][ERROR] init_db başarısız: {e}")
         raise
 
+app.include_router(system.router)
+
 app.include_router(auth.router)
+app.include_router(cargotype.router)
+app.include_router(courier.router)
 app.include_router(driver.router)
+app.include_router(file.router)
+app.include_router(geo.router)
 app.include_router(jobs.router)
 app.include_router(payments.router)
-app.include_router(system.router)
-app.include_router(courier.router)
-app.include_router(geo.router)
-app.include_router(file.router)
 app.include_router(restaurant.router)
+app.include_router(subsection.router)

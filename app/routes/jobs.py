@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Form
 from ..models.jobs_model import JobStatusUpdateReq
 from ..controllers import auth_controller, jobs_controller
 
-router = APIRouter(prefix="/driver/jobs")
+router = APIRouter(prefix="/driver/jobs", tags=["Jobs"])
 
 @router.get("/available")
 def available_jobs(driver=Depends(auth_controller.get_current_driver)):
