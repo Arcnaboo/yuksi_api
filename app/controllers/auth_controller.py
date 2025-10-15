@@ -1,24 +1,47 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, status, status,Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ..utils.security import decode_jwt
 from ..services import auth_service
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+http_bearer = HTTPBearer(auto_error=False)
+
+def require_roles(allowed: list[str]):
+    def _dep(credentials: HTTPAuthorizationCredentials = Security(http_bearer)):
+        if not credentials or not credentials.credentials:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
+        token = credentials.credentials
+        payload = decode_jwt(token)
+        if not payload:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+        roles = payload.get("role") or payload.get("roles") or []
+        if isinstance(roles, str):
+            roles = [roles]
+
+        if not any(r in roles for r in allowed):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden: insufficient role")
+        return payload
+    return _dep
 
 def register(first_name: str, last_name:str, email: str, phone: str, password: str):
-    token = auth_service.register(first_name,last_name, email, phone, password)
-    if not token:
+    tokens = auth_service.register(first_name,last_name, email, phone, password)
+    if not tokens:
         return {"success": False, "message": "Email or phone already registered", "data": {}}
-    return {"success": True, "message": "Driver registered", "data": {"access_token": token, "token_type": "bearer"}}
+    return {"success": True, "message": "Driver registered", "data": tokens}
 
 def login(email: str, password: str):
-    token = auth_service.login(email, password)
-    if not token:
+    tokens = auth_service.login(email, password)
+    if not tokens:
         return {"success": False, "message": "Wrong email or password", "data": {}}
-    return {"success": True, "message": "Login successful", "data": {"access_token": token, "token_type": "bearer"}}
+    return {"success": True, "message": "Login successful", "data": tokens}
 
-def get_current_driver(token: str = Depends(oauth2_scheme)):
-    payload = decode_jwt(token)
+def get_current_driver(credentials: HTTPAuthorizationCredentials = Security(http_bearer)):
+    if not credentials or not credentials.credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
+    token = credentials.credentials
+    payload = decode_jwt(token)  
+    if not payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     driver_id = payload.get("sub")
     driver = auth_service.get_driver(driver_id)
     if not driver:
@@ -28,3 +51,17 @@ def get_current_driver(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return driver
+
+
+def refresh(refresh_token: str):
+    tokens = auth_service.refresh_with_token(refresh_token)
+    if not tokens:
+        return {"success": False, "message": "Invalid refresh token", "data": {}}
+    return {"success": True, "message": "Token refreshed", "data": tokens}
+
+
+def logout(refresh_token: str):
+    ok = auth_service.revoke_refresh_token(refresh_token)
+    if not ok:
+        return {"success": False, "message": "Refresh token already invalid or not found", "data": {}}
+    return {"success": True, "message": "Logged out", "data": {}}

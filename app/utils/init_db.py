@@ -221,6 +221,16 @@ CREATE TABLE IF NOT EXISTS restaurants (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL,
+  user_type TEXT NOT NULL, 
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
 ('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)
@@ -229,6 +239,8 @@ ON CONFLICT DO NOTHING;
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_type);
 """
 
 # SQL dump dosyaları burada beklenir: app/sql/10_countries.sql vb.

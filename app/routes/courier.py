@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Path, Body
+from fastapi import APIRouter, Path, Body, Depends
 from ..models.courier_model import (
     CourierRegisterStep1Req,
     CourierRegisterStep2Req,
     CourierRegisterStep3Req,
 )
 from ..controllers import courier_controller as ctrl
-
+from ..controllers import auth_controller
 router = APIRouter(
     prefix="/api/Courier",
     tags=["Courier"],
@@ -225,6 +225,7 @@ def courier_register3(
 )
 def get_courier_profile(
     user_id: str = Path(..., description="The UUID of the courier user"),
+    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
 ):
     return ctrl.get_courier_profile(user_id)
 
@@ -275,5 +276,5 @@ def get_courier_profile(
         }
     },
 )
-def list_couriers():
+def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
     return ctrl.list_couriers()

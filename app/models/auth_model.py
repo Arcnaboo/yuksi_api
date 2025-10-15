@@ -10,3 +10,9 @@ class RegisterReq(BaseModel):
 class LoginReq(BaseModel):
     email: EmailStr
     password: str
+
+class RefreshReq(BaseModel):
+    refreshToken: str
+
+class LogoutReq(BaseModel):
+    refreshToken: str
