@@ -1,13 +1,15 @@
-from fastapi import FastAPI
-
-from app.routes import admin, contact
+from fastapi import FastAPI,Request,HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from app.routes import contact
 from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route,order
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
-
-
-
+import logging
 import asyncio
+
+logger = logging.getLogger("uvicorn.error")
+
 
 '''
 tags_metadata = [
@@ -60,5 +62,27 @@ app.include_router(restaurant.router)
 app.include_router(subsection.router)
 app.include_router(contact.router)
 app.include_router(order.router)
-app.include_router(subsection.router)
-app.include_router(admin.router)
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # Controller/Service içinde raise edilen HTTPException'ları tek tip JSON'a çevirir
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"success": False, "message": exc.detail, "data": {}},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning("Validation error on %s %s: %s", request.method, request.url, exc.errors())
+    return JSONResponse(
+        status_code=422,
+        content={"success": False, "message": "Validation error", "errors": exc.errors(), "data": {}},
+    )
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url)
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "message": "Internal Server Error", "data": {}},
+    )
