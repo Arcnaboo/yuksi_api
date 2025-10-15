@@ -29,7 +29,6 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-<<<<<<< HEAD
     CREATE TYPE content_type AS ENUM (
         'Destek',
         'Hakkimizda',
@@ -39,13 +38,11 @@ DO $$ BEGIN
         'KuryeGizlilikSözlesmesi',
         'KuryeTasiyiciSözlesmesi'
     );
-=======
     CREATE TYPE delivery_type AS ENUM ('yerinde', 'paketservis', 'gel-al');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
     CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'yolda', 'teslim_edildi');
->>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
@@ -252,7 +249,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-<<<<<<< HEAD
 CREATE TABLE IF NOT EXISTS contact_messages (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -270,7 +266,9 @@ CREATE TABLE IF NOT EXISTS subsections (
     show_in_menu BOOLEAN DEFAULT FALSE,
     show_in_footer BOOLEAN DEFAULT FALSE,
     content TEXT NOT NULL,
-=======
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -286,13 +284,10 @@ CREATE TABLE IF NOT EXISTS orders (
     vehicle_type TEXT DEFAULT '2_teker_motosiklet',
     cargo_type TEXT,
     special_requests TEXT,
->>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-<<<<<<< HEAD
-=======
 CREATE TABLE IF NOT EXISTS order_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
@@ -302,7 +297,6 @@ CREATE TABLE IF NOT EXISTS order_items (
     total DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
->>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
 
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),

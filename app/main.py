@@ -1,11 +1,7 @@
 from fastapi import FastAPI
-<<<<<<< HEAD
 
 from app.routes import contact
-from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route
-=======
-from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route, order
->>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
+from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route,order
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
 
@@ -59,10 +55,7 @@ app.include_router(jobs.router)
 app.include_router(payments.router)
 app.include_router(paytr_route.router)
 app.include_router(restaurant.router)
-<<<<<<< HEAD
 app.include_router(subsection.router)
 app.include_router(contact.router)
-=======
 app.include_router(order.router)
 app.include_router(subsection.router)
->>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
