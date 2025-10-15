@@ -27,6 +27,26 @@ DO $$ BEGIN
         'KimlikArka'
     );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+<<<<<<< HEAD
+    CREATE TYPE content_type AS ENUM (
+        'Destek',
+        'Hakkimizda',
+        'Iletisim',
+        'GizlilikPolitikasi',
+        'KullanimKosullari',
+        'KuryeGizlilikSözlesmesi',
+        'KuryeTasiyiciSözlesmesi'
+    );
+=======
+    CREATE TYPE delivery_type AS ENUM ('yerinde', 'paketservis', 'gel-al');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'yolda', 'teslim_edildi');
+>>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
 # -----------------------------------------------------------
@@ -205,6 +225,7 @@ CREATE TABLE IF NOT EXISTS driver_onboarding (
     updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+
 CREATE TABLE IF NOT EXISTS restaurants (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email           TEXT UNIQUE NOT NULL,
@@ -231,14 +252,73 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+<<<<<<< HEAD
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    subject TEXT,
+    message TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS subsections (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content_type content_type NOT NULL,
+    show_in_menu BOOLEAN DEFAULT FALSE,
+    show_in_footer BOOLEAN DEFAULT FALSE,
+    content TEXT NOT NULL,
+=======
+CREATE TABLE IF NOT EXISTS orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    customer TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address TEXT NOT NULL,
+    delivery_address TEXT NOT NULL,
+    type delivery_type NOT NULL,
+    status order_status DEFAULT 'hazirlaniyor',
+    amount DECIMAL(10,2) NOT NULL,
+    carrier_type TEXT DEFAULT 'kurye',
+    vehicle_type TEXT DEFAULT '2_teker_motosiklet',
+    cargo_type TEXT,
+    special_requests TEXT,
+>>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+<<<<<<< HEAD
+=======
+CREATE TABLE IF NOT EXISTS order_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    product_name TEXT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+>>>>>>> 9421868df53415c55ce1801e5e4b73669207131d
+
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
 ('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)
 ON CONFLICT DO NOTHING;
 
+
+
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
+CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id ON orders(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(code);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_type);
 """

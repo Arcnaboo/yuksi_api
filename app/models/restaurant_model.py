@@ -15,7 +15,7 @@ class RestaurantRegisterReq(BaseModel):
     addresLine1: str
     addressLine2: Optional[str] = ""
     cityId: int = Field(..., ge=1)
-    districtId: int = Field(..., ge=1)
+    stateId: int = Field(..., ge=1)
 
     model_config = ConfigDict(extra="forbid")
 

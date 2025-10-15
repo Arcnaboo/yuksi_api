@@ -1,28 +1,31 @@
-from fastapi import APIRouter, Path, Body
-from ..models.subsection_model import (
-    CreateSubSectionRequest,
-    UpdateSubSectionRequest,
-)
-from ..controllers import subsection_controller as ctrl
+from fastapi import APIRouter
+from app.models.subsection_model import SubSectionCreate, SubSectionUpdate
+from app.controllers import subsection_controller as controller
 
 router = APIRouter(prefix="/api/SubSection", tags=["SubSection"])
 
-@router.get("/", summary="Get all subsections")
-def get_all():
-    return ctrl.get_all()
+# CREATE
+@router.post("/create")
+async def create_subsection(req: SubSectionCreate):
+    return await controller.create_subsection(req.title, req.content_type, req.show_in_menu, req.show_in_footer, req.content)
 
-@router.get("/{id}", summary="Get subsection by ID")
-def get_by_id(id: int = Path(...)):
-    return ctrl.get_by_id(id)
+# GET ALL
+@router.get("/all")
+async def get_all(limit: int = 100, offset: int = 0):
+    return await controller.get_all_subsections(limit, offset)
 
-@router.post("/", summary="Create new subsection")
-def create(req: CreateSubSectionRequest = Body(...)):
-    return ctrl.create(req)
+# GET BY ID
+@router.get("/{sub_id}")
+async def get_by_id(sub_id: int):
+    return await controller.get_subsection_by_id(sub_id)
 
-@router.put("/{id}", summary="Update subsection")
-def update(id: int = Path(...), req: UpdateSubSectionRequest = Body(...)):
-    return ctrl.update(id, req)
+# UPDATE
+@router.patch("/update")
+async def update(req: SubSectionUpdate):
+    fields = {k: v for k, v in req.dict().items() if v is not None and k != "id"}
+    return await controller.update_subsection(req.id, fields)
 
-@router.delete("/{id}", summary="Delete subsection")
-def delete(id: int = Path(...)):
-    return ctrl.delete(id)
+# DELETE
+@router.delete("/delete/{sub_id}")
+async def delete(sub_id: int):
+    return await controller.delete_subsection(sub_id)
