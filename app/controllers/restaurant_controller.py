@@ -13,8 +13,8 @@ def restaurant_register(req):
         tax_number=req.taxNumber,
         address_line1=req.addresLine1,  # Typo'lu field
         address_line2=req.addressLine2 or "",
-        state_id=req.cityId,      # .NET cityId → bizim state_id
-        city_id=req.districtId,   # .NET districtId → bizim city_id
+        state_id=req.stateId,     # .NET stateId → bizim state_id
+        city_id=req.cityId,       # .NET cityId → bizim city_id
     )
     
     if err:
