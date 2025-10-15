@@ -1,7 +1,12 @@
 from fastapi import FastAPI
+
+from app.routes import contact
 from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
+
+
+
 import asyncio
 '''
 tags_metadata = [
@@ -51,3 +56,4 @@ app.include_router(payments.router)
 app.include_router(paytr_route.router)
 app.include_router(restaurant.router)
 app.include_router(subsection.router)
+app.include_router(contact.router)

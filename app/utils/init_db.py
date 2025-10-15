@@ -27,6 +27,18 @@ DO $$ BEGIN
         'KimlikArka'
     );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE content_type AS ENUM (
+        'Destek',
+        'Hakkimizda',
+        'Iletisim',
+        'GizlilikPolitikasi',
+        'KullanimKosullari',
+        'KuryeGizlilikSözlesmesi',
+        'KuryeTasiyiciSözlesmesi'
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
 # -----------------------------------------------------------
@@ -205,6 +217,7 @@ CREATE TABLE IF NOT EXISTS driver_onboarding (
     updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+
 CREATE TABLE IF NOT EXISTS restaurants (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email           TEXT UNIQUE NOT NULL,
@@ -221,10 +234,34 @@ CREATE TABLE IF NOT EXISTS restaurants (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    subject TEXT,
+    message TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS subsections (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content_type content_type NOT NULL,
+    show_in_menu BOOLEAN DEFAULT FALSE,
+    show_in_footer BOOLEAN DEFAULT FALSE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
 ('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)
 ON CONFLICT DO NOTHING;
+
+
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);

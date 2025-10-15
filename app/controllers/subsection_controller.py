@@ -1,47 +1,37 @@
-from ..models.subsection_model import SubSection
+from typing import Any, Dict
+from app.services import subsection_service as svc
 
-mock_data = [
-    SubSection(
-        id=1, title="Hakkımızda", contentType=2,
-        showInMenu=True, showInFooter=False,
-        content="Biz kimiz?", isActive=True, isDeleted=False
-    ),
-    SubSection(
-        id=2, title="İletişim", contentType=3,
-        showInMenu=False, showInFooter=True,
-        content="Bize ulaşın.", isActive=True, isDeleted=False
-    )
-]
+# CREATE
+async def create_subsection(title: str, content_type: str, show_in_menu: bool, show_in_footer: bool, content: str) -> Dict[str, Any]:
+    result, err = await svc.create_subsection(title, content_type, show_in_menu, show_in_footer, content)
+    if err:
+        return { "success": False, "message": err, "data": {} }
+    return { "success": True, "message": "SubSection created", "data": result }
 
-def get_all():
-    return {"success": True, "data": mock_data}
+# GET ALL
+async def get_all_subsections(limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+    result, err = await svc.get_all_subsections(limit, offset)
+    if err:
+        return { "success": False, "message": err, "data": [] }
+    return { "success": True, "message": "SubSections retrieved", "data": result }
 
-def get_by_id(id: int):
-    for s in mock_data:
-        if s.id == id:
-            return {"success": True, "data": s}
-    return {"success": False, "message": "Not found"}
+# GET BY ID
+async def get_subsection_by_id(sub_id: int) -> Dict[str, Any]:
+    result, err = await svc.get_subsection_by_id(sub_id)
+    if err or not result:
+        return { "success": False, "message": err or "Not found", "data": {} }
+    return { "success": True, "message": "SubSection retrieved", "data": result }
 
-def create(req):
-    new_id = max(s.id for s in mock_data) + 1
-    new_item = SubSection(id=new_id, **req.dict(), isActive=True, isDeleted=False)
-    mock_data.append(new_item)
-    return {"success": True, "data": new_item}
+# UPDATE
+async def update_subsection(sub_id: int, fields: Dict[str, Any]) -> Dict[str, Any]:
+    ok, err = await svc.update_subsection(sub_id, fields)
+    if err or not ok:
+        return { "success": False, "message": err or "Update failed", "data": {} }
+    return { "success": True, "message": "SubSection updated", "data": {} }
 
-def update(id, req):
-    for s in mock_data:
-        if s.id == id:
-            s.title = req.title
-            s.contentType = req.contentType
-            s.showInMenu = req.showInMenu
-            s.showInFooter = req.showInFooter
-            s.content = req.content
-            return {"success": True, "data": s}
-    return {"success": False, "message": "Not found"}
-
-def delete(id):
-    for s in mock_data:
-        if s.id == id:
-            mock_data.remove(s)
-            return {"success": True, "message": f"SubSection {id} deleted"}
-    return {"success": False, "message": "Not found"}
+# DELETE
+async def delete_subsection(sub_id: int) -> Dict[str, Any]:
+    err = await svc.delete_subsection(sub_id)
+    if err:
+        return { "success": False, "message": err, "data": {} }
+    return { "success": True, "message": "SubSection deleted", "data": {} }
