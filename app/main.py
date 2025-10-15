@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.routes import contact
+from app.routes import admin, contact
 from .routes import auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, cargotype, banner, paytr_route,order
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
@@ -8,6 +8,7 @@ from app.utils.config import APP_ENV, get_database_url
 
 
 import asyncio
+
 '''
 tags_metadata = [
     {
@@ -17,6 +18,7 @@ tags_metadata = [
     },
 ]
 '''
+
 app = FastAPI(
     title="YÜKSİ Courier API",
     version="1.0.0",
@@ -59,3 +61,4 @@ app.include_router(subsection.router)
 app.include_router(contact.router)
 app.include_router(order.router)
 app.include_router(subsection.router)
+app.include_router(admin.router)

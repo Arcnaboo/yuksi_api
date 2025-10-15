@@ -298,6 +298,16 @@ CREATE TABLE IF NOT EXISTS order_items (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS system_admins (
+    id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    first_name      TEXT NOT NULL,
+    last_name      TEXT NOT NULL,
+    email          TEXT UNIQUE NOT NULL,
+    password_hash  TEXT NOT NULL,
+    created_at     TIMESTAMPTZ DEFAULT NOW(),
+    singleton      SMALLINT DEFAULT 1 UNIQUE
+);
+
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
 ('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)

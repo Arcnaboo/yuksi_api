@@ -12,19 +12,21 @@ class ContentTypeEnum(str, Enum):
     KuryeGizlilikSözlesmesi = "KuryeGizlilikSözlesmesi"
     KuryeTasiyiciSözlesmesi = "KuryeTasiyiciSözlesmesi"
 
-# Create DTO
+from pydantic import BaseModel
+from typing import Optional
+
+# ENUM'u burada kaldırıyoruz — integer kabul etsin
 class SubSectionCreate(BaseModel):
     title: str
-    content_type: ContentTypeEnum
-    show_in_menu: bool = False
-    show_in_footer: bool = False
+    content_type: int  # ✅ Artık INT kabul edecek
+    show_in_menu: bool
+    show_in_footer: bool
     content: str
 
-# Update DTO (ID zorunlu)
 class SubSectionUpdate(BaseModel):
     id: int
     title: Optional[str] = None
-    content_type: Optional[ContentTypeEnum] = None
+    content_type: Optional[int] = None  # ✅ INT opsiyonel
     show_in_menu: Optional[bool] = None
     show_in_footer: Optional[bool] = None
     content: Optional[str] = None

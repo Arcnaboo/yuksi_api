@@ -82,6 +82,7 @@ def register(first_name: str, last_name:str, email: str, phone: str, password: s
     return tokens
 
 def login(email: str, password: str):
+    print("ok")
     with db_cursor(dict_cursor=True) as cur:
         cur.execute("SELECT id, email, password_hash FROM drivers WHERE email=%s", (email,))
         row = cur.fetchone()
@@ -105,7 +106,18 @@ def login(email: str, password: str):
                 user_type="restaurant",
             )
             return tokens
-
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("SELECT id, email, password_hash, first_name,last_name FROM system_admins WHERE email=%s", (email,))
+        a = cur.fetchone()
+        if a and verify_pwd(password, a["password_hash"]):
+            tokens = _generate_tokens_net_style(
+                user_id=a["id"],
+                email=a["email"],
+                roles=["Admin"],
+                user_type="admin",
+            )
+            return tokens   
+  
     return None
 
 def get_driver(driver_id: str):

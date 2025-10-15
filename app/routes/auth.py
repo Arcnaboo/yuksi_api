@@ -13,7 +13,8 @@ def register(req: RegisterReq):
 
 @router.post("/login")
 def login(req: LoginReq):
-    return auth_controller.login(req.email, req.password)
+    print("routes")
+    return auth_controller.login(req.email,req.password)
 
 @router.post("/logout")
 def logout(req: LogoutReq):
