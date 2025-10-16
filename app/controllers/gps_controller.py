@@ -1,4 +1,4 @@
-from ..models.gps_model import GPSUpdateRequest, GPSData
+from ..models.gps_model import GPSUpdateRequest
 from ..services import gps_service as svc
 
 async def upsert_location(req: GPSUpdateRequest):
