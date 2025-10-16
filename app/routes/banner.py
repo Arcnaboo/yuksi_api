@@ -10,16 +10,16 @@ async def get_all_banners():
 
 @router.post("/set-banner")
 async def add_banner(req: BannerReq):
-    return await banner_controller.create_banner(req.title ,req.images, req.link, req.description)
+    return await banner_controller.create_banner(req.title, req.image_url, req.priority, req.active)
 
 @router.get("/get-banners/{banner_id}")
-async def get_banner(banner_id: int):
+async def get_banner(banner_id: str):
     return await banner_controller.get_banner_by_id(banner_id)
 
 @router.patch("/update-banner")
 async def update_banner(req: UpdateBannerReq):
-    return await banner_controller.update_banner(req.id, req.title ,req.images, req.link, req.description)
+    return await banner_controller.update_banner(req.id, req.title, req.image_url, req.priority, req.active)
 
 @router.delete("/delete-banner/{banner_id}")
-async def delete_banner(banner_id: int):
+async def delete_banner(banner_id: str):
     return await banner_controller.delete_banner(banner_id)  
