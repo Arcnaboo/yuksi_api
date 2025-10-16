@@ -334,6 +334,16 @@ CREATE TABLE IF NOT EXISTS general_settings (
 );
 
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    type TEXT NOT NULL, -- single veya bulk
+    target_email TEXT,
+    user_type TEXT,     -- courier, restaurant, all
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
