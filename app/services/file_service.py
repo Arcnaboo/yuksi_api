@@ -38,3 +38,10 @@ async def handle_upload(user_id: str, file: UploadFile) -> dict:
         new_id = cur.fetchone()[0]
 
     return {"id": str(new_id)}
+
+def get_public_url(file_id: str) -> str:
+    """
+    Public CDN URL üretir. Eğer gerçek CDN varsa base_url'i ona göre değiştir.
+    """
+    BASE_URL = "https://cdn.yuksi.com/files"
+    return f"{BASE_URL}/{file_id}"

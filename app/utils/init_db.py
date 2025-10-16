@@ -318,6 +318,22 @@ CREATE TABLE IF NOT EXISTS packages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ✅ General Settings Tablosu
+CREATE TABLE IF NOT EXISTS general_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    app_name TEXT NOT NULL,
+    app_title TEXT NOT NULL,
+    keywords TEXT NOT NULL,
+    email TEXT NOT NULL,
+    whatsapp TEXT NOT NULL,
+    address TEXT NOT NULL,
+    map_embed_code TEXT NOT NULL,
+    logo_path TEXT, -- ✅ file_service den dönen public URL tutulacak
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
