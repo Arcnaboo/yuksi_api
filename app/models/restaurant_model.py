@@ -41,3 +41,23 @@ class RestaurantListItem(BaseModel):
     phone: str
     fullAddress: str
 
+
+class RestaurantProfileResponse(BaseModel):
+    """Restaurant profil görüntüleme modeli"""
+    email: str
+    phone: str
+    addressLine1: str
+    addressLine2: Optional[str] = ""
+    openingHour: Optional[str] = None
+    closingHour: Optional[str] = None
+
+class RestaurantProfileUpdateReq(BaseModel):
+    """Restaurant profil güncelleme modeli"""
+    email: Optional[str] = Field(None, description="E-posta adresi")
+    phone: Optional[str] = Field(None, min_length=7, max_length=20, description="Telefon numarası")
+    addressLine1: Optional[str] = Field(None, description="Adres satır 1")
+    addressLine2: Optional[str] = Field(None, description="Adres satır 2")
+    openingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Açılış saati (HH:MM)")
+    closingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Kapanış saati (HH:MM)")
+    model_config = ConfigDict(extra="forbid")
+
