@@ -12,9 +12,21 @@ CONTENT_TYPE_MAP = {
     7: "KuryeTasiyiciSözlesmesi"
 }
 
+# ✅ Formatlayıcı
+def format_subsection_row(row):
+    return {
+        "id": row[0],
+        "title": row[1],
+        "content_type": row[2],
+        "show_in_menu": row[3],
+        "show_in_footer": row[4],
+        "content": row[5],
+        "created_at": row[6]
+    }
+
 async def create_subsection(
     title: str,
-    content_type: int,   # INT GELECEK — MAPE ÇEVİRİYORUZ
+    content_type: int,
     show_in_menu: bool,
     show_in_footer: bool,
     content: str
@@ -34,7 +46,7 @@ async def create_subsection(
                 (title, ct_value, show_in_menu, show_in_footer, content)
             )
             row = cur.fetchone()
-            return row, None
+            return format_subsection_row(row), None
     except Exception as e:
         return None, str(e)
 
@@ -52,7 +64,8 @@ async def get_all_subsections(limit: int = 100, offset: int = 0) -> Tuple[Option
                 (limit, offset)
             )
             rows = cur.fetchall()
-            return rows, None
+            formatted = [format_subsection_row(r) for r in rows]
+            return formatted, None
     except Exception as e:
         return None, str(e)
 
@@ -69,7 +82,9 @@ async def get_subsection_by_id(sub_id: int) -> Tuple[Optional[Dict[str, Any]], O
                 (sub_id,)
             )
             row = cur.fetchone()
-            return row, None
+            if not row:
+                return None, "SubSection bulunamadı"
+            return format_subsection_row(row), None
     except Exception as e:
         return None, str(e)
 
@@ -79,7 +94,6 @@ async def update_subsection(sub_id: int, fields: Dict[str, Any]) -> Optional[str
         if not fields:
             return "Güncellenecek alan yok"
 
-        # ✅ ENUM GÜNCELLEMEDE DE MAP KONTROLÜ
         if "content_type" in fields:
             ct_value = CONTENT_TYPE_MAP.get(int(fields["content_type"]))
             if not ct_value:

@@ -310,6 +310,14 @@ CREATE TABLE IF NOT EXISTS system_admins (
     singleton      SMALLINT DEFAULT 1 UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS packages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    carrier TEXT NOT NULL,
+    days INT NOT NULL,
+    price NUMERIC(10,2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
