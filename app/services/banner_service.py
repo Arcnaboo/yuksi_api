@@ -1,25 +1,67 @@
 from typing import Any, Dict, Tuple, Optional, List
+from uuid import UUID
+from app.utils.database import db_cursor
 
-# TODO : cagri : Implement actual database operations and error handling
 async def get_all_banners() -> Tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
-    # Implementation for fetching all banners from the database
-    return [
-        {"id": 1, "title": "Summer Sale", "images": ["img1.jpg", "img2.jpg"], "link": "http://example.com/sale", "description": "Up to 50% off!"},
-        {"id": 2, "title": "New Arrivals", "images": ["img3.jpg"], "link": "http://example.com/new", "description": "Check out our new products."}
-    ], None
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("""
+            SELECT id, title, image_url, priority, active
+            FROM banners
+            ORDER BY active DESC, priority DESC, title ASC
+        """)
+        rows = cur.fetchall()
+        return rows, None
 
-async def get_banner_by_id(banner_id: int) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-    # Implementation for fetching a specific banner by ID from the database
-    return {"id": banner_id, "title": "Sample Banner", "images": ["img1.jpg"], "link": "http://example.com", "description": "Sample Description"}, None
+async def get_banner_by_id(banner_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("""
+            SELECT id, title, image_url, priority, active
+            FROM banners
+            WHERE id = %s
+        """, (banner_id))
+        row = cur.fetchone()
+        if not row:
+            return None, "Banner not found"
+        return row, None
+    
+async def create_banner(
+    title: str,
+    image_url: str,
+    priority: int = 0,
+    active: bool = True
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("""
+            INSERT INTO banners (title, image_url, priority, active)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, title, image_url, priority, active
+        """, (title, image_url, priority, active))
+        row = cur.fetchone()
+        return row, None
 
-async def create_banner(title: str, images: list, link: str = None, description: str = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-    # Implementation for creating a new banner in the database
-    return {"id": 3, "title": title, "images": images, "link": link, "description": description}, None
+async def update_banner(
+    banner_id: str,
+    title: str,
+    image_url: str,
+    priority: int = 0,
+    active: bool = True
+) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("""
+            UPDATE banners
+            SET title = %s,
+                image_url = %s,
+                priority = %s,
+                active = %s
+            WHERE id = %s
+            RETURNING id, title, image_url, priority, active
+        """, (title, image_url, priority, active, banner_id))
+        row = cur.fetchone()
+        if not row:
+            return None, "Banner not found"
+        return row, None
 
-async def update_banner(banner_id: int, title: str, images: list, link: str = None, description: str = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-    # Implementation for updating an existing banner in the database
-    return {"id": banner_id, "title": title, "images": images, "link": link, "description": description}, None
-
-async def delete_banner(banner_id: int) -> Optional[str]:
-    # Implementation for deleting a specific banner by ID from the database
-    return None
+async def delete_banner(banner_id: UUID):
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("DELETE FROM banners WHERE id=%s RETURNING id", (banner_id,))
+        return None if cur.fetchone() else "Banner not found"

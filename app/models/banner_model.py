@@ -2,13 +2,13 @@ from pydantic import BaseModel
 
 class BannerReq(BaseModel):
     title: str
-    link: str = None    
-    description: str = None
-    images: list[str] = []
+    image_url: str
+    priority: int = 0
+    active: bool = True
 
 class UpdateBannerReq(BaseModel):
-    id: int
+    id: str
     title: str
-    link: str = None    
-    description: str = None
-    images: list[str] = []
+    image_url: str
+    priority: int = 0
+    active: bool = True

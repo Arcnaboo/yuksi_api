@@ -316,14 +316,6 @@ CREATE TABLE IF NOT EXISTS gps_table (
 );
 CREATE INDEX IF NOT EXISTS idx_gps_updated_at ON gps_table(updated_at DESC);
 
-
-INSERT INTO banners (title,image_url,priority) VALUES
-('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
-('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)
-ON CONFLICT DO NOTHING;
-
-
-
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
@@ -334,6 +326,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_type);
+CREATE INDEX IF NOT EXISTS ix_banners_active ON banners(active);
+CREATE INDEX IF NOT EXISTS ix_banners_priority ON banners(priority DESC);
 """
 
 # SQL dump dosyaları burada beklenir: app/sql/10_countries.sql vb.
