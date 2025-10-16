@@ -50,6 +50,7 @@ async def update_restaurant_profile(restaurant_id: str, req):
         restaurant_id=restaurant_id,
         email=req.email,
         phone=req.phone,
+        contact_person=req.contactPerson,
         address_line1=req.addressLine1,
         address_line2=req.addressLine2,
         opening_hour=req.openingHour,

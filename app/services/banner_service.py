@@ -10,6 +10,8 @@ async def get_all_banners() -> Tuple[Optional[List[Dict[str, Any]]], Optional[st
             ORDER BY active DESC, priority DESC, title ASC
         """)
         rows = cur.fetchall()
+        if not rows:
+            return None, "Banners not found"
         return rows, None
 
 async def get_banner_by_id(banner_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
