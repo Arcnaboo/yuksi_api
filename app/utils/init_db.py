@@ -308,6 +308,15 @@ CREATE TABLE IF NOT EXISTS system_admins (
     singleton      SMALLINT DEFAULT 1 UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS gps_table (
+    driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
+    latitude NUMERIC(10,6) NOT NULL,
+    longitude NUMERIC(10,6) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_gps_updated_at ON gps_table(updated_at DESC);
+
+
 INSERT INTO banners (title,image_url,priority) VALUES
 ('Ramazan Kampanyası','https://cdn.yuksi.com/ramazan.png',1),
 ('Yeni Sürücü Bonusu','https://cdn.yuksi.com/bonus.png',2)
