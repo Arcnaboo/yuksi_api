@@ -125,7 +125,7 @@ async def get_restaurant_profile(restaurant_id: str) -> Optional[Dict[str, Any]]
         from ..utils.database_async import fetch_one
         
         row = await fetch_one("""
-            SELECT email, phone, address_line1, address_line2, 
+            SELECT email, phone, contact_person, address_line1, address_line2, 
                    opening_hour, closing_hour
             FROM restaurants 
             WHERE id = $1
@@ -137,6 +137,7 @@ async def get_restaurant_profile(restaurant_id: str) -> Optional[Dict[str, Any]]
         return {
             "email": row.get("email"),
             "phone": row.get("phone"),
+            "contactPerson": row.get("contact_person") or "",
             "addressLine1": row.get("address_line1") or "",
             "addressLine2": row.get("address_line2") or "",
             "openingHour": row.get("opening_hour").strftime("%H:%M") if row.get("opening_hour") else None,
@@ -150,6 +151,7 @@ async def update_restaurant_profile(
     restaurant_id: str,
     email: Optional[str] = None,
     phone: Optional[str] = None,
+    contact_person: Optional[str] = None,
     address_line1: Optional[str] = None,
     address_line2: Optional[str] = None,
     opening_hour: Optional[str] = None,
@@ -172,6 +174,10 @@ async def update_restaurant_profile(
         if phone is not None:
             update_fields.append(f"phone = ${param_count}")
             params.append(phone)
+            param_count += 1
+        if contact_person is not None:
+            update_fields.append(f"contact_person = ${param_count}")
+            params.append(contact_person)
             param_count += 1
         if address_line1 is not None:
             update_fields.append(f"address_line1 = ${param_count}")
