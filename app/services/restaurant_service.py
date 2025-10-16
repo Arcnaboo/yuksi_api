@@ -118,3 +118,95 @@ def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         
         return result
 
+
+async def get_restaurant_profile(restaurant_id: str) -> Optional[Dict[str, Any]]:
+    """Restaurant profil bilgilerini getir"""
+    try:
+        from ..utils.database_async import fetch_one
+        
+        row = await fetch_one("""
+            SELECT email, phone, address_line1, address_line2, 
+                   opening_hour, closing_hour
+            FROM restaurants 
+            WHERE id = $1
+        """, restaurant_id)
+        
+        if not row:
+            return None
+            
+        return {
+            "email": row.get("email"),
+            "phone": row.get("phone"),
+            "addressLine1": row.get("address_line1") or "",
+            "addressLine2": row.get("address_line2") or "",
+            "openingHour": row.get("opening_hour").strftime("%H:%M") if row.get("opening_hour") else None,
+            "closingHour": row.get("closing_hour").strftime("%H:%M") if row.get("closing_hour") else None
+        }
+    except Exception as e:
+        print(f"Error getting restaurant profile: {e}")
+        return None
+
+async def update_restaurant_profile(
+    restaurant_id: str,
+    email: Optional[str] = None,
+    phone: Optional[str] = None,
+    address_line1: Optional[str] = None,
+    address_line2: Optional[str] = None,
+    opening_hour: Optional[str] = None,
+    closing_hour: Optional[str] = None
+) -> Tuple[bool, Optional[str]]:
+    """Restaurant profil bilgilerini güncelle"""
+    try:
+        from ..utils.database_async import execute
+        from datetime import time
+        
+        # Güncellenecek alanları belirle
+        update_fields = []
+        params = []
+        param_count = 1
+        
+        if email is not None:
+            update_fields.append(f"email = ${param_count}")
+            params.append(email)
+            param_count += 1
+        if phone is not None:
+            update_fields.append(f"phone = ${param_count}")
+            params.append(phone)
+            param_count += 1
+        if address_line1 is not None:
+            update_fields.append(f"address_line1 = ${param_count}")
+            params.append(address_line1)
+            param_count += 1
+        if address_line2 is not None:
+            update_fields.append(f"address_line2 = ${param_count}")
+            params.append(address_line2)
+            param_count += 1
+        if opening_hour is not None:
+            update_fields.append(f"opening_hour = ${param_count}")
+            # String'i time objesine çevir
+            hour, minute = opening_hour.split(':')
+            params.append(time(int(hour), int(minute)))
+            param_count += 1
+        if closing_hour is not None:
+            update_fields.append(f"closing_hour = ${param_count}")
+            # String'i time objesine çevir
+            hour, minute = closing_hour.split(':')
+            params.append(time(int(hour), int(minute)))
+            param_count += 1
+            
+        if not update_fields:
+            return False, "Güncellenecek alan bulunamadı"
+            
+        # SQL sorgusu oluştur
+        sql = f"UPDATE restaurants SET {', '.join(update_fields)} WHERE id = ${param_count}"
+        params.append(restaurant_id)
+        
+        result = await execute(sql, *params)
+        if result == "UPDATE 0":
+            return False, "Restaurant bulunamadı"
+                
+        return True, None
+        
+    except Exception as e:
+        print(f"Error updating restaurant profile: {e}")
+        return False, f"Güncelleme hatası: {str(e)}"

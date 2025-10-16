@@ -3,7 +3,9 @@ from typing import List
 from ..models.restaurant_model import (
     RestaurantRegisterReq,
     RestaurantRegisterResponse,
-    RestaurantListItem
+    RestaurantListItem,
+    RestaurantProfileResponse,
+    RestaurantProfileUpdateReq
 )
 from ..controllers import restaurant_controller as ctrl
 
@@ -40,4 +42,24 @@ def list_restaurants():
     """Restaurant listesi endpoint"""
     result = ctrl.list_restaurants()
     return result["data"]
+
+
+@router.get(
+    "/{restaurant_id}/profile",
+    summary="Get Restaurant Profile",
+    description="Restaurant profil bilgilerini getirir.",
+    response_model=RestaurantProfileResponse
+)
+async def get_profile(restaurant_id: str):
+    """Restaurant profil görüntüleme"""
+    return await ctrl.get_restaurant_profile(restaurant_id)
+
+@router.put(
+    "/{restaurant_id}/profile",
+    summary="Update Restaurant Profile",
+    description="Restaurant profil bilgilerini günceller."
+)
+async def update_profile(restaurant_id: str, req: RestaurantProfileUpdateReq):
+    """Restaurant profil güncelleme"""
+    return await ctrl.update_restaurant_profile(restaurant_id, req)
 

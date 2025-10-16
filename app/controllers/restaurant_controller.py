@@ -36,3 +36,28 @@ def list_restaurants():
         "data": restaurants
     }
 
+
+async def get_restaurant_profile(restaurant_id: str):
+    """Restaurant profil görüntüleme controller"""
+    profile = await svc.get_restaurant_profile(restaurant_id)
+    if not profile:
+        return {"error": "Restaurant bulunamadı"}, 404
+    return profile
+
+async def update_restaurant_profile(restaurant_id: str, req):
+    """Restaurant profil güncelleme controller"""
+    success, error = await svc.update_restaurant_profile(
+        restaurant_id=restaurant_id,
+        email=req.email,
+        phone=req.phone,
+        address_line1=req.addressLine1,
+        address_line2=req.addressLine2,
+        opening_hour=req.openingHour,
+        closing_hour=req.closingHour
+    )
+    
+    if not success:
+        return {"error": error}, 400
+        
+    return {"message": "Profil başarıyla güncellendi"}
+

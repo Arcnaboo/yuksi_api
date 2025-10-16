@@ -236,6 +236,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
     address_line2   TEXT,
     state_id        BIGINT,
     city_id         BIGINT,
+    opening_hour    TIME,
+    closing_hour    TIME,
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
