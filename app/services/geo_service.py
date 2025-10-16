@@ -14,7 +14,7 @@ def _row_to_dict(row, description) -> Optional[Dict[str, Any]]:
     cols = [col[0] for col in description]
     return dict(zip(cols, row))
 
-# --- servis fonksiyonları ---
+# --- servis fonksiyonları ---   
 
 def list_countries(q: Optional[str], limit: int, offset: int) -> List[Dict[str, Any]]:
     with db_cursor() as cur:
