@@ -24,7 +24,7 @@ def list_countries(q: Optional[str], limit: int, offset: int) -> List[Dict[str, 
                 SELECT id, name, iso2, iso3, phonecode
                 FROM public.countries
                 WHERE lower(name) LIKE lower(%s)
-                ORDER BY name
+                ORDER BY NULLIF(regexp_replace(phonecode, '\\D', '', 'g'), '')::int ASC, name
                 LIMIT %s OFFSET %s
                 """,
                 (f"%{q}%", limit, offset),
@@ -34,7 +34,7 @@ def list_countries(q: Optional[str], limit: int, offset: int) -> List[Dict[str, 
                 """
                 SELECT id, name, iso2, iso3, phonecode
                 FROM public.countries
-                ORDER BY name
+                ORDER BY NULLIF(regexp_replace(phonecode, '\\D', '', 'g'), '')::int ASC, name
                 LIMIT %s OFFSET %s
                 """,
                 (limit, offset),
