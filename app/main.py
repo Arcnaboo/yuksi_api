@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from app.routes import contact
+from app.routes import contact, general_setting, package
 from .routes import (auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, 
                      cargotype, banner, paytr_route,order, gps_route)
 from .utils.init_db import init_db
@@ -64,6 +64,9 @@ app.include_router(subsection.router)
 app.include_router(contact.router)
 app.include_router(order.router)
 app.include_router(gps_route.router)
+app.include_router(package.router)
+app.include_router(general_setting.router)
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
