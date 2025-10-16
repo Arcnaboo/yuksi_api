@@ -5,7 +5,7 @@ from app.utils.templates.contact_user_template import ContactMessageEmailTemplat
 from app.utils.templates.contact_admin_template import ContactAdminEmailTemplate
 import os
 from datetime import datetime
-
+import logging
 # Admin Email .env'den çekiyoruz
 ADMIN_EMAIL = os.getenv("MAIL_USER", "testmaildeneme77@gmail.com")
 
@@ -18,6 +18,8 @@ async def create_contact_message(
     message: str
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     try:
+
+        logging.info(f" attempting contact message {name}:{email}:{phone}:{message}")
         # DB INSERT
         with db_cursor() as cur:
             cur.execute(

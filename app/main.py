@@ -22,6 +22,20 @@ tags_metadata = [
 ]
 '''
 
+def setup_console_logging():
+    root = logging.getLogger()
+    if root.hasHandlers():
+        root.handlers.clear()
+
+    handler_console = logging.StreamHandler()
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    handler_console.setFormatter(fmt)
+    root.addHandler(handler_console)
+    root.setLevel(logging.INFO)
+    logging.info("Console logging initialised")
+
+
+
 app = FastAPI(
     title="YÜKSİ Courier API",
     version="1.0.0",
@@ -68,7 +82,7 @@ app.include_router(package.router)
 app.include_router(general_setting.router)
 app.include_router(notification.router)
 
-
+setup_console_logging()
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
