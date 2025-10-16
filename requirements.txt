@@ -8,4 +8,4 @@ email-validator
 python-multipart
 filestack-python
 asyncpg
-hhtpx
+httpx
