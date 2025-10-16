@@ -21,10 +21,16 @@ def list_countries(q: Optional[str], limit: int, offset: int) -> List[Dict[str, 
         if q:
             cur.execute(
                 """
-                SELECT id, name, iso2, iso3, phonecode
-                FROM public.countries
-                WHERE lower(name) LIKE lower(%s)
-                ORDER BY NULLIF(regexp_replace(phonecode, '\\D', '', 'g'), '')::int ASC, name
+                SELECT DISTINCT ON (clean_code) 
+                       id, name, iso2, iso3, phonecode
+                FROM (
+                    SELECT id, name, iso2, iso3, phonecode,
+                           NULLIF(regexp_replace(phonecode, '\\D', '', 'g'), '')::int AS clean_code
+                    FROM public.countries
+                    WHERE lower(name) LIKE lower(%s)
+                ) AS sub
+                WHERE clean_code IS NOT NULL
+                ORDER BY clean_code ASC, name
                 LIMIT %s OFFSET %s
                 """,
                 (f"%{q}%", limit, offset),
@@ -32,9 +38,15 @@ def list_countries(q: Optional[str], limit: int, offset: int) -> List[Dict[str, 
         else:
             cur.execute(
                 """
-                SELECT id, name, iso2, iso3, phonecode
-                FROM public.countries
-                ORDER BY NULLIF(regexp_replace(phonecode, '\\D', '', 'g'), '')::int ASC, name
+                SELECT DISTINCT ON (clean_code)
+                       id, name, iso2, iso3, phonecode
+                FROM (
+                    SELECT id, name, iso2, iso3, phonecode,
+                           NULLIF(regexp_replace(phonecode, '\\D', '', 'g'), '')::int AS clean_code
+                    FROM public.countries
+                ) AS sub
+                WHERE clean_code IS NOT NULL
+                ORDER BY clean_code ASC, name
                 LIMIT %s OFFSET %s
                 """,
                 (limit, offset),
