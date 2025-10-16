@@ -1,57 +1,69 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
 import logging
-MAIL_HOST = os.getenv("MAIL_HOST")
-MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
-MAIL_USER = os.getenv("MAIL_USER")
-MAIL_PASS = os.getenv("MAIL_PASS")
-MAIL_FROM = os.getenv("MAIL_FROM", MAIL_USER)
-MAIL_TLS = os.getenv("MAIL_TLS", "true").lower() == "true"
+import httpx
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from app.utils.database import db_cursor  # keep this import for bulk mail
 
+# environment
+MAIL_FROM = os.getenv("MAIL_FROM", "Yuksi Destek <support@yuksi.dev>")
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+
+# ---------------------------------------------------------------------------------
+# Base mail sender via Resend HTTPS API
+# ---------------------------------------------------------------------------------
 async def send_mail(to: str, subject: str, html_body: str) -> tuple[bool, str]:
     """
     ✅ Tek mail gönderimi (Base fonksiyon)
-    (Same logic, detailed logging only)
+    Uses Resend API (works on Render – no SMTP)
     """
     try:
-        logging.info("[MAIL-A] send_mail STARTED")
-        logging.info(f"[MAIL-A1] to={to}, subject={subject}")
+        logging.info("[MAIL-A] send_mail STARTED (Resend API)")
+        logging.info(f"[MAIL-A1] to={to}, subject={subject}, from={MAIL_FROM}")
 
+        if not RESEND_API_KEY:
+            logging.error("[MAIL-ERR] RESEND_API_KEY not set")
+            return False, "RESEND_API_KEY missing"
+
+        # MIME generation (optional, for template consistency)
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = MAIL_FROM
         msg["To"] = to
+        msg.attach(MIMEText(html_body, "html"))
 
-        part = MIMEText(html_body, "html")
-        msg.attach(part)
-        logging.info("[MAIL-B] MIME message composed")
+        payload = {
+            "from": MAIL_FROM,
+            "to": [to],
+            "subject": subject,
+            "html": html_body,
+        }
 
-        logging.info("[MAIL-C] opening SMTP connection")
-        with smtplib.SMTP(MAIL_HOST, MAIL_PORT) as server:
-            logging.info("[MAIL-C1] SMTP connection opened")
+        logging.info("[MAIL-B] Sending via Resend API...")
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.post(
+                "https://api.resend.com/emails",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+            )
 
-            if MAIL_TLS:
-                logging.info("[MAIL-D] starting TLS handshake")
-                server.starttls()
-                logging.info("[MAIL-D1] TLS handshake complete")
-
-            logging.info("[MAIL-E] logging in to mail server")
-            server.login(MAIL_USER, MAIL_PASS)
-            logging.info("[MAIL-E1] login successful")
-
-            logging.info("[MAIL-F] sending email message")
-            server.sendmail(MAIL_FROM, to, msg.as_string())
-            logging.info("[MAIL-F1] sendmail() completed")
-
-        logging.info("[MAIL-G] SMTP connection closed")
-        return True, "Mail başarıyla gönderildi"
+        if r.status_code == 200:
+            logging.info("[MAIL-C] Resend accepted message ✅")
+            return True, "Mail başarıyla gönderildi"
+        else:
+            logging.error(f"[MAIL-ERR] Resend error {r.status_code}: {r.text}")
+            return False, f"Resend error {r.status_code}: {r.text}"
 
     except Exception as e:
         logging.exception("[MAIL-ERR] send_mail FAILED")
         return False, str(e)
 
+# ---------------------------------------------------------------------------------
+# Controller wrappers (same signatures as before)
+# ---------------------------------------------------------------------------------
 async def send_single_mail(email: str, subject: str, message: str) -> tuple[bool, str]:
     """
     ✅ Controller -> Tek kişiye bildirim
@@ -63,8 +75,6 @@ async def send_bulk_mail(user_type: str, subject: str, message: str) -> tuple[bo
     """
     ✅ Controller -> Toplu bildirim (all, courier, restaurant)
     """
-    from app.utils.database import db_cursor
-
     try:
         if user_type == "all":
             query = "SELECT email FROM drivers UNION SELECT email FROM restaurants"
@@ -89,4 +99,5 @@ async def send_bulk_mail(user_type: str, subject: str, message: str) -> tuple[bo
         return True, "Toplu mail gönderildi"
 
     except Exception as e:
+        logging.exception("[MAIL-ERR] send_bulk_mail FAILED")
         return False, str(e)
