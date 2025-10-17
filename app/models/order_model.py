@@ -79,6 +79,7 @@ class OrderHistoryItem(BaseModel):
     customer: str
     phone: str
     address: str
+    delivery_address: str
     type: str
     amount: float
     status: str
