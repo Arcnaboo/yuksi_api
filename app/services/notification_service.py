@@ -76,3 +76,33 @@ async def list_notifications_for_user(claims):
             return []
 
         return cur.fetchall()
+
+
+
+async def delete_notification(notification_id: int, user_id: str, roles: list[str]) -> tuple[bool, str]:
+    try:
+        with db_cursor(dict_cursor=True) as cur:
+            # 1️⃣ Bildirim var mı kontrol et
+            cur.execute("SELECT id, user_type FROM notifications WHERE id=%s", (notification_id,))
+            notif = cur.fetchone()
+
+            if not notif:
+                return False, "Bildirim bulunamadı"
+
+            notif_user_type = (notif["user_type"] or "").strip().lower()
+            current_role = (roles[0] or "").strip().lower()
+
+            # 2️⃣ Eğer admin değilse, sadece kendi user_type'ına ait bildirimi silebilir
+            if current_role != "admin":
+                if notif_user_type != current_role:
+                    return False, "Bu bildirimi silme yetkiniz yok"
+
+            # 3️⃣ Silme işlemi
+            cur.execute("DELETE FROM notifications WHERE id=%s", (notification_id,))
+
+        return True, "Bildirim silindi"
+
+    except Exception as e:
+        return False, f"SQL Hatası: {str(e)}"
+
+

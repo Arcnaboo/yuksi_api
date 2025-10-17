@@ -21,3 +21,16 @@ async def list_notifications(claims):
         "message": "Notifications fetched",
         "data": data
     }
+
+
+async def delete_notification(notification_id: int, claims):
+    user_id = claims.get("sub")
+    roles = claims.get("role") or claims.get("roles") or []
+
+    ok, msg = await service.delete_notification(notification_id, user_id, roles)
+
+    if not ok:
+        return {"success": False, "message": msg, "data": {}}
+
+    return {"success": True, "message": msg, "data": {}}
+
