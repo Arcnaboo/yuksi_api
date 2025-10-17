@@ -38,11 +38,11 @@ DO $$ BEGIN
         'KuryeGizlilikSözlesmesi',
         'KuryeTasiyiciSözlesmesi'
     );
-    CREATE TYPE delivery_type AS ENUM ('yerinde', 'paketservis', 'gel-al');
+    CREATE TYPE delivery_type AS ENUM ('yerinde', 'paket_servis', 'gel_al');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'yolda', 'teslim_edildi');
+    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'kurye_cagrildi', 'kuryeye_verildi', 'yolda', 'teslim_edildi');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
