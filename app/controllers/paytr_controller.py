@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from fastapi import Request
 from app.models.paytr_models import PaytrConfig, PaymentRequest, CallbackData
 from app.services.paytr_service import PaytrService
-
+import logging
 load_dotenv()
 
 def get_config() -> PaytrConfig:
@@ -22,6 +22,7 @@ def init_payment(req: PaymentRequest):
     return service.create_payment(req)
 
 async def handle_callback(request: Request):
+    logging.info(f"PAYTR CALLBACK {request} ")
     form = await request.form()
     callback = CallbackData(
         merchant_oid=form.get("merchant_oid"),
@@ -29,7 +30,7 @@ async def handle_callback(request: Request):
         total_amount=int(form.get("total_amount", "0")),
         hash=form.get("hash")
     )
-
+    logging.info(f"callback data {callback}")
     service = PaytrService(get_config())
     verified = service.verify_callback(callback)
 
