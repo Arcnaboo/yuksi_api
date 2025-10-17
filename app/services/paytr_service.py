@@ -51,7 +51,14 @@ class PaytrService:
             "merchant_fail_url": self.config.fail_url,
             "user_basket": req.basket_json,
             "paytr_token": token_hash,
-            "no_installment": 0,  # ✅ Zorunlu alan eklendi
+            # ✅ Zorunlu alanlar
+            "no_installment": getattr(req, "no_installment", 0),
+            "max_installment": getattr(req, "max_installment", 12),
+            # ✅ Ek tavsiye edilen alanlar
+            "installment_count": getattr(req, "installment_count", 0),
+            "user_name": getattr(req, "user_name", "Test Kullanıcı"),
+            "user_address": getattr(req, "user_address", "Ankara, Türkiye"),
+            "user_phone": getattr(req, "user_phone", "+905551112233"),
         }
 
         logging.info("[create_payment] Payload prepared: %s", payload)
@@ -68,7 +75,7 @@ class PaytrService:
                 reason=data.get("reason")
             )
         except Exception as e:
-            logging.info("[create_payment] Exception occurred: %s", str(e))
+            logging.exception("[create_payment] Exception occurred: %s", str(e))
             return PaymentResponse(status="error", reason=str(e))
 
     def verify_callback(self, callback: CallbackData) -> bool:
@@ -102,6 +109,5 @@ def get_config() -> PaytrConfig:
         callback_url=os.getenv("PAYTR_CALLBACK_URL"),
         test_mode=1
     )
-
 
 paytr_service = PaytrService(get_config())
