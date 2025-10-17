@@ -2,7 +2,7 @@ from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.routes import contact, general_setting, notification, package
-from .routes import (auth, driver, jobs, payments, system, courier, geo, file, restaurant, subsection, 
+from .routes import (auth, driver, jobs, payments, system, courier,carrier_type, geo, file, restaurant, subsection, 
                      cargotype, banner, paytr_route,order, gps_route)
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
@@ -81,6 +81,7 @@ app.include_router(gps_route.router)
 app.include_router(package.router)
 app.include_router(general_setting.router)
 app.include_router(notification.router)
+app.include_router(carrier_type.router)
 
 setup_console_logging()
 
