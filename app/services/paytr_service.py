@@ -1,7 +1,7 @@
 # app/services/paytr_service.py
 import base64, hmac, hashlib, requests
 from app.models.paytr_models import PaytrConfig, PaymentRequest, PaymentResponse, CallbackData
-import logging,os 
+import logging, os
 
 class PaytrService:
     TOKEN_URL = "https://www.paytr.com/odeme/api/get-token"
@@ -51,8 +51,11 @@ class PaytrService:
             "merchant_fail_url": self.config.fail_url,
             "user_basket": req.basket_json,
             "paytr_token": token_hash,
+            "no_installment": 0,  # ✅ Zorunlu alan eklendi
         }
+
         logging.info("[create_payment] Payload prepared: %s", payload)
+        logging.info("[create_payment] Using no_installment=%s", payload["no_installment"])
 
         try:
             r = requests.post(self.TOKEN_URL, data=payload, timeout=10)
@@ -82,10 +85,11 @@ class PaytrService:
 
         logging.info("[verify_callback] Expected hash: %s", expected_hash)
         result = expected_hash == callback.hash
-        logging.info("[verify_callback] Hash match result: %s", result)
+        if not result:
+            logging.warning("[verify_callback] Hash mismatch! expected=%s got=%s", expected_hash, callback.hash)
+        else:
+            logging.info("[verify_callback] Hash match verified successfully")
         return result
-
-
 
 
 def get_config() -> PaytrConfig:
