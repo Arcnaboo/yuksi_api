@@ -2,7 +2,7 @@ from typing import Optional, Tuple, Dict, Any, List
 from ..utils.database import db_cursor
 from ..utils.security import hash_pwd
 
-def courier_register_step1(
+async def courier_register_step1(
     phone: str,
     first_name: str,
     last_name: str,
@@ -39,7 +39,7 @@ def courier_register_step1(
 
     return str(driver_id), None
 
-def courier_register_step2(driver_id: str, working_type: int) -> Optional[str]:
+async def courier_register_step2(driver_id: str, working_type: int) -> Optional[str]:
     with db_cursor() as cur:
         cur.execute("SELECT 1 FROM drivers WHERE id=%s", (driver_id,))
         if not cur.fetchone():
@@ -53,7 +53,7 @@ def courier_register_step2(driver_id: str, working_type: int) -> Optional[str]:
         )
     return None
 
-def courier_register_step3(
+async def courier_register_step3(
     driver_id: str,
     vehicle_type: int,
     vehicle_capacity: int,
@@ -114,13 +114,13 @@ def courier_register_step3(
                 )
     return None
 
-def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
+async def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
     with db_cursor(dict_cursor=True) as cur:
         cur.execute("SELECT * FROM driver_onboarding WHERE driver_id=%s", (driver_id,))
         return cur.fetchone()
 
 
-def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
     sql = """
     SELECT
       d.id,
@@ -149,7 +149,7 @@ def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         cur.execute(sql, (limit, offset))
         return cur.fetchall() or []
 
-def get_courier(driver_id: str) -> Dict[str, Any] | None:
+async def get_courier(driver_id: str) -> Dict[str, Any] | None:
     sql = """
     SELECT
       d.id,

@@ -5,12 +5,12 @@ from ..models.order_model import (
     OrderCreateReq, OrderUpdateReq, OrderResponse, OrderHistoryItem, OrderListResponse
 )
 
-def create_order(restaurant_id: str, req: OrderCreateReq) -> Dict[str, Any]:
+async def create_order(restaurant_id: str, req: OrderCreateReq) -> Dict[str, Any]:
     """Sipariş oluştur controller"""
     # Ürünleri dict'e çevir
     items = [item.dict() for item in req.items]
     
-    result, error = svc.create_order(
+    result, error = await svc.create_order(
         restaurant_id=restaurant_id,
         customer=req.customer,
         phone=req.phone,
@@ -30,15 +30,15 @@ def create_order(restaurant_id: str, req: OrderCreateReq) -> Dict[str, Any]:
     
     return {"success": True, "message": "Order created successfully", "data": result}
 
-def get_order(restaurant_id: str, order_id: str) -> Dict[str, Any]:
+async def get_order(restaurant_id: str, order_id: str) -> Dict[str, Any]:
     """Sipariş detayı controller"""
-    order = svc.get_order(order_id, restaurant_id)
+    order = await svc.get_order(order_id, restaurant_id)
     if not order:
         return {"success": False, "message": "Order not found", "data": {}}
     
     return {"success": True, "message": "Order details", "data": order}
 
-def update_order(restaurant_id: str, order_id: str, req: OrderUpdateReq) -> Dict[str, Any]:
+async def update_order(restaurant_id: str, order_id: str, req: OrderUpdateReq) -> Dict[str, Any]:
     """Sipariş güncelle controller"""
     # Güncellenecek alanları hazırla
     update_data = {}
@@ -64,23 +64,23 @@ def update_order(restaurant_id: str, order_id: str, req: OrderUpdateReq) -> Dict
     if req.items is not None:
         update_data['items'] = [item.dict() for item in req.items]
     
-    success, error = svc.update_order(order_id, restaurant_id, **update_data)
+    success, error = await svc.update_order(order_id, restaurant_id, **update_data)
     
     if not success:
         return {"success": False, "message": error, "data": {}}
     
     return {"success": True, "message": "Order updated successfully", "data": {}}
 
-def delete_order(restaurant_id: str, order_id: str) -> Dict[str, Any]:
+async def delete_order(restaurant_id: str, order_id: str) -> Dict[str, Any]:
     """Sipariş sil controller"""
-    success, error = svc.delete_order(order_id, restaurant_id)
+    success, error = await svc.delete_order(order_id, restaurant_id)
     
     if not success:
         return {"success": False, "message": error, "data": {}}
     
     return {"success": True, "message": "Order deleted successfully", "data": {}}
 
-def list_orders(
+async def list_orders(
     restaurant_id: str,
     status: str = None,
     order_type: str = None,
@@ -91,7 +91,7 @@ def list_orders(
     offset: int = 0
 ) -> Dict[str, Any]:
     """Sipariş listesi controller"""
-    orders, total_count, total_amount = svc.list_orders(
+    orders, total_count, total_amount = await svc.list_orders(
         restaurant_id=restaurant_id,
         status=status,
         order_type=order_type,
@@ -112,7 +112,7 @@ def list_orders(
         }
     }
 
-def get_order_history(
+async def get_order_history(
     restaurant_id: str,
     status: str = None,
     order_type: str = None,
@@ -123,7 +123,7 @@ def get_order_history(
     offset: int = 0
 ) -> Dict[str, Any]:
     """Sipariş geçmişi controller"""
-    orders, total_count, total_amount = svc.get_order_history(
+    orders, total_count, total_amount = await svc.get_order_history(
         restaurant_id=restaurant_id,
         status=status,
         order_type=order_type,

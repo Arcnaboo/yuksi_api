@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional, Tuple
 from app.utils.database import db_cursor
 
-def create_general_setting(data: Dict[str, Any]) -> Optional[str]:
+async def create_general_setting(data: Dict[str, Any]) -> Optional[str]:
     with db_cursor() as cur:
         cur.execute("SELECT COUNT(*) FROM general_settings")
         count = cur.fetchone()[0]
@@ -18,13 +18,13 @@ def create_general_setting(data: Dict[str, Any]) -> Optional[str]:
         ))
     return None
 
-def get_general_setting() -> Optional[Dict[str, Any]]:
+async def get_general_setting() -> Optional[Dict[str, Any]]:
     with db_cursor(dict_cursor=True) as cur:
         cur.execute("SELECT * FROM general_settings LIMIT 1")
         row = cur.fetchone()
         return row
 
-def update_general_setting(gs_id: str, fields: Dict[str, Any]) -> Optional[str]:
+async def update_general_setting(gs_id: str, fields: Dict[str, Any]) -> Optional[str]:
     if not fields:
         return "No fields to update"
 
