@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict, Any
-from app.utils.db import fetch_all, fetch_one
+from app.utils.database_async import fetch_all, fetch_one
 
 
 # --- ÜLKELER ---

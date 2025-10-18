@@ -1,4 +1,4 @@
-from app.utils.db import fetch_all, fetch_one, execute
+from app.utils.database_async import fetch_all, fetch_one, execute
 
 
 # === TÜM UYGUN İŞLER ===

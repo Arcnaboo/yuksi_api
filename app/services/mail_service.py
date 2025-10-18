@@ -3,7 +3,7 @@ import logging
 import httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from app.utils.db import fetch_all  # asyncpg tabanlı
+from app.utils.database_async import fetch_all  # asyncpg tabanlı
 
 # Environment
 MAIL_FROM = os.getenv("MAIL_FROM", "Yuksi Destek <support@yuksi.dev>")
