@@ -358,6 +358,22 @@ CREATE TABLE IF NOT EXISTS carrier_types (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id SERIAL PRIMARY KEY,
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    restaurant_name TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    reply TEXT,
+    status TEXT DEFAULT 'pending', 
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    replied_at TIMESTAMPTZ
+);
+
+
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
