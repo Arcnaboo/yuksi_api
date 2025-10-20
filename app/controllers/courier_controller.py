@@ -43,8 +43,14 @@ def list_couriers():
     couriers = svc.list_couriers()
     return {"success": True, "message": "Courier list", "data": couriers}
 
-def get_courier_documents(user_id: str):
-    documents = svc.get_courier_documents(user_id)
+async def get_courier_documents(user_id: str):
+    documents = await svc.get_courier_documents(user_id)
     if documents is None:
         return {"success": False, "message": "Courier not found", "data": {}}
     return {"success": True, "message": "Courier documents", "data": documents}
+
+async def update_courier_document_status(user_id: str, document_id: str, status: str):
+    err = await svc.update_courier_document_status(user_id, document_id, status)
+    if err:
+        return {"success": False, "message": err, "data": {}}
+    return {"success": True, "message": "Document status updated", "data": {}}

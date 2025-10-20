@@ -6,6 +6,8 @@ from ..models.courier_model import (
 )
 from ..controllers import courier_controller as ctrl
 from ..controllers import auth_controller
+from uuid import UUID
+
 router = APIRouter(
     prefix="/api/Courier",
     tags=["Courier"],
@@ -298,42 +300,49 @@ def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","A
                                         {
                                         "doc_type": "KimlikArka",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         },
                                         {
                                         "doc_type": "KimlikOn",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         },
                                         {
                                         "doc_type": "RuhsatArka",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         },
                                         {
                                         "doc_type": "RuhsatOn",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         },
                                         {
                                         "doc_type": "EhliyetArka",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         },
                                         {
                                         "doc_type": "EhliyetOn",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         },
                                         {
                                         "doc_type": "VergiLevhasi",
                                         "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
                                         "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
                                         "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
                                         }
@@ -354,8 +363,50 @@ def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","A
         }
     },
 )
-def get_courier_documents(
-    user_id: str = Path(..., description="The UUID of the courier user"),
+async def get_courier_documents(
+    user_id: UUID = Path(..., description="The UUID of the courier user"),
     _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
 ):
-    return ctrl.get_courier_documents(user_id)
+    return await ctrl.get_courier_documents(user_id)
+
+
+@router.put(
+    "/{user_id}/update_documents_status/{document_id}",
+    summary="Update Courier Document Status",
+    description="Updates the status of a specific courier document. Types of status include: 'evrak_bekleniyor', 'inceleme_bekleniyor', 'eksik_belge', 'kuryeye_verildi', 'reddedildi', 'onaylandi'.",
+    responses={
+        200: {
+            "description": "Courier document status updated successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier document status updated",
+                                "data": {}
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier document not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier document not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def update_courier_document_status(
+    user_id: UUID = Path(..., description="The UUID of the courier user"),
+    document_id: UUID = Path(..., description="The UUID of the document to update"),
+    new_status: str = Body(..., embed=True, description="The new status for the document"),
+    _claims = Depends(auth_controller.require_roles(["Admin"]))
+):
+    return await ctrl.update_courier_document_status(user_id, document_id, new_status)
+    
