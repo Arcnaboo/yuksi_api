@@ -176,3 +176,19 @@ def get_courier(driver_id: str) -> Dict[str, Any] | None:
     with db_cursor(dict_cursor=True) as cur:
         cur.execute(sql, (driver_id,))
         return cur.fetchone()
+    
+
+def get_courier_documents(driver_id: str) -> Optional[List[Dict[str, Any]]]:
+    with db_cursor(dict_cursor=True) as cur:
+        cur.execute("SELECT 1 FROM drivers WHERE id=%s", (driver_id,))
+        if not cur.fetchone():
+            return None
+
+        cur.execute(
+            """SELECT cd.doc_type, f.id AS file_id, f.image_url, f.uploaded_at
+               FROM courier_documents cd
+               JOIN files f ON f.id = cd.file_id
+               WHERE cd.user_id=%s""",
+            (driver_id,),
+        )
+        return cur.fetchall()

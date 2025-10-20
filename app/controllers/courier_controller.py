@@ -42,3 +42,9 @@ def get_courier_profile(user_id: str):
 def list_couriers():
     couriers = svc.list_couriers()
     return {"success": True, "message": "Courier list", "data": couriers}
+
+def get_courier_documents(user_id: str):
+    documents = svc.get_courier_documents(user_id)
+    if documents is None:
+        return {"success": False, "message": "Courier not found", "data": {}}
+    return {"success": True, "message": "Courier documents", "data": documents}

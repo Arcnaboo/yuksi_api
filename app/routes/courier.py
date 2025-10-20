@@ -278,3 +278,84 @@ def get_courier_profile(
 )
 def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
     return ctrl.list_couriers()
+
+@router.get(
+    "/{user_id}/get_documents",
+    summary="Get Courier Documents",
+    description="Fetches the documents of a courier by user ID.",
+    responses={
+        200: {
+            "description": "Courier documents retrieved successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier documents",
+                                "data": [
+                                        {
+                                        "doc_type": "KimlikArka",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "KimlikOn",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "RuhsatArka",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "RuhsatOn",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "EhliyetArka",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "EhliyetOn",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "VergiLevhasi",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        }
+                                ]
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+def get_courier_documents(
+    user_id: str = Path(..., description="The UUID of the courier user"),
+    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
+):
+    return ctrl.get_courier_documents(user_id)
