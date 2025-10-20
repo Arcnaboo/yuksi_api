@@ -189,6 +189,7 @@ async def get_courier_documents(driver_id: str) -> Optional[List[Dict[str, Any]]
 
     sql = """
     SELECT
+        cd.id AS document_id,
       cd.doc_type,
       cd.file_id,
       cd.courier_document_status AS document_status,
