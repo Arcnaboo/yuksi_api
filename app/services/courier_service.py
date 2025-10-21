@@ -1,9 +1,13 @@
 from typing import Optional, Tuple, Dict, Any, List
+from app.utils.database_async import fetch_one, fetch_all, execute
+from app.utils.security import hash_pwd
 from ..utils.database import db_cursor
 from ..utils.database_async import fetch_all,fetch_one,execute
 from ..utils.security import hash_pwd
 
-def courier_register_step1(
+
+# === STEP 1 ===
+async def courier_register_step1(
     phone: str,
     first_name: str,
     last_name: str,
@@ -12,49 +16,55 @@ def courier_register_step1(
     country_id: int,
     confirm_contract: bool
 ) -> Tuple[Optional[str], Optional[str]]:
-    full_name = f"{first_name.strip()} {last_name.strip()}".strip()
-    first_name = first_name.strip()
-    last_name = last_name.strip()
-    with db_cursor() as cur:
-        cur.execute("SELECT id FROM drivers WHERE email=%s OR phone=%s", (email, phone))
-        if cur.fetchone():
-            return None, "Email or phone already registered"
+    first_name, last_name = first_name.strip(), last_name.strip()
+    full_name = f"{first_name} {last_name}".strip()
 
-        pwd_hash = hash_pwd(password)
-        cur.execute(
-            "INSERT INTO drivers (first_name,last_name,email,phone,password_hash) VALUES (%s,%s,%s,%s,%s) RETURNING id",
-            (first_name,last_name, email, phone, pwd_hash),
-        )
-        driver_id = cur.fetchone()[0]
+    # Email veya telefon kayıtlı mı?
+    exists = await fetch_one("SELECT id FROM drivers WHERE email=$1 OR phone=$2", email, phone)
+    if exists:
+        return None, "Email or phone already registered"
 
-        cur.execute("INSERT INTO driver_status (driver_id) VALUES (%s) ON CONFLICT DO NOTHING", (driver_id,))
+    pwd_hash = hash_pwd(password)
+    row = await fetch_one(
+        "INSERT INTO drivers (first_name,last_name,email,phone,password_hash) "
+        "VALUES ($1,$2,$3,$4,$5) RETURNING id;",
+        first_name, last_name, email, phone, pwd_hash
+    )
+    driver_id = row["id"]
 
-        cur.execute(
-            """INSERT INTO driver_onboarding (driver_id, contract_confirmed, country_id, step)
-               VALUES (%s, %s, %s, 1)
-               ON CONFLICT (driver_id) DO UPDATE SET contract_confirmed=EXCLUDED.contract_confirmed,
-                                                    country_id=EXCLUDED.country_id,
-                                                    step=1""",
-            (driver_id, confirm_contract, country_id),
-        )
+    await execute("INSERT INTO driver_status (driver_id) VALUES ($1) ON CONFLICT DO NOTHING;", driver_id)
+
+    await execute(
+        """INSERT INTO driver_onboarding (driver_id, contract_confirmed, country_id, step)
+           VALUES ($1, $2, $3, 1)
+           ON CONFLICT (driver_id) DO UPDATE
+             SET contract_confirmed=EXCLUDED.contract_confirmed,
+                 country_id=EXCLUDED.country_id,
+                 step=1;""",
+        driver_id, confirm_contract, country_id
+    )
 
     return str(driver_id), None
 
-def courier_register_step2(driver_id: str, working_type: int) -> Optional[str]:
-    with db_cursor() as cur:
-        cur.execute("SELECT 1 FROM drivers WHERE id=%s", (driver_id,))
-        if not cur.fetchone():
-            return "User not found"
 
-        cur.execute(
-            """INSERT INTO driver_onboarding (driver_id, step, working_type)
-               VALUES (%s, 2, %s)
-               ON CONFLICT (driver_id) DO UPDATE SET working_type=EXCLUDED.working_type, step=2""",
-            (driver_id, working_type),
-        )
+# === STEP 2 ===
+async def courier_register_step2(driver_id: str, working_type: int) -> Optional[str]:
+    exists = await fetch_one("SELECT 1 FROM drivers WHERE id=$1", driver_id)
+    if not exists:
+        return "User not found"
+
+    await execute(
+        """INSERT INTO driver_onboarding (driver_id, step, working_type)
+           VALUES ($1, 2, $2)
+           ON CONFLICT (driver_id) DO UPDATE
+             SET working_type=EXCLUDED.working_type, step=2;""",
+        driver_id, working_type
+    )
     return None
 
-def courier_register_step3(
+
+# === STEP 3 ===
+async def courier_register_step3(
     driver_id: str,
     vehicle_type: int,
     vehicle_capacity: int,
@@ -62,66 +72,67 @@ def courier_register_step3(
     vehicle_year: int,
     documents: Optional[List[Dict[str, Any]]] = None
 ) -> Optional[str]:
-    with db_cursor() as cur:
-        cur.execute("SELECT 1 FROM drivers WHERE id=%s", (driver_id,))
-        if not cur.fetchone():
-            return "User not found"
+    exists = await fetch_one("SELECT 1 FROM drivers WHERE id=$1", driver_id)
+    if not exists:
+        return "User not found"
 
-        cur.execute(
-            """INSERT INTO driver_onboarding (driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year, step)
-               VALUES (%s, %s, %s, %s, %s, 3)
-               ON CONFLICT (driver_id) DO UPDATE SET
-                 vehicle_type=EXCLUDED.vehicle_type,
-                 vehicle_capacity=EXCLUDED.vehicle_capacity,
-                 state_id=EXCLUDED.state_id,
-                 vehicle_year=EXCLUDED.vehicle_year,
-                 step=3""",
-            (driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year),
+    await execute(
+        """INSERT INTO driver_onboarding (driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year, step)
+           VALUES ($1, $2, $3, $4, $5, 3)
+           ON CONFLICT (driver_id) DO UPDATE SET
+             vehicle_type=EXCLUDED.vehicle_type,
+             vehicle_capacity=EXCLUDED.vehicle_capacity,
+             state_id=EXCLUDED.state_id,
+             vehicle_year=EXCLUDED.vehicle_year,
+             step=3;""",
+        driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year
+    )
+
+    if not documents:
+        return None
+
+    allowed_types = {
+        "VergiLevhasi", "EhliyetOn", "EhliyetArka", "RuhsatOn",
+        "RuhsatArka", "KimlikOn", "KimlikArka"
+    }
+
+    for doc in documents:
+        doc_type = doc.get("docType") if isinstance(doc, dict) else getattr(doc, "docType", None)
+        file_id = doc.get("fileId") if isinstance(doc, dict) else getattr(doc, "fileId", None)
+        if not doc_type or not file_id:
+            return "Invalid document payload"
+        if doc_type not in allowed_types:
+            return f"Invalid docType: {doc_type}"
+
+        file_id_str = str(file_id)
+        driver_id_str = str(driver_id)
+
+        valid = await fetch_one(
+            "SELECT 1 FROM files WHERE id=$1 AND user_id=$2 AND is_deleted=FALSE;",
+            file_id_str, driver_id_str
         )
-        if documents:
-            allowed_types = {"VergiLevhasi", "EhliyetOn", "EhliyetArka", "RuhsatOn", "RuhsatArka", "KimlikOn", "KimlikArka"}
-            for doc in documents:
-                if isinstance(doc, dict):
-                    doc_type = doc.get("docType")
-                    file_id  = doc.get("fileId")
-                else:
-                    # Pydantic model (e.g., DocumentItem) or simple object
-                    doc_type = getattr(doc, "docType", None)
-                    file_id  = getattr(doc, "fileId", None)
-                # Normalize UUIDs to string for psycopg2
-                try:
-                    file_id_str = str(file_id)
-                except Exception:
-                    return "Invalid fileId format"
-                driver_id_str = str(driver_id)
-                if not doc_type or not file_id:
-                    return "Invalid document payload"
-                if doc_type not in allowed_types:
-                    return f"Invalid docType: {doc_type}"
+        if not valid:
+            return f"Invalid fileId for user: {file_id}"
 
-                # Dosya gerçekten var mı ve bu kullanıcıya mı ait?
-                cur.execute("SELECT 1 FROM files WHERE id=%s AND user_id=%s AND is_deleted=FALSE", (file_id_str, driver_id_str))
-                if cur.fetchone() is None:
-                    return f"Invalid fileId for user: {file_id}"
+        await execute(
+            """INSERT INTO courier_documents (user_id, file_id, doc_type)
+               VALUES ($1, $2, $3)
+               ON CONFLICT (user_id, doc_type)
+               DO UPDATE SET file_id = EXCLUDED.file_id;""",
+            driver_id_str, file_id_str, doc_type
+        )
 
-                cur.execute(
-                    """
-                    INSERT INTO courier_documents (user_id, file_id, doc_type)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (user_id, doc_type)
-                    DO UPDATE SET file_id = EXCLUDED.file_id
-                    """,
-                    (driver_id_str, file_id_str, doc_type),
-                )
     return None
 
-def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
-    with db_cursor(dict_cursor=True) as cur:
-        cur.execute("SELECT * FROM driver_onboarding WHERE driver_id=%s", (driver_id,))
-        return cur.fetchone()
+
+# === GET ONBOARDING ===
+async def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
+    row = await fetch_one("SELECT * FROM driver_onboarding WHERE driver_id=$1", driver_id)
+    return dict(row) if row else None
 
 
-def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+# === LIST COURIERS ===
+async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
     sql = """
     SELECT
       d.id,
@@ -141,16 +152,17 @@ def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
       ob.step
     FROM drivers d
     LEFT JOIN driver_onboarding ob ON ob.driver_id = d.id
-    LEFT JOIN countries c          ON c.id = ob.country_id
-    LEFT JOIN states s             ON s.id = ob.state_id
+    LEFT JOIN countries c ON c.id = ob.country_id
+    LEFT JOIN states s ON s.id = ob.state_id
     ORDER BY d.created_at DESC
-    LIMIT %s OFFSET %s
+    LIMIT $1 OFFSET $2;
     """
-    with db_cursor(dict_cursor=True) as cur:
-        cur.execute(sql, (limit, offset))
-        return cur.fetchall() or []
+    rows = await fetch_all(sql, limit, offset)
+    return [dict(r) for r in rows] if rows else []
 
-def get_courier(driver_id: str) -> Dict[str, Any] | None:
+
+# === GET COURIER ===
+async def get_courier(driver_id: str) -> Optional[Dict[str, Any]]:
     sql = """
     SELECT
       d.id,
@@ -170,14 +182,12 @@ def get_courier(driver_id: str) -> Dict[str, Any] | None:
       ob.step
     FROM drivers d
     LEFT JOIN driver_onboarding ob ON ob.driver_id = d.id
-    LEFT JOIN countries c          ON c.id = ob.country_id
-    LEFT JOIN states s             ON s.id = ob.state_id
-    WHERE d.id = %s
+    LEFT JOIN countries c ON c.id = ob.country_id
+    LEFT JOIN states s ON s.id = ob.state_id
+    WHERE d.id = $1;
     """
-    with db_cursor(dict_cursor=True) as cur:
-        cur.execute(sql, (driver_id,))
-        return cur.fetchone()
-    
+    row = await fetch_one(sql, driver_id)
+    return dict(row) if row else None
 
 async def get_courier_documents(driver_id: str) -> Optional[List[Dict[str, Any]]]:
     #check if driver exists
