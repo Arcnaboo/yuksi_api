@@ -1,28 +1,8 @@
 from app.utils.database import db_cursor
 from typing import Any, Dict, List, Optional, Tuple
 
-async def create_city_price(data: Dict[str, Any]) -> Tuple[Optional[int], Optional[str]]:
-    try:
-        with db_cursor() as cur:
-            cur.execute("""
-                INSERT INTO city_prices (
-                    route_name, country_id, state_id,
-                    courier_price, minivan_price, panelvan_price,
-                    kamyonet_price, kamyon_price
-                )
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-                RETURNING id;
-            """, (
-                data["route_name"], data["country_id"], data["state_id"],
-                data["courier_price"], data["minivan_price"],
-                data["panelvan_price"], data["kamyonet_price"], data["kamyon_price"]
-            ))
-            new_id = cur.fetchone()[0]
-            return new_id, None
-    except Exception as e:
-        return None, str(e)
 
-
+# Listeleme
 async def list_city_prices():
     try:
         with db_cursor(dict_cursor=True) as cur:
@@ -30,43 +10,94 @@ async def list_city_prices():
                 SELECT cp.id, cp.route_name,
                        c.name AS country_name,
                        s.name AS state_name,
+                       ci.name AS city_name,
                        cp.courier_price, cp.minivan_price, cp.panelvan_price,
                        cp.kamyonet_price, cp.kamyon_price, cp.created_at
                 FROM city_prices cp
                 LEFT JOIN countries c ON cp.country_id = c.id
                 LEFT JOIN states s ON cp.state_id = s.id
+                LEFT JOIN cities ci ON cp.city_id = ci.id
                 ORDER BY cp.id DESC;
             """)
             rows = cur.fetchall()
-            print("DEBUG CITY DATA:", rows)
             return rows, None
     except Exception as e:
         return None, str(e)
 
 
-async def update_city_price(id: int, fields: Dict[str, Any]) -> Optional[str]:
+# Tek kayıt getir
+async def get_city_price(id: int):
     try:
-        if not fields:
-            return "No fields provided."
-
-        set_parts, values = [], []
-        for k, v in fields.items():
-            set_parts.append(f"{k} = %s")
-            values.append(v)
-        values.append(id)
-
-        sql = f"UPDATE city_prices SET {', '.join(set_parts)} WHERE id = %s"
-        with db_cursor() as cur:
-            cur.execute(sql, tuple(values))
-        return None
+        with db_cursor(dict_cursor=True) as cur:
+            cur.execute("""
+                SELECT cp.id, cp.route_name,
+                       c.name AS country_name,
+                       s.name AS state_name,
+                       ci.name AS city_name,
+                       cp.courier_price, cp.minivan_price, cp.panelvan_price,
+                       cp.kamyonet_price, cp.kamyon_price, cp.created_at
+                FROM city_prices cp
+                LEFT JOIN countries c ON cp.country_id = c.id
+                LEFT JOIN states s ON cp.state_id = s.id
+                LEFT JOIN cities ci ON cp.city_id = ci.id
+                WHERE cp.id = %s;
+            """, (id,))
+            row = cur.fetchone()
+            return row, None
     except Exception as e:
-        return str(e)
+        return None, str(e)
 
 
-async def delete_city_price(id: int) -> Optional[str]:
+# Yeni kayıt ekle
+async def create_city_price(route_name: str, country_id: int, state_id: int, city_id: int,
+                            courier_price: float, minivan_price: float,
+                            panelvan_price: float, kamyonet_price: float, kamyon_price: float):
+    try:
+        with db_cursor(dict_cursor=True) as cur:
+            cur.execute("""
+                INSERT INTO city_prices (route_name, country_id, state_id, city_id,
+                                         courier_price, minivan_price, panelvan_price, kamyonet_price, kamyon_price)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (route_name, country_id, state_id, city_id,
+                  courier_price, minivan_price, panelvan_price, kamyonet_price, kamyon_price))
+            row = cur.fetchone()
+            return row, None
+    except Exception as e:
+        return None, str(e)
+
+
+# Güncelleme
+async def update_city_price(id: int, route_name: str, country_id: int, state_id: int, city_id: int,
+                            courier_price: float, minivan_price: float,
+                            panelvan_price: float, kamyonet_price: float, kamyon_price: float):
     try:
         with db_cursor() as cur:
-            cur.execute("DELETE FROM city_prices WHERE id = %s;", (id,))
-        return None
+            cur.execute("""
+                UPDATE city_prices
+                SET route_name = %s,
+                    country_id = %s,
+                    state_id = %s,
+                    city_id = %s,
+                    courier_price = %s,
+                    minivan_price = %s,
+                    panelvan_price = %s,
+                    kamyonet_price = %s,
+                    kamyon_price = %s
+                WHERE id = %s;
+            """, (route_name, country_id, state_id, city_id,
+                  courier_price, minivan_price, panelvan_price, kamyonet_price, kamyon_price, id))
+            return True, None
     except Exception as e:
-        return str(e)
+        return False, str(e)
+
+async def delete_city_price(id: int):
+    try:
+        with db_cursor() as cur:
+            cur.execute("DELETE FROM city_prices WHERE id = %s RETURNING id;", (id,))
+            deleted = cur.fetchone()
+            if not deleted:
+                return False, "Record not found"
+            return True, None
+    except Exception as e:
+        return False, str(e)

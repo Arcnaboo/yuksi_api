@@ -376,11 +376,13 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     replied_at TIMESTAMPTZ
 );
 
+
 CREATE TABLE IF NOT EXISTS city_prices (
     id SERIAL PRIMARY KEY,
     route_name TEXT NOT NULL,
     country_id INT NOT NULL,
     state_id INT NOT NULL,
+    city_id INT NOT NULL,
     courier_price NUMERIC(10,2) NOT NULL,
     minivan_price NUMERIC(10,2) NOT NULL,
     panelvan_price NUMERIC(10,2) NOT NULL,
@@ -388,6 +390,8 @@ CREATE TABLE IF NOT EXISTS city_prices (
     kamyon_price NUMERIC(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT now()
 );
+
+
 
 CREATE TABLE IF NOT EXISTS courier_ratings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body
-from typing import List
+from typing import Any, List, Union
 from ..models.restaurant_model import (
     RestaurantRegisterReq,
     RestaurantRegisterResponse,
@@ -20,12 +20,12 @@ router = APIRouter(
     "/register",
     summary="Restaurant Register",
     description="Yeni restoran kaydı oluşturur.",
-    response_model=RestaurantRegisterResponse
+    response_model=Union[RestaurantRegisterResponse, Any]
 )
 def restaurant_register(req: RestaurantRegisterReq):
     """Restaurant kayıt endpoint"""
     result = ctrl.restaurant_register(req)
-    if not result.get("success"):
+    if not result.get('success'):
         return result
     return result['data']
 
@@ -36,7 +36,7 @@ def restaurant_register(req: RestaurantRegisterReq):
     "/list",
     summary="Get Restaurant List",
     description="Tüm restoranları listeler.",
-    response_model= List[RestaurantListItem]
+    response_model= Union[List[RestaurantListItem]]
 )
 async def list_restaurants():
     """Restaurant listesi endpoint"""
@@ -48,7 +48,7 @@ async def list_restaurants():
     "/{restaurant_id}/profile",
     summary="Get Restaurant Profile",
     description="Restaurant profil bilgilerini getirir.",
-    response_model=RestaurantProfileResponse
+    response_model=Union[RestaurantProfileResponse, Any]
 )
 async def get_profile(restaurant_id: str):
     """Restaurant profil görüntüleme"""
