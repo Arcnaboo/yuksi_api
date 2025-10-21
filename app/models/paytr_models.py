@@ -1,5 +1,5 @@
 # app/models/paytr_models.py
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class PaytrConfig(BaseModel):
     merchant_id: str
@@ -13,6 +13,7 @@ class PaytrConfig(BaseModel):
 
 
 class PaymentRequest(BaseModel):
+    # 🔹 Basic required fields
     merchant_oid: str
     email: str
     payment_amount: int  # örn: 100.00 TL = 10000
@@ -24,6 +25,18 @@ class PaymentRequest(BaseModel):
     lang: str = "tr"
     test_mode: int = 1
     non_3d: int = 0
+
+    # 🔹 Card info fields (for Direct API mode)
+    cc_owner: str | None = Field(default=None, description="Card holder name")
+    card_number: str | None = Field(default=None, description="Card number (no spaces)")
+    expiry_month: str | None = Field(default=None, description="MM format, e.g. '12'")
+    expiry_year: str | None = Field(default=None, description="YY format, e.g. '26'")
+    cvv: str | None = Field(default=None, description="3-digit CVV")
+
+    # 🔹 Optional customer info fields
+    user_name: str | None = None
+    user_address: str | None = None
+    user_phone: str | None = None
 
 
 class PaymentResponse(BaseModel):
