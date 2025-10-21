@@ -47,7 +47,7 @@ def _get_valid_refresh_row(token: str):
         )
         return cur.fetchone()
 
-async def _generate_tokens_net_style(user_id: int | str, email: str, roles: list[str], user_type: str):
+def _generate_tokens_net_style(user_id: int | str, email: str, roles: list[str], user_type: str):
     claims = {
         "sub": str(user_id),
         "unique_name": email,
@@ -84,8 +84,10 @@ def register(first_name: str, last_name:str, email: str, phone: str, password: s
 def login(email: str, password: str):
     print("ok")
     with db_cursor(dict_cursor=True) as cur:
-        cur.execute("SELECT id, email, password_hash FROM drivers WHERE email=%s", (email,))
+        cur.execute("SELECT id, email, password_hash,deleted FROM drivers WHERE email=%s", (email,))
         row = cur.fetchone()
+        if row and row["deleted"]:
+            return "banned"
         if row and verify_pwd(password, row["password_hash"]):
             tokens = _generate_tokens_net_style(
                 user_id=row["id"],

@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Dict, Any, List
 from ..utils.database import db_cursor
 from ..utils.database_async import fetch_all,fetch_one,execute
 from ..utils.security import hash_pwd
+from uuid import UUID
 
 VALID_STATUSES = {
     "evrak_bekleniyor",
@@ -255,5 +256,18 @@ async def update_courier_document_status(driver_id: str, document_id: str, statu
         await execute("UPDATE drivers SET is_active = FALSE WHERE id = $1", driver_id)
 
     
+
+    return None
+
+async def delete_courier_user(driver_id: UUID) -> Optional[str]:
+    driver = await fetch_one("SELECT 1 FROM drivers WHERE id = $1", driver_id)
+    if driver is None:
+        return "Driver not found"
+
+    await execute("""
+        UPDATE drivers
+        SET deleted = TRUE, deleted_at = NOW(), is_active = FALSE
+        WHERE id = $1
+    """, driver_id)
 
     return None

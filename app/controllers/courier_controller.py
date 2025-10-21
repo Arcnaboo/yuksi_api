@@ -1,4 +1,5 @@
 from ..services import courier_service as svc
+from uuid import UUID
 
 def courier_register1(req):
     user_id, err = svc.courier_register_step1(
@@ -54,3 +55,9 @@ async def update_courier_document_status(user_id: str, document_id: str, status:
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Document status updated", "data": {}}
+
+async def delete_courier_user(user_id: UUID):
+    err = await svc.delete_courier_user(user_id)
+    if err:
+        return {"success": False, "message": err, "data": {}}
+    return {"success": True, "message": "Courier user deleted", "data": {}}

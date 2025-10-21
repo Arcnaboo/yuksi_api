@@ -422,3 +422,41 @@ async def update_courier_document_status(
 ):
     return await ctrl.update_courier_document_status(user_id, document_id, new_status)
     
+
+@router.delete(
+    "/{user_id}/delete",
+    summary="Delete Courier User",
+    description="Soft deletes a courier user by setting the 'deleted' flag and 'deleted_at' timestamp.",
+    responses={
+        200: {
+            "description": "Courier user deleted successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier user deleted successfully",
+                                "data": {}
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier user not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier user not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def delete_courier_user(
+    user_id: UUID = Path(..., description="The UUID of the courier user to delete"),
+    _claims = Depends(auth_controller.require_roles(["Admin"]))
+):
+    return await ctrl.delete_courier_user(user_id)
