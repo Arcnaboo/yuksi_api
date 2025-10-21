@@ -5,16 +5,15 @@ from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.database import db_cursor
 
 async def get_all_banners() -> Tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
-    with db_cursor(dict_cursor=True) as cur:
-        cur.execute("""
-            SELECT id, title, image_url, priority, active
-            FROM banners
-            ORDER BY active DESC, priority DESC, title ASC
-        """)
-        rows = cur.fetchall()
-        if not rows:
-            return None, "Banners not found"
-        return rows, None
+    query = """
+        SELECT id, title, image_url, priority, active
+        FROM banners
+        ORDER BY active DESC, priority DESC, title ASC
+    """
+    rows = await fetch_all(query)
+    if not rows:
+        return None, "Banners not found"
+    return rows, None
 
 async def get_banner_by_id(banner_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     try:
@@ -37,14 +36,15 @@ async def create_banner(
     priority: int = 0,
     active: bool = True
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
-    with db_cursor(dict_cursor=True) as cur:
-        cur.execute("""
-            INSERT INTO banners (title, image_url, priority, active)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, title, image_url, priority, active
-        """, (title, image_url, priority, active))
-        row = cur.fetchone()
-        return row, None
+    query = """
+        INSERT INTO banners (title, image_url, priority, active)
+        VALUES (%s, %s, %s, %s)
+        RETURNING id, title, image_url, priority, active
+    """
+    row = await fetch_one(query, title, image_url, priority, active)
+    if not row:
+        return None, "Banner not created"
+    return row, None
 
 async def update_banner(
     banner_id: str,
