@@ -29,8 +29,8 @@ async def register(first_name: str, last_name:str, email: str, phone: str, passw
         return {"success": False, "message": "Email or phone already registered", "data": {}}
     return {"success": True, "message": "Driver registered", "data": tokens}
 
-def login(email: str, password: str):
-    tokens = auth_service.login(email, password)
+async def login(email: str, password: str):
+    tokens = await auth_service.login(email, password)
     if not tokens:
         return {"success": False, "message": "Wrong email or password", "data": {}}
     elif tokens == "banned":
@@ -59,6 +59,8 @@ async def refresh(refresh_token: str):
     tokens = await auth_service.refresh_with_token(refresh_token)
     if not tokens:
         return {"success": False, "message": "Invalid refresh token", "data": {}}
+    elif tokens == "banned":
+        return {"success": False, "message": "User is deleted", "data": {}}
     return {"success": True, "message": "Token refreshed", "data": tokens}
 
 

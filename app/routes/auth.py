@@ -12,8 +12,8 @@ async def register(req: RegisterReq):
     return await auth_controller.register(req.first_name,req.last_name, req.email, req.phone, req.password)
 
 @router.post("/login")
-def login(req: LoginReq):
-    return auth_controller.login(req.email,req.password)
+async def login(req: LoginReq):
+    return await auth_controller.login(req.email,req.password)
 
 @router.post("/logout")
 async def logout(req: LogoutReq):
