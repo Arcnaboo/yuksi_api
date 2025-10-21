@@ -1,5 +1,6 @@
 from typing import Any, Dict, Tuple, Optional, List
 from uuid import UUID
+import uuid
 from app.utils.database_async import fetch_one, fetch_all, execute
 
 async def get_all_banners() -> Tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
@@ -15,6 +16,10 @@ async def get_all_banners() -> Tuple[Optional[List[Dict[str, Any]]], Optional[st
 
 
 async def get_banner_by_id(banner_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    try:
+        uuid.UUID(str(banner_id))
+    except ValueError:
+        return None, "Invalid ID"
     query = """
         SELECT id, title, image_url, priority, active
         FROM banners
@@ -46,6 +51,10 @@ async def update_banner(
     priority: int = 0,
     active: bool = True,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    try:
+        uuid.UUID(str(banner_id))
+    except ValueError:
+        return None, "Invalid ID"
     query = """
         UPDATE banners
         SET title = $1,
@@ -61,8 +70,12 @@ async def update_banner(
     return dict(row), None
 
 async def delete_banner(banner_id: UUID) -> Optional[str]:
+    try:
+        uuid.UUID(str(banner_id))
+    except ValueError:
+        return "Invalid ID"
     query = "DELETE FROM banners WHERE id = $1 RETURNING id"
     row = await fetch_one(query, banner_id)
     if not row:
         return "Banner not found"
-    return None
+    return "Banner deleted successfully"

@@ -27,7 +27,7 @@ def restaurant_register(req: RestaurantRegisterReq):
     result = ctrl.restaurant_register(req)
     if not result.get("success"):
         return result
-    return result["data"]
+    return result['data']
 
 
 
@@ -36,12 +36,12 @@ def restaurant_register(req: RestaurantRegisterReq):
     "/list",
     summary="Get Restaurant List",
     description="Tüm restoranları listeler.",
-    response_model=List[RestaurantListItem]
+    response_model= List[RestaurantListItem]
 )
-def list_restaurants():
+async def list_restaurants():
     """Restaurant listesi endpoint"""
-    result = ctrl.list_restaurants()
-    return result["data"]
+    result = await ctrl.list_restaurants()
+    return result['data']
 
 
 @router.get(

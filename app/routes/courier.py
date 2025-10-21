@@ -45,7 +45,7 @@ router = APIRouter(
         }
     },
 )
-def courier_register1(
+async def courier_register1(
     req: CourierRegisterStep1Req = Body(
         ...,
         examples={
@@ -91,7 +91,7 @@ def courier_register1(
         },
     )
 ):
-    return ctrl.courier_register1(req)
+    return await ctrl.courier_register1(req)
 
 
 @router.post(
@@ -126,7 +126,7 @@ def courier_register1(
         }
     },
 )
-def courier_register2(
+async def courier_register2(
     user_id: str = Path(..., description="Kullanıcının UUID değeri"),
     req: CourierRegisterStep2Req = Body(
         ...,
@@ -136,7 +136,7 @@ def courier_register2(
         },
     ),
 ):
-    return ctrl.courier_register2(user_id, req)
+    return await ctrl.courier_register2(user_id, req)
 
 
 @router.post(
@@ -171,11 +171,11 @@ def courier_register2(
         }
     },
 )
-def courier_register3(
+async def courier_register3(
     user_id: str = Path(..., description="Kullanıcının UUID değeri"),
     req: CourierRegisterStep3Req = Body(...),
 ):
-    return ctrl.courier_register3(user_id, req)
+    return await ctrl.courier_register3(user_id, req)
 
 
 @router.get(
@@ -225,11 +225,11 @@ def courier_register3(
         }
     },
 )
-def get_courier_profile(
+async def get_courier_profile(
     user_id: str = Path(..., description="The UUID of the courier user"),
     _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
 ):
-    return ctrl.get_courier_profile(user_id)
+    return await ctrl.get_courier_profile(user_id)
 
 
 @router.get("/list",
@@ -278,8 +278,8 @@ def get_courier_profile(
         }
     },
 )
-def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
-    return ctrl.list_couriers()
+async def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
+    return await ctrl.list_couriers()
 
 @router.get(
     "/{user_id}/get_documents",

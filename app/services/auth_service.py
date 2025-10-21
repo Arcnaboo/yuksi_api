@@ -128,9 +128,9 @@ async def refresh_with_token(refresh_token: str):
     return await _generate_tokens_net_style(user_id, email, roles, user_type)
 
 
-def revoke_refresh_token(refresh_token: str) -> bool:
-    row = _get_valid_refresh_row(refresh_token)
+async def revoke_refresh_token(refresh_token: str) -> bool:
+    row = await _get_valid_refresh_row(refresh_token)
     if not row:
         return False
-    _revoke_refresh_token(refresh_token)
+    await _revoke_refresh_token(refresh_token)
     return True

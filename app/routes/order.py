@@ -17,11 +17,11 @@ router = APIRouter(
     description="Yeni sipariş oluştur",
     response_model=dict
 )
-def create_order(
+async def create_order(
     restaurant_id: str = Path(..., description="Restaurant ID"),
     req: OrderCreateReq = Body(..., description="Order creation data")
 ):
-    return ctrl.create_order(restaurant_id, req)
+    return await ctrl.create_order(restaurant_id, req)
 
 
 @router.get(
@@ -30,11 +30,11 @@ def create_order(
     description="Sipariş detayını getir",
     response_model=dict
 )
-def get_order(
+async def get_order(
     restaurant_id: str = Path(..., description="Restaurant ID"),
     order_id: str = Path(..., description="Order ID")
 ):
-    return ctrl.get_order(restaurant_id, order_id)
+    return await ctrl.get_order(restaurant_id, order_id)
 
 @router.put(
     "/{restaurant_id}/orders/{order_id}",
@@ -42,12 +42,12 @@ def get_order(
     description="Sipariş güncelle",
     response_model=dict
 )
-def update_order(
+async def update_order(
     restaurant_id: str = Path(..., description="Restaurant ID"),
     order_id: str = Path(..., description="Order ID"),
     req: OrderUpdateReq = Body(..., description="Order update data")
 ):
-    return ctrl.update_order(restaurant_id, order_id, req)
+    return await ctrl.update_order(restaurant_id, order_id, req)
 
 @router.delete(
     "/{restaurant_id}/orders/{order_id}",
@@ -55,11 +55,11 @@ def update_order(
     description="Sipariş sil",
     response_model=dict
 )
-def delete_order(
+async def delete_order(
     restaurant_id: str = Path(..., description="Restaurant ID"),
     order_id: str = Path(..., description="Order ID")
 ):
-    return ctrl.delete_order(restaurant_id, order_id)
+    return await ctrl.delete_order(restaurant_id, order_id)
 
 @router.get(
     "/{restaurant_id}/order-history",
@@ -67,7 +67,7 @@ def delete_order(
     description="Sipariş geçmişini getir",
     response_model=dict
 )
-def get_order_history(
+async def get_order_history(
     restaurant_id: str = Path(..., description="Restaurant ID"),
     status: Optional[str] = Query(None, description="Order status filter"),
     type: Optional[str] = Query(None, description="Order type filter"),
@@ -77,7 +77,7 @@ def get_order_history(
     limit: int = Query(50, ge=1, le=100, description="Page size"),
     offset: int = Query(0, ge=0, description="Page offset")
 ):
-    return ctrl.get_order_history(
+    return await ctrl.get_order_history(
         restaurant_id=restaurant_id,
         status=status,
         order_type=type,
