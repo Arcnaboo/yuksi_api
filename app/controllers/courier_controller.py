@@ -59,12 +59,9 @@ async def update_courier_document_status(user_id: str, document_id: str, status:
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Document status updated", "data": {}}
-<<<<<<< HEAD
 
 async def delete_courier_user(user_id: UUID):
     err = await svc.delete_courier_user(user_id)
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Courier user deleted", "data": {}}
-=======
->>>>>>> parent of e288dd1 (Revert "Merge pull request #2 from Arcnaboo/cagri/async_codebase")
