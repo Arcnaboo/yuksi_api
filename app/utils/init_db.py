@@ -282,6 +282,7 @@ CREATE TABLE IF NOT EXISTS subsections (
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    courier_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
     code VARCHAR(20) UNIQUE NOT NULL,
     customer TEXT NOT NULL,
     phone TEXT NOT NULL,
@@ -388,6 +389,17 @@ CREATE TABLE IF NOT EXISTS city_prices (
     created_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS courier_ratings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    courier_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(restaurant_id, courier_id, order_id)
+);
 
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
@@ -401,10 +413,14 @@ CREATE INDEX IF NOT EXISTS idx_gps_updated_at ON gps_table(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
 CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id ON orders(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_orders_courier_id ON orders(courier_id);
 CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(code);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_courier_ratings_restaurant_id ON courier_ratings(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_courier_ratings_courier_id ON courier_ratings(courier_id);
+CREATE INDEX IF NOT EXISTS idx_courier_ratings_order_id ON courier_ratings(order_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_type);
 CREATE INDEX IF NOT EXISTS ix_banners_active ON banners(active);
