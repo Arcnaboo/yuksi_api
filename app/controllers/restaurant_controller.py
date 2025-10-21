@@ -1,9 +1,9 @@
 from ..services import restaurant_service as svc
 
 
-async def restaurant_register(req):
+def restaurant_register(req):
     """Restaurant kayıt controller"""
-    restaurant_data, err = await svc.restaurant_register(
+    restaurant_data, err = svc.restaurant_register(
         email=req.email,
         password=req.password,
         phone=req.phone,
@@ -27,9 +27,9 @@ async def restaurant_register(req):
     }
 
 
-async def list_restaurants():
+def list_restaurants():
     """Restaurant listesi controller"""
-    restaurants = await svc.list_restaurants()
+    restaurants = svc.list_restaurants()
     return {
         "success": True,
         "message": "Restaurant list",

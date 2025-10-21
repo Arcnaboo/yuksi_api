@@ -1,41 +1,41 @@
 from ..services import driver_service
 
-async def save_vehicle(driver, req):
-    await driver_service.upsert_vehicle(driver["id"], req.make, req.model, req.year, req.plate)
+def save_vehicle(driver, req):
+    driver_service.upsert_vehicle(driver["id"], req.make, req.model, req.year, req.plate)
     return {"success": True, "message": "Vehicle saved", "data": {}}
 
-async def upload_documents(driver, license_file, criminal_file, insurance_file):
+def upload_documents(driver, license_file, criminal_file, insurance_file):
     base = "https://cdn.yuksi.com/docs"
     if license_file:
-        await driver_service.insert_document(driver["id"], "license", f"{base}/{driver['id']}_license.pdf")
+        driver_service.insert_document(driver["id"], "license", f"{base}/{driver['id']}_license.pdf")
     if criminal_file:
-        await driver_service.insert_document(driver["id"], "criminal_record", f"{base}/{driver['id']}_criminal.pdf")
+        driver_service.insert_document(driver["id"], "criminal_record", f"{base}/{driver['id']}_criminal.pdf")
     if insurance_file:
-        await driver_service.insert_document(driver["id"], "vehicle_insurance", f"{base}/{driver['id']}_insurance.pdf")
+        driver_service.insert_document(driver["id"], "vehicle_insurance", f"{base}/{driver['id']}_insurance.pdf")
     return {"success": True, "message": "Documents uploaded", "data": {}}
 
-async def list_documents(driver):
-    rows = await driver_service.list_documents(driver["id"])
+def list_documents(driver):
+    rows = driver_service.list_documents(driver["id"])
     return {"success": True, "message": "Documents list", "data": rows}
 
-async def finalize_profile(driver):
-    err = await driver_service.finalize_profile(driver["id"])
+def finalize_profile(driver):
+    err = driver_service.finalize_profile(driver["id"])
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Profile submitted for approval", "data": {}}
 
-async def go_online(driver):
-    await driver_service.set_online(driver["id"], True)
+def go_online(driver):
+    driver_service.set_online(driver["id"], True)
     return {"success": True, "message": "You are online", "data": {}}
 
-async def go_offline(driver):
-    await driver_service.set_online(driver["id"], False)
+def go_offline(driver):
+    driver_service.set_online(driver["id"], False)
     return {"success": True, "message": "You are offline", "data": {}}
 
-async def earnings(driver):
-    total = await driver_service.earnings(driver["id"])
+def earnings(driver):
+    total = driver_service.earnings(driver["id"])
     return {"success": True, "message": "Total earnings", "data": {"total_earnings": total}}
 
-async def banners():
-    rows = await driver_service.get_banners()
+def banners():
+    rows = driver_service.get_banners()
     return {"success": True, "message": "Banners", "data": rows}

@@ -1,10 +1,9 @@
 from fastapi import UploadFile, HTTPException
 from app.services.filestack_service import FilestackService
-from app.utils.database_async import fetch_one
-from typing import Dict
+from ..utils.database import db_cursor
+from .filestack_service import FilestackService
 
-# === HANDLE UPLOAD ===
-async def handle_upload(user_id: str, file: UploadFile) -> Dict[str, str]:
+async def handle_upload(user_id: str, file: UploadFile) -> dict:
     if not file:
         raise HTTPException(status_code=400, detail="File is required")
 
@@ -12,7 +11,6 @@ async def handle_upload(user_id: str, file: UploadFile) -> Dict[str, str]:
     if not data:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    # Filestack upload
     fs = FilestackService()
     meta = fs.upload_bytes(
         data=data,
@@ -20,31 +18,30 @@ async def handle_upload(user_id: str, file: UploadFile) -> Dict[str, str]:
         mimetype=file.content_type or "application/octet-stream",
     )
 
-    # DB kayıt
-    query = """
-        INSERT INTO files (user_id, image_url, size, mime_type, filename, key)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id;
-    """
-    row = await fetch_one(
-        query,
-        user_id,
-        meta["url"],
-        meta.get("size"),
-        meta.get("type"),
-        meta.get("filename"),
-        meta.get("key"),
-    )
-    if not row:
-        raise HTTPException(status_code=500, detail="File insert failed")
+        # DB insert with plain SQL (no ORM)
+    with db_cursor() as cur:
+        cur.execute(
+            """
+            INSERT INTO files (user_id, image_url, size, mime_type, filename, key)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (
+                user_id,
+                meta["url"],
+                meta.get("size"),
+                meta.get("type"),
+                meta.get("filename"),
+                meta.get("key"),
+            ),
+        )
+        new_id = cur.fetchone()[0]
 
-    return {"id": str(row["id"])}
+    return {"id": str(new_id)}
 
-
-# === GET PUBLIC URL ===
 def get_public_url(file_id: str) -> str:
     """
-    Public CDN URL üretir. Gerçek CDN varsa base_url değiştirilebilir.
+    Public CDN URL üretir. Eğer gerçek CDN varsa base_url'i ona göre değiştir.
     """
     BASE_URL = "https://cdn.yuksi.com/files"
     return f"{BASE_URL}/{file_id}"
