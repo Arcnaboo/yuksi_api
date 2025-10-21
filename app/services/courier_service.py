@@ -124,6 +124,7 @@ def courier_register_step3(
                 )
     return None
 
+
 def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
     with db_cursor(dict_cursor=True) as cur:
         cur.execute("SELECT * FROM driver_onboarding WHERE driver_id=%s", (driver_id,))
