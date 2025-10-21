@@ -375,6 +375,18 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     replied_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS city_prices (
+    id SERIAL PRIMARY KEY,
+    route_name TEXT NOT NULL,
+    country_id INT NOT NULL,
+    state_id INT NOT NULL,
+    courier_price NUMERIC(10,2) NOT NULL,
+    minivan_price NUMERIC(10,2) NOT NULL,
+    panelvan_price NUMERIC(10,2) NOT NULL,
+    kamyonet_price NUMERIC(10,2) NOT NULL,
+    kamyon_price NUMERIC(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT now()
+);
 
 
 CREATE TABLE IF NOT EXISTS gps_table (
