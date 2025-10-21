@@ -117,6 +117,8 @@ class PaytrService:
 
         # PayTR returns HTML for both success and failure
         html = rsp.text
+        
+        print(f"BEGIN/n{html}/nEND",)
 
         if rsp.status_code == 200 and "İşlem başarısız" not in html:
             return PaymentResponse(status="success", token=None, reason=None)
