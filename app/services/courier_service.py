@@ -3,6 +3,15 @@ from ..utils.database import db_cursor
 from ..utils.database_async import fetch_all,fetch_one,execute
 from ..utils.security import hash_pwd
 
+VALID_STATUSES = {
+    "evrak_bekleniyor",
+    "inceleme_bekleniyor",
+    "eksik_belge",
+    "reddedildi",
+    "onaylandi",
+}
+
+
 def courier_register_step1(
     phone: str,
     first_name: str,
@@ -115,6 +124,7 @@ def courier_register_step3(
                 )
     return None
 
+
 def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
     with db_cursor(dict_cursor=True) as cur:
         cur.execute("SELECT * FROM driver_onboarding WHERE driver_id=%s", (driver_id,))
@@ -130,6 +140,9 @@ def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
       d.email,
       d.phone,
       d.created_at,
+      d.is_active,
+      d.deleted,
+      d.deleted_at,
       ob.country_id,
       c.name   AS country_name,
       ob.state_id,
@@ -159,6 +172,9 @@ def get_courier(driver_id: str) -> Dict[str, Any] | None:
       d.email,
       d.phone,
       d.created_at,
+      d.is_active,
+      d.deleted,
+      d.deleted_at,
       ob.country_id,
       c.name   AS country_name,
       ob.state_id,
@@ -205,6 +221,8 @@ async def get_courier_documents(driver_id: str) -> Optional[List[Dict[str, Any]]
 
 
 async def update_courier_document_status(driver_id: str, document_id: str, status: str) -> Optional[str]:
+    if status not in VALID_STATUSES:
+        return "Invalid status value"
     #check if driver exists
     driver_check_sql = "SELECT 1 FROM drivers WHERE id = $1"
     driver = await fetch_one(driver_check_sql, driver_id)
@@ -224,4 +242,18 @@ async def update_courier_document_status(driver_id: str, document_id: str, statu
     """
     await execute(update_sql, status, driver_id, document_id)
     
+    all_ok_sql = """
+    SELECT (COUNT(*) > 0) AND bool_and(courier_document_status = 'onaylandi') AS all_approved
+    FROM courier_documents
+    WHERE user_id = $1
+    """
+    row = await fetch_one(all_ok_sql, driver_id)
+    all_approved = bool(row["all_approved"]) if row is not None else False
+    if all_approved:
+        await execute("UPDATE drivers SET is_active = TRUE WHERE id = $1", driver_id)
+    else:
+        await execute("UPDATE drivers SET is_active = FALSE WHERE id = $1", driver_id)
+
+    
+
     return None
