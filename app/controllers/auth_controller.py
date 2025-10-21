@@ -29,10 +29,12 @@ async def register(first_name: str, last_name:str, email: str, phone: str, passw
         return {"success": False, "message": "Email or phone already registered", "data": {}}
     return {"success": True, "message": "Driver registered", "data": tokens}
 
-async def login(email: str, password: str):
-    tokens = await auth_service.login(email, password)
+def login(email: str, password: str):
+    tokens = auth_service.login(email, password)
     if not tokens:
         return {"success": False, "message": "Wrong email or password", "data": {}}
+    elif tokens == "banned":
+        return {"success": False, "message": "User is deleted", "data": {}}
     return {"success": True, "message": "Login successful", "data": tokens}
 
 async def get_current_driver(credentials: HTTPAuthorizationCredentials = Security(http_bearer)):
