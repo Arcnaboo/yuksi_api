@@ -24,8 +24,8 @@ async def get_subsection_by_id(sub_id: int) -> Dict[str, Any]:
 
 # UPDATE
 async def update_subsection(sub_id: int, fields: Dict[str, Any]) -> Dict[str, Any]:
-    ok, err = await svc.update_subsection(sub_id, fields)
-    if err or not ok:
+    err = await svc.update_subsection(sub_id, fields)
+    if err:
         return { "success": False, "message": err or "Update failed", "data": {} }
     return { "success": True, "message": "SubSection updated", "data": {} }
 

@@ -22,9 +22,9 @@ router = APIRouter(
     description="Yeni restoran kaydı oluşturur.",
     response_model=Union[RestaurantRegisterResponse, Any]
 )
-def restaurant_register(req: RestaurantRegisterReq):
+async def restaurant_register(req: RestaurantRegisterReq):
     """Restaurant kayıt endpoint"""
-    result = ctrl.restaurant_register(req)
+    result = await ctrl.restaurant_register(req)
     if not result.get('success'):
         return result
     return result['data']
