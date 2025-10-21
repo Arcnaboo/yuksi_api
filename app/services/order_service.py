@@ -2,6 +2,7 @@ from typing import Optional, List, Dict, Any, Tuple
 import random
 import string
 from datetime import datetime
+import uuid
 from app.utils.database_async import fetch_one, fetch_all, execute
 
 
@@ -30,6 +31,10 @@ async def create_order(
     items: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Sipariş oluştur"""
+    try:
+        uuid.UUID(restaurant_id)
+    except:
+        return "Invalid UUID"  
     try:
         rest = await fetch_one("SELECT id FROM restaurants WHERE id=$1;", restaurant_id)
         if not rest:
@@ -71,6 +76,11 @@ async def create_order(
 
 # === Sipariş Detayı ===
 async def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any]]:
+    try:
+        uuid.UUID(order_id)
+        uuid.UUID(restaurant_id)
+    except:
+        return "Invalid UUID"    
     query = """
         SELECT o.*, r.name AS restaurant_name
         FROM orders o
@@ -97,6 +107,11 @@ async def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any
 
 # === Sipariş Güncelle ===
 async def update_order(order_id: str, restaurant_id: str, **kwargs) -> Tuple[bool, Optional[str]]:
+    try:
+        uuid.UUID(order_id)
+        uuid.UUID(restaurant_id)
+    except:
+        return False, "Invalid UUID"  
     try:
         exists = await fetch_one(
             "SELECT id FROM orders WHERE id=$1 AND restaurant_id=$2;",
@@ -145,6 +160,11 @@ async def update_order(order_id: str, restaurant_id: str, **kwargs) -> Tuple[boo
 # === Sipariş Sil ===
 async def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optional[str]]:
     try:
+        uuid.UUID(order_id)
+        uuid.UUID(restaurant_id)
+    except:
+        return False, "Invalid UUID"  
+    try:
         result = await execute(
             "DELETE FROM orders WHERE id=$1 AND restaurant_id=$2;",
             order_id, restaurant_id
@@ -167,6 +187,10 @@ async def list_orders(
     limit: int = 50,
     offset: int = 0,
 ) -> Tuple[List[Dict[str, Any]], int, float]:
+    try:
+        uuid.UUID(restaurant_id)
+    except:
+        return [], 0, 0  
     where = ["o.restaurant_id = $1"]
     params = [restaurant_id]
     idx = 2
@@ -230,4 +254,8 @@ async def get_order_history(
     offset: int = 0,
 ) -> Tuple[List[Dict[str, Any]], int, float]:
     """Sipariş geçmişi (list_orders ile aynı)"""
+    try:
+        uuid.UUID(restaurant_id)
+    except:
+        return [], 0, 0
     return await list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)

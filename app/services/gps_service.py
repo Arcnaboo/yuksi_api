@@ -1,4 +1,5 @@
 from typing import Any, Dict, Tuple, Optional, List
+import uuid
 from ..utils.database_async import fetch_one, fetch_all
 
 async def get_all_latest() -> Tuple[Optional[List[Dict[str, Any]]], Optional[str]]:
@@ -15,6 +16,10 @@ async def upsert_location(driver_id: str, latitude: float, longitude: float) -> 
     """
     Update location from database instantly.
     """
+    try:
+        uuid.UUID(driver_id)
+    except:
+        return None, "Invalid UUID"    
     query = """
         INSERT INTO gps_table (driver_id, latitude, longitude, updated_at)
         VALUES ($1, $2, $3, NOW())
@@ -34,6 +39,10 @@ async def get_latest(driver_id: str):
     """
     Get latest data from database for selected driver.
     """
+    try:
+        uuid.UUID(driver_id)
+    except:
+        return None, "Invalid UUID"
     query = """
         SELECT * FROM gps_table WHERE driver_id = $1
     """
