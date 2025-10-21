@@ -34,7 +34,7 @@ async def create_banner(
     title: str,
     image_url: str,
     priority: int = 0,
-    active: bool = True
+    active: bool = True,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     query = """
         INSERT INTO banners (title, image_url, priority, active)
@@ -51,7 +51,7 @@ async def update_banner(
     title: str,
     image_url: str,
     priority: int = 0,
-    active: bool = True
+    active: bool = True,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     try:
         uuid.UUID(str(banner_id))
