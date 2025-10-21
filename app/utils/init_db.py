@@ -44,6 +44,10 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
     CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'kurye_cagrildi', 'kuryeye_verildi', 'yolda', 'teslim_edildi');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE courier_document_status AS ENUM ('evrak_bekleniyor', 'inceleme_bekleniyor', 'eksik_belge', 'reddedildi', 'onaylandi');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
 # -----------------------------------------------------------
@@ -205,6 +209,7 @@ CREATE TABLE IF NOT EXISTS courier_documents (
   user_id    UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
   file_id    UUID NOT NULL REFERENCES files(id)   ON DELETE RESTRICT,
   doc_type   courier_doc_type NOT NULL,
+  courier_document_status courier_document_status NOT NULL DEFAULT 'inceleme_bekleniyor',
   created_at TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, doc_type)
 );
@@ -318,7 +323,6 @@ CREATE TABLE IF NOT EXISTS packages (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ✅ General Settings Tablosu
 CREATE TABLE IF NOT EXISTS general_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     app_name TEXT NOT NULL,
@@ -328,7 +332,7 @@ CREATE TABLE IF NOT EXISTS general_settings (
     whatsapp TEXT NOT NULL,
     address TEXT NOT NULL,
     map_embed_code TEXT NOT NULL,
-    logo_path TEXT, -- ✅ file_service den dönen public URL tutulacak
+    logo_path TEXT, 
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -353,6 +357,22 @@ CREATE TABLE IF NOT EXISTS carrier_types (
     image_file_id UUID REFERENCES files(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+    id SERIAL PRIMARY KEY,
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    restaurant_name TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    reply TEXT,
+    status TEXT DEFAULT 'pending', 
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    replied_at TIMESTAMPTZ
+);
+
+
 
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,

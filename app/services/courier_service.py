@@ -1,6 +1,9 @@
 from typing import Optional, Tuple, Dict, Any, List
 from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.security import hash_pwd
+from ..utils.database import db_cursor
+from ..utils.database_async import fetch_all,fetch_one,execute
+from ..utils.security import hash_pwd
 
 
 # === STEP 1 ===
@@ -185,3 +188,50 @@ async def get_courier(driver_id: str) -> Optional[Dict[str, Any]]:
     """
     row = await fetch_one(sql, driver_id)
     return dict(row) if row else None
+
+async def get_courier_documents(driver_id: str) -> Optional[List[Dict[str, Any]]]:
+    #check if driver exists
+    driver_check_sql = "SELECT 1 FROM drivers WHERE id = $1"
+    driver = await fetch_one(driver_check_sql, driver_id)
+    if driver is None:
+        return None #driver not found
+    
+
+    sql = """
+    SELECT
+        cd.id AS document_id,
+      cd.doc_type,
+      cd.file_id,
+      cd.courier_document_status AS document_status,
+      f.image_url AS image_url,
+      f.uploaded_at
+    FROM courier_documents cd
+    JOIN files f ON f.id = cd.file_id
+    WHERE cd.user_id = $1
+    """
+    documents = await fetch_all(sql, driver_id)
+    
+    return [dict(doc) for doc in documents]
+
+
+async def update_courier_document_status(driver_id: str, document_id: str, status: str) -> Optional[str]:
+    #check if driver exists
+    driver_check_sql = "SELECT 1 FROM drivers WHERE id = $1"
+    driver = await fetch_one(driver_check_sql, driver_id)
+    if driver is None:
+        return "Driver not found"
+    
+    #check if document exists for this driver
+    document_check_sql = "SELECT 1 FROM courier_documents WHERE user_id = $1 AND id = $2"
+    document = await fetch_one(document_check_sql, driver_id, document_id)
+    if document is None:
+        return "Document not found for this driver"
+    
+    update_sql = """
+    UPDATE courier_documents
+    SET courier_document_status = $1
+    WHERE user_id = $2 AND id = $3
+    """
+    await execute(update_sql, status, driver_id, document_id)
+    
+    return None

@@ -6,6 +6,8 @@ from ..models.courier_model import (
 )
 from ..controllers import courier_controller as ctrl
 from ..controllers import auth_controller
+from uuid import UUID
+
 router = APIRouter(
     prefix="/api/Courier",
     tags=["Courier"],
@@ -278,3 +280,139 @@ def get_courier_profile(
 )
 def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
     return ctrl.list_couriers()
+
+@router.get(
+    "/{user_id}/get_documents",
+    summary="Get Courier Documents",
+    description="Fetches the documents of a courier by user ID.",
+    responses={
+        200: {
+            "description": "Courier documents retrieved successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier documents",
+                                "data": [
+                                        {
+                                        "document_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "doc_type": "KimlikArka",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                            "document_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "doc_type": "KimlikOn",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                            "document_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "doc_type": "RuhsatArka",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                            "document_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "doc_type": "RuhsatOn",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                            "document_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "doc_type": "EhliyetArka",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                        "doc_type": "EhliyetOn",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        },
+                                        {
+                                            "document_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "doc_type": "VergiLevhasi",
+                                        "file_id": "4185b628-312f-4c40-bb84-1f75ee0749fc",
+                                        "document_status": "inceleme_bekleniyor",
+                                        "image_url": "https://cdn.filestackcontent.com/HLURGSHTa21ujC2o8prf",
+                                        "uploaded_at": "2025-10-13T13:44:08.451586+03:00"
+                                        }
+                                ]
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_documents(
+    user_id: UUID = Path(..., description="The UUID of the courier user"),
+    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
+):
+    return await ctrl.get_courier_documents(user_id)
+
+
+@router.put(
+    "/{user_id}/update_documents_status/{document_id}",
+    summary="Update Courier Document Status",
+    description="Updates the status of a specific courier document. Types of status include: 'evrak_bekleniyor', 'inceleme_bekleniyor', 'eksik_belge', 'kuryeye_verildi', 'reddedildi', 'onaylandi'.",
+    responses={
+        200: {
+            "description": "Courier document status updated successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier document status updated",
+                                "data": {}
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier document not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier document not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def update_courier_document_status(
+    user_id: UUID = Path(..., description="The UUID of the courier user"),
+    document_id: UUID = Path(..., description="The UUID of the document to update"),
+    new_status: str = Body(..., embed=True, description="The new status for the document"),
+    _claims = Depends(auth_controller.require_roles(["Admin"]))
+):
+    return await ctrl.update_courier_document_status(user_id, document_id, new_status)
+    
