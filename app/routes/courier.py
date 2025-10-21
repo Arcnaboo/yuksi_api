@@ -284,6 +284,7 @@ async def get_courier_profile(
         }
     },
 )
+
 async def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
     return await ctrl.list_couriers()
 

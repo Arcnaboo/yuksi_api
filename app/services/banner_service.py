@@ -38,7 +38,7 @@ async def create_banner(
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     query = """
         INSERT INTO banners (title, image_url, priority, active)
-        VALUES (%s, %s, %s, %s)
+        VALUES ($1, $2, $3, $4)
         RETURNING id, title, image_url, priority, active
     """
     row = await fetch_one(query, title, image_url, priority, active)

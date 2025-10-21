@@ -45,7 +45,7 @@ async def list_couriers():
     return {"success": True, "message": "Courier list", "data": couriers}
 
 async def list_couriers():
-    couriers = svc.list_couriers()
+    couriers = await svc.list_couriers()
     return {"success": True, "message": "Courier list", "data": couriers}
 
 async def get_courier_documents(user_id: str):
