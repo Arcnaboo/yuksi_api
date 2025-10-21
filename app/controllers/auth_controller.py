@@ -23,19 +23,19 @@ def require_roles(allowed: list[str]):
         return payload
     return _dep
 
-def register(first_name: str, last_name:str, email: str, phone: str, password: str):
-    tokens = auth_service.register(first_name,last_name, email, phone, password)
+async def register(first_name: str, last_name:str, email: str, phone: str, password: str):
+    tokens = await auth_service.register(first_name,last_name, email, phone, password)
     if not tokens:
         return {"success": False, "message": "Email or phone already registered", "data": {}}
     return {"success": True, "message": "Driver registered", "data": tokens}
 
-def login(email: str, password: str):
-    tokens = auth_service.login(email, password)
+async def login(email: str, password: str):
+    tokens = await auth_service.login(email, password)
     if not tokens:
         return {"success": False, "message": "Wrong email or password", "data": {}}
     return {"success": True, "message": "Login successful", "data": tokens}
 
-def get_current_driver(credentials: HTTPAuthorizationCredentials = Security(http_bearer)):
+async def get_current_driver(credentials: HTTPAuthorizationCredentials = Security(http_bearer)):
     if not credentials or not credentials.credentials:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
     token = credentials.credentials
@@ -43,7 +43,7 @@ def get_current_driver(credentials: HTTPAuthorizationCredentials = Security(http
     if not payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
     driver_id = payload.get("sub")
-    driver = auth_service.get_driver(driver_id)
+    driver = await auth_service.get_driver(driver_id)
     if not driver:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,15 +53,15 @@ def get_current_driver(credentials: HTTPAuthorizationCredentials = Security(http
     return driver
 
 
-def refresh(refresh_token: str):
-    tokens = auth_service.refresh_with_token(refresh_token)
+async def refresh(refresh_token: str):
+    tokens = await auth_service.refresh_with_token(refresh_token)
     if not tokens:
         return {"success": False, "message": "Invalid refresh token", "data": {}}
     return {"success": True, "message": "Token refreshed", "data": tokens}
 
 
-def logout(refresh_token: str):
-    ok = auth_service.revoke_refresh_token(refresh_token)
+async def logout(refresh_token: str):
+    ok = await auth_service.revoke_refresh_token(refresh_token)
     if not ok:
         return {"success": False, "message": "Refresh token already invalid or not found", "data": {}}
     return {"success": True, "message": "Logged out", "data": {}}

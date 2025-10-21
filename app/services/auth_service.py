@@ -37,7 +37,7 @@ async def _get_valid_refresh_row(token: str):
     """
     return await db.fetch_one(query, token)
 
-def _generate_tokens_net_style(user_id: int | str, email: str, roles: list[str], user_type: str):
+async def _generate_tokens_net_style(user_id: int | str, email: str, roles: list[str], user_type: str):
     claims = {
         "sub": str(user_id),
         "unique_name": email,
