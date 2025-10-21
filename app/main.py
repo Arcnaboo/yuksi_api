@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -10,7 +11,7 @@ import logging
 import asyncio
 
 logger = logging.getLogger("uvicorn.error")
-
+#
 
 '''
 tags_metadata = [

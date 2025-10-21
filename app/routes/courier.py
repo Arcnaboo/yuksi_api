@@ -207,7 +207,10 @@ async def courier_register3(
                                     "workingType": 1,
                                     "vehicleType": 0,
                                     "vehicleCapacity": 100,
-                                    "vehicleYear": 2020
+                                    "vehicleYear": 2020,
+                                    "is_active": True,
+                                    "deleted" : False,
+                                    "deleted_at": None
                                 }
                             }
                         },
@@ -260,7 +263,10 @@ async def get_courier_profile(
                                     "workingType": 1,
                                     "vehicleType": 0,
                                     "vehicleCapacity": 100,
-                                    "vehicleYear": 2020
+                                    "vehicleYear": 2020,
+                                    "is_active": True,
+                                    "deleted" : False,
+                                    "deleted_at": None
                                 }]
                             }
                         },
@@ -379,7 +385,7 @@ async def get_courier_documents(
 @router.put(
     "/{user_id}/update_documents_status/{document_id}",
     summary="Update Courier Document Status",
-    description="Updates the status of a specific courier document. Types of status include: 'evrak_bekleniyor', 'inceleme_bekleniyor', 'eksik_belge', 'kuryeye_verildi', 'reddedildi', 'onaylandi'.",
+    description="Updates the status of a specific courier document. Types of status include: 'evrak_bekleniyor', 'inceleme_bekleniyor', 'eksik_belge', 'reddedildi', 'onaylandi'.",
     responses={
         200: {
             "description": "Courier document status updated successfully.",

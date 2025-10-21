@@ -64,6 +64,9 @@ CREATE TABLE IF NOT EXISTS drivers (
     email           TEXT UNIQUE NOT NULL,
     phone           TEXT UNIQUE NOT NULL,
     password_hash   TEXT NOT NULL,
+    is_active       BOOLEAN DEFAULT FALSE,
+    deleted         BOOLEAN DEFAULT FALSE,
+    deleted_at      TIMESTAMPTZ,
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
