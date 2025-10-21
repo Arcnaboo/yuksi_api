@@ -1,12 +1,13 @@
 # arda_test.py (updated)
 from app.services.paytr_service import PaymentRequest, paytr_service
 import base64
+import uuid
 
 req = PaymentRequest(
     user_ip="78.183.89.120",
     merchant_oid="arda1234567",
     email="a@b.com",
-    payment_amount=10000,        # 100.00 TL (kuruş pricing)
+    payment_amount=50,        # 100.00 TL (kuruş pricing)
     currency="TL",
     test_mode=0,                 # keep as you had it (0 or 1 depending on sandbox)
     non_3d=0,                    # use 3D flow
@@ -19,7 +20,8 @@ req = PaymentRequest(
     card_number="4183421279930647",
     expiry_month="06",
     expiry_year="32",
-    cvv="279"
+    cvv="279",
+    id = uuid.uuid4()
 )
 
 resp = paytr_service.create_payment(req)

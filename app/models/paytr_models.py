@@ -1,5 +1,6 @@
 # app/models/paytr_models.py
 from pydantic import BaseModel, Field
+import uuid
 
 class PaytrConfig(BaseModel):
     merchant_id: str
@@ -14,6 +15,7 @@ class PaytrConfig(BaseModel):
 
 class PaymentRequest(BaseModel):
     # 🔹 Basic required fields
+    id: uuid.UUID
     merchant_oid: str
     email: str
     payment_amount: int  # örn: 100.00 TL = 10000
@@ -37,6 +39,7 @@ class PaymentRequest(BaseModel):
     user_name: str | None = None
     user_address: str | None = None
     user_phone: str | None = None
+
 
 
 class PaymentResponse(BaseModel):

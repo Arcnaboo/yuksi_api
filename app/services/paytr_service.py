@@ -115,13 +115,16 @@ class PaytrService:
             logger.exception("[create_payment] network error: %s", exc)
             return PaymentResponse(status="error", reason=str(exc))
 
-        # PayTR returns HTML for both success and failure
-        html = rsp.text
-        
-        print(f"BEGIN/n{html}/nEND",)
+        # PayTR returns HTML for both success and failure 
+        html = rsp.text# bu html yi kullaniciya link olarak vermeliyiz
+        with open(f"{req.id}.html", "w") as file:
+            file.write(html)
+
+        print(f"{req.id}.html generated")        
+       
 
         if rsp.status_code == 200 and "İşlem başarısız" not in html:
-            return PaymentResponse(status="success", token=None, reason=None)
+            return PaymentResponse(status="success", token=html, reason=None)
 
         # Try to extract fail_message
         reason = None
