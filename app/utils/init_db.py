@@ -249,6 +249,20 @@ CREATE TABLE IF NOT EXISTS restaurants (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
+
+-- init_db.py'ye ekle (DDL kısmına)
+CREATE TABLE IF NOT EXISTS restaurant_couriers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    courier_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+    assigned_at TIMESTAMPTZ DEFAULT NOW(),
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(restaurant_id, courier_id)
+);
+
+
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL,
@@ -426,6 +440,8 @@ CREATE INDEX IF NOT EXISTS idx_gps_updated_at ON gps_table(updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
 CREATE INDEX IF NOT EXISTS idx_orders_restaurant_id ON orders(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_couriers_restaurant_id ON restaurant_couriers(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_restaurant_couriers_courier_id ON restaurant_couriers(courier_id);
 CREATE INDEX IF NOT EXISTS idx_orders_courier_id ON orders(courier_id);
 CREATE INDEX IF NOT EXISTS idx_orders_code ON orders(code);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
