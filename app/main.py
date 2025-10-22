@@ -15,6 +15,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent   # proje kökü
 PAYTR_DIR = BASE_DIR / "public" / "paytr"
+PAYTR_DIR.mkdir(parents=True, exist_ok=True)
 
 print(f"[BOOT] Ensuring PayTR directory exists at {PAYTR_DIR}")
 
