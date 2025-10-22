@@ -15,7 +15,12 @@ class PaytrConfig(BaseModel):
 
 class PaymentRequest(BaseModel):
     # 🔹 Basic required fields
-    id: uuid.UUID
+    # Use Field with default_factory to auto-generate a UUID
+    # Use include_in_schema=False to hide it from Swagger/OpenAPI spec
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,  # Auto-generate a UUID
+        include_in_schema=False     # Exclude from Swagger request body
+    )
     merchant_oid: str
     email: str
     payment_amount: int  # örn: 100.00 TL = 10000
@@ -28,6 +33,7 @@ class PaymentRequest(BaseModel):
     test_mode: int = 1
     non_3d: int = 0
 
+    # ... (rest of the fields remain the same)
     # 🔹 Card info fields (for Direct API mode)
     cc_owner: str | None = Field(default=None, description="Card holder name")
     card_number: str | None = Field(default=None, description="Card number (no spaces)")
