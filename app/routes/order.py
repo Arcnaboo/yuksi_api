@@ -1,6 +1,6 @@
 # app/routes/order.py
 from fastapi import APIRouter, Path, Query, Body, HTTPException
-from typing import Optional
+from typing import Optional, Dict, Any
 from ..models.order_model import (
     OrderCreateReq, OrderUpdateReq, OrderResponse, OrderListResponse
 )
@@ -87,3 +87,22 @@ def get_order_history(
         limit=limit,
         offset=offset
     )
+
+
+
+
+# order.py'nin sonuna ekle
+
+@router.get(
+    "/courier/{courier_id}/assigned-orders",
+    summary="Get Courier Assigned Orders",
+    description="Kuryeye atanan siparişleri listele",
+    response_model=dict
+)
+async def get_courier_assigned_orders(
+    courier_id: str = Path(..., description="Courier ID"),
+    limit: int = Query(50, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Page offset")
+):
+    """Kuryeye atanan siparişleri getir endpoint"""
+    return await ctrl.get_courier_assigned_orders(courier_id, limit, offset)
