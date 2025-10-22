@@ -9,6 +9,15 @@ from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
 import logging
 import asyncio
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent   # proje kökü
+PAYTR_DIR = BASE_DIR / "public" / "paytr"
+
+print(f"[BOOT] Ensuring PayTR directory exists at {PAYTR_DIR}")
+
 
 logger = logging.getLogger("uvicorn.error")
 #
@@ -61,7 +70,11 @@ async def on_startup():
         # Başlangıçta veritabanı init hatasını görünür kılalım
         print(f"[BOOT][ERROR] init_db başarısız: {e}")
         raise
-
+app.mount(
+    "/paytr",
+    StaticFiles(directory=str(PAYTR_DIR), html=True),
+    name="paytr_static",
+)
 app.include_router(system.router)
 
 app.include_router(auth.router)
