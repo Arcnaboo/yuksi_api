@@ -1,3 +1,4 @@
+from typing import Optional, Dict, Any
 from ..services import restaurant_service as svc
 
 
@@ -62,3 +63,53 @@ async def update_restaurant_profile(restaurant_id: str, req):
         
     return {"message": "Profil başarıyla güncellendi"}
 
+
+async def assign_courier_to_restaurant(
+    restaurant_id: str, 
+    courier_id: str,
+    notes: Optional[str] = None
+) -> Dict[str, Any]:
+    """Restorana kurye ata controller"""
+    success, error = await svc.assign_courier_to_restaurant(
+        restaurant_id=restaurant_id,
+        courier_id=courier_id,
+        notes=notes
+    )
+    
+    if error:
+        return {"success": False, "message": error, "data": {}}
+    
+    return {"success": True, "message": "Courier assigned to restaurant successfully", "data": {}}
+
+async def get_restaurant_couriers(
+    restaurant_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """Restoranın kuryelerini getir controller"""
+    couriers = await svc.get_restaurant_couriers(restaurant_id, limit, offset)
+    stats = await svc.get_restaurant_courier_stats(restaurant_id)
+    
+    return {
+        "success": True, 
+        "message": "Restaurant couriers retrieved successfully", 
+        "data": {
+            "stats": stats,
+            "couriers": couriers
+        }
+    }
+
+async def remove_courier_from_restaurant(
+    restaurant_id: str, 
+    assignment_id: str
+) -> Dict[str, Any]:
+    """Restorandan kurye atamasını kaldır controller"""
+    success, error = await svc.remove_courier_from_restaurant(
+        assignment_id=assignment_id,
+        restaurant_id=restaurant_id
+    )
+    
+    if error:
+        return {"success": False, "message": error, "data": {}}
+    
+    return {"success": True, "message": "Courier removed from restaurant successfully", "data": {}}

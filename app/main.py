@@ -3,12 +3,22 @@ from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.routes import contact, general_setting, notification, package
-from .routes import (auth, driver, jobs, city_price,payments, system,restaurant_package_price,support_ticket,courier,carrier_type, geo, file, restaurant, subsection, 
+from .routes import (auth,admin, driver, jobs, city_price,payments, system,restaurant_package_price,support_ticket,courier,carrier_type, geo, file, restaurant, subsection, 
                      cargotype, banner, paytr_route,order, gps_route, courier_rating)
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
 import logging
 import asyncio
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent   # proje kökü
+PAYTR_DIR = BASE_DIR / "public" / "paytr"
+PAYTR_DIR.mkdir(parents=True, exist_ok=True)
+
+print(f"[BOOT] Ensuring PayTR directory exists at {PAYTR_DIR}")
+
 
 logger = logging.getLogger("uvicorn.error")
 #
@@ -41,7 +51,7 @@ app = FastAPI(
     title="YÜKSİ Courier API",
     version="1.0.0",
     description="Kurye uygulaması için backend API.",
-    contact={"name": "YÜKSİ Tech", "email": "dev@yuksi.com"},
+    contact={"name": "YÜKSİ Tech", "email": "cto@arccorp.ai"},
     license_info={"name": "Proprietary"},
     #openapi_tags=tags_metadata,
     docs_url="/docs",
@@ -61,7 +71,11 @@ async def on_startup():
         # Başlangıçta veritabanı init hatasını görünür kılalım
         print(f"[BOOT][ERROR] init_db başarısız: {e}")
         raise
-
+app.mount(
+    "/paytr",
+    StaticFiles(directory=str(PAYTR_DIR), html=True),
+    name="paytr_static",
+)
 app.include_router(system.router)
 
 app.include_router(auth.router)
@@ -87,7 +101,7 @@ app.include_router(support_ticket.router)
 app.include_router(city_price.router)
 app.include_router(courier_rating.router)
 app.include_router(restaurant_package_price.router)
-
+app.include_router(admin.router)
 setup_console_logging()
 
 @app.exception_handler(HTTPException)

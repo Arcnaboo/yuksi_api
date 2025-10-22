@@ -185,3 +185,139 @@ async def update_restaurant_profile(
     except Exception as e:
         print(f"Error updating restaurant profile: {e}")
         return False, f"Güncelleme hatası: {str(e)}"
+    
+    
+async def assign_courier_to_restaurant(
+    restaurant_id: str,
+    courier_id: str,
+    notes: Optional[str] = None
+) -> Tuple[bool, Optional[str]]:
+    """Restorana kurye ata"""
+    try:
+        from ..utils.database_async import fetch_one, execute
+        
+        # Restoran kontrolü
+        restaurant = await fetch_one("SELECT id, name FROM restaurants WHERE id = $1", restaurant_id)
+        if not restaurant:
+            return False, "Restaurant not found"
+        
+        # Kurye kontrolü
+        courier = await fetch_one("SELECT id, first_name, last_name, is_active FROM drivers WHERE id = $1", courier_id)
+        if not courier:
+            return False, "Courier not found"
+        
+        if not courier["is_active"]:
+            return False, "Courier is not active"
+        
+        # Zaten atanmış mı kontrol et
+        existing = await fetch_one("""
+            SELECT id FROM restaurant_couriers 
+            WHERE restaurant_id = $1 AND courier_id = $2
+        """, restaurant_id, courier_id)
+        
+        if existing:
+            return False, "Courier already assigned to this restaurant"
+        
+        # Atama yap
+        await execute("""
+            INSERT INTO restaurant_couriers (restaurant_id, courier_id, notes)
+            VALUES ($1, $2, $3)
+        """, restaurant_id, courier_id, notes)
+        
+        return True, None
+        
+    except Exception as e:
+        return False, str(e)
+
+async def get_restaurant_couriers(
+    restaurant_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> List[Dict[str, Any]]:
+    """Restoranın kuryelerini getir"""
+    try:
+        from ..utils.database_async import fetch_all
+        
+        rows = await fetch_all("""
+            SELECT 
+                rc.id,
+                rc.restaurant_id,
+                rc.courier_id,
+                rc.assigned_at,
+                rc.notes,
+                rc.created_at,
+                d.first_name,
+                d.last_name,
+                d.email,
+                d.phone,
+                d.is_active,
+                CONCAT(d.first_name, ' ', d.last_name) as courier_name
+            FROM restaurant_couriers rc
+            LEFT JOIN drivers d ON d.id = rc.courier_id
+            WHERE rc.restaurant_id = $1
+            ORDER BY rc.assigned_at DESC
+            LIMIT $2 OFFSET $3
+        """, restaurant_id, limit, offset)
+        
+        # asyncpg.Record objelerini dict'e çevir
+        result = []
+        if rows:
+            for row in rows:
+                result.append(dict(row))
+        
+        return result
+        
+    except Exception as e:
+        return []
+
+async def remove_courier_from_restaurant(
+    assignment_id: str,
+    restaurant_id: str
+) -> Tuple[bool, Optional[str]]:
+    """Restorandan kurye atamasını kaldır"""
+    try:
+        from ..utils.database_async import execute
+        
+        result = await execute("""
+            DELETE FROM restaurant_couriers 
+            WHERE id = $1 AND restaurant_id = $2
+        """, assignment_id, restaurant_id)
+        
+        if result == "DELETE 0":
+            return False, "Assignment not found"
+        
+        return True, None
+        
+    except Exception as e:
+        return False, str(e)
+
+async def get_restaurant_courier_stats(restaurant_id: str) -> Optional[Dict[str, Any]]:
+    """Restoran kurye istatistikleri"""
+    try:
+        from ..utils.database_async import fetch_one
+        
+        # Restoran bilgileri
+        restaurant = await fetch_one("SELECT name FROM restaurants WHERE id = $1", restaurant_id)
+        if not restaurant:
+            return None
+        
+        # İstatistikler
+        stats = await fetch_one("""
+            SELECT COUNT(*) as total_couriers
+            FROM restaurant_couriers 
+            WHERE restaurant_id = $1
+        """, restaurant_id)
+        
+        # asyncpg.Record objelerini dict'e çevir
+        restaurant_dict = dict(restaurant) if restaurant else {}
+        stats_dict = dict(stats) if stats else {}
+        
+        return {
+            "restaurant_id": restaurant_id,
+            "restaurant_name": restaurant_dict.get("name", ""),
+            "total_couriers": stats_dict.get("total_couriers", 0) or 0
+        }
+        
+    except Exception as e:
+        return None
+    

@@ -6,6 +6,7 @@ import logging
 import os
 import re
 from typing import Optional
+from pathlib import Path  
 
 import requests
 
@@ -17,6 +18,17 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 TOKEN_URL = "https://www.paytr.com/odeme"
+PAYTR_PUBLIC_DIR = Path(__file__).resolve().parent.parent.parent / "public" / "paytr"  # /public/paytr
+REQUIRED_ENV = [
+    "PAYTR_MERCHANT_ID",
+    "PAYTR_MERCHANT_KEY",
+    "PAYTR_MERCHANT_SALT",
+    "PAYTR_OK_URL",
+    "PAYTR_FAIL_URL",
+    "PAYTR_CALLBACK_URL",
+    "PAYTR_TEST_MODE",
+]
+
 
 
 # ---------------------------------------------------------------------------
@@ -25,6 +37,38 @@ TOKEN_URL = "https://www.paytr.com/odeme"
 def _ensure_str(val: Optional[str], default: str) -> str:
     """Return stripped value or default when None/empty."""
     return (val and str(val).strip()) or default
+
+def _getenv_or_load(name: str, default: Optional[str] = None) -> Optional[str]:
+    """
+    Env yoksa app.utils.config'i import edip (side-effect) .env yüklenmesini tetikler,
+    tekrar okumayı dener.
+    """
+    val = os.getenv(name)
+    if val is not None and str(val).strip() != "":
+        return val
+
+    # .env'yi main.py'de yüklemediysen veya process env boşsa, buradan tetikle
+    try:
+        # Bu import'un tek amacı config.py içindeki load_dotenv vb. kodların çalışması
+        import app.utils.config  # noqa: F401
+    except Exception as e:
+        logger.warning("[paytr] env yüklemek için app.utils.config import edilemedi: %s", e)
+
+    # tekrar dene
+    val = os.getenv(name)
+    if val is None or str(val).strip() == "":
+        if default is not None:
+            return default
+        logger.warning("[paytr] ENV boş: %s", name)
+        return None
+    return val
+
+def _ensure_public_dir():
+    try:
+        PAYTR_PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        logger.error("[paytr] public/paytr klasörü oluşturulamadı: %s", e)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -66,35 +110,37 @@ class PaytrService:
         logger.info("[create_payment] oid=%s amount=%s", req.merchant_oid, req.payment_amount)
 
         token_hash = self._create_hash(req)
-
+        try:
         # Build payload – ensure NOTHING is empty
-        payload = {
-            "merchant_id": self.config.merchant_id,
-            "user_ip": req.user_ip,
-            "merchant_oid": req.merchant_oid,
-            "email": req.email.strip(),
-            "payment_amount": int(req.payment_amount),
-            "currency": req.currency.upper(),
-            "payment_type": getattr(req, "payment_type", "card"),
-            "installment_count": int(getattr(req, "installment_count", 0)),
-            "test_mode": int(req.test_mode),
-            "non_3d": int(req.non_3d),
-            "merchant_ok_url": self.config.ok_url,
-            "merchant_fail_url": self.config.fail_url,
-            "user_basket": req.basket_json,
-            "paytr_token": token_hash,
-            "no_installment": int(getattr(req, "no_installment", 0)),
-            "max_installment": int(getattr(req, "max_installment", 12)),
-            # Mandatory user fields – NEVER empty
-            "user_name": _ensure_str(getattr(req, "user_name", None), "Test Kullanıcı"),
-            "user_address": _ensure_str(getattr(req, "user_address", None), "Ankara, Türkiye"),
-            "user_phone": _ensure_str(getattr(req, "user_phone", None), "+905551112233"),
-            "expiry_month":int(req.expiry_month),
-            "expiry_year": int(req.expiry_year),
-            "cc_owner": req.cc_owner,
-            "card_number": req.card_number,
-            "cvv":req.cvv
-        }
+            payload = {
+                "merchant_id": self.config.merchant_id,
+                "user_ip": req.user_ip,
+                "merchant_oid": req.merchant_oid,
+                "email": req.email.strip(),
+                "payment_amount": int(req.payment_amount),
+                "currency": req.currency.upper(),
+                "payment_type": getattr(req, "payment_type", "card"),
+                "installment_count": int(getattr(req, "installment_count", 0)),
+                "test_mode": int(req.test_mode),
+                "non_3d": int(req.non_3d),
+                "merchant_ok_url": self.config.ok_url,
+                "merchant_fail_url": self.config.fail_url,
+                "user_basket": self.config.basket_json,
+                "paytr_token": token_hash,
+                "no_installment": int(getattr(req, "no_installment", 0)),
+                "max_installment": int(getattr(req, "max_installment", 12)),
+                # Mandatory user fields – NEVER empty
+                "user_name": _ensure_str(getattr(req, "user_name", None), "Test Kullanıcı"),
+                "user_address": _ensure_str(getattr(req, "user_address", None), "Ankara, Türkiye"),
+                "user_phone": _ensure_str(getattr(req, "user_phone", None), "+905551112233"),
+                "expiry_month":int(req.expiry_month),
+                "expiry_year": int(req.expiry_year),
+                "cc_owner": req.cc_owner,
+                "card_number": req.card_number,
+                "cvv":req.cvv
+            }
+        except Exception as e:
+            return PaymentResponse(status="error", reason=str(e))
 
         # -------------------------------------------------------------------
         # If you want NON-3D (non_3d=1) you MUST supply card_* parameters.
@@ -115,13 +161,16 @@ class PaytrService:
             logger.exception("[create_payment] network error: %s", exc)
             return PaymentResponse(status="error", reason=str(exc))
 
-        # PayTR returns HTML for both success and failure
-        html = rsp.text
-        
-        print(f"BEGIN/n{html}/nEND",)
+        # PayTR returns HTML for both success and failure 
+        html = rsp.text# bu html yi kullaniciya link olarak vermeliyiz
+        with open(f"public/paytr/{req.id}.html", "w") as file:
+            file.write(html)
+
+        print(f"{req.id}.html generated")        
+
 
         if rsp.status_code == 200 and "İşlem başarısız" not in html:
-            return PaymentResponse(status="success", token=None, reason=None)
+            return PaymentResponse(status="success", token=f"paytr/{req.id}.html", reason=None)
 
         # Try to extract fail_message
         reason = None
@@ -163,14 +212,18 @@ class PaytrService:
 # Config factory
 # ---------------------------------------------------------------------------
 def get_config() -> PaytrConfig:
+    # Eksik env varsa config.py import edilip .env yüklemesi tetiklenir
+    values = {k: _getenv_or_load(k) for k in REQUIRED_ENV}
+
     return PaytrConfig(
-        merchant_id=os.getenv("PAYTR_MERCHANT_ID"),
-        merchant_key=os.getenv("PAYTR_MERCHANT_KEY"),
-        merchant_salt=os.getenv("PAYTR_MERCHANT_SALT"),
-        ok_url=os.getenv("PAYTR_OK_URL"),
-        fail_url=os.getenv("PAYTR_FAIL_URL"),
-        callback_url=os.getenv("PAYTR_CALLBACK_URL"),
-        test_mode=int(os.getenv("PAYTR_TEST_MODE", "1")),
+        merchant_id=values["PAYTR_MERCHANT_ID"],
+        merchant_key=values["PAYTR_MERCHANT_KEY"],
+        merchant_salt=values["PAYTR_MERCHANT_SALT"],
+        ok_url=values["PAYTR_OK_URL"],
+        fail_url=values["PAYTR_FAIL_URL"],
+        callback_url=values["PAYTR_CALLBACK_URL"],
+        test_mode=int(values.get("PAYTR_TEST_MODE") or "1"),
+        basket_json="W1siSXRlbSIsICI1MC4wMCIsIDFdXQ=="
     )
 
 

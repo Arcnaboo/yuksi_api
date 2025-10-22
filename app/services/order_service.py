@@ -259,3 +259,52 @@ async def get_order_history(
     except:
         return [], 0, 0
     return await list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
+    """Sipariş geçmişi (list_orders ile aynı ama farklı response formatı)"""
+    return list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
+
+
+
+    # order_service.py'nin sonuna ekle
+
+async def get_courier_assigned_orders(
+    courier_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> List[Dict[str, Any]]:
+    """Kuryeye atanan siparişleri getir"""
+    try:
+        from ..utils.database_async import fetch_all
+        
+        rows = await fetch_all("""
+            SELECT 
+                o.id as order_id,
+                o.code as order_code,
+                o.status as order_status,
+                o.type as order_type,
+                o.courier_id,
+                o.created_at as order_created_at,
+                o.updated_at as order_updated_at,
+                o.delivery_address,
+                o.customer as customer_name,
+                o.phone as customer_phone,
+                o.amount,
+                r.name as restaurant_name,
+                r.address_line1 as restaurant_address,
+                r.phone as restaurant_phone
+            FROM orders o
+            LEFT JOIN restaurants r ON r.id = o.restaurant_id
+            WHERE o.courier_id = $1
+            ORDER BY o.created_at DESC
+            LIMIT $2 OFFSET $3
+        """, courier_id, limit, offset)
+        
+        # asyncpg.Record objelerini dict'e çevir
+        result = []
+        if rows:
+            for row in rows:
+                result.append(dict(row))
+        
+        return result
+        
+    except Exception as e:
+        return []

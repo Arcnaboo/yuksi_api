@@ -146,3 +146,22 @@ async def get_order_history(
 
 
 
+# order_controller.py kle
+
+async def get_courier_assigned_orders(
+    courier_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """Kuryeye atanan siparişleri getir controller"""
+    orders = await svc.get_courier_assigned_orders(courier_id, limit, offset)
+    
+    return {
+        "success": True, 
+        "message": "Courier assigned orders retrieved successfully", 
+        "data": {
+            "orders": orders,
+            "total": len(orders)
+        }
+    }
+
