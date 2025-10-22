@@ -5,9 +5,9 @@ import uuid
 
 req = PaymentRequest(
     user_ip="78.183.89.120",
-    merchant_oid="arda1234567",
+    merchant_oid="arda12345678",
     email="a@b.com",
-    payment_amount=50,        # 100.00 TL (kuruş pricing)
+    payment_amount=10,        # 100.00 TL (kuruş pricing)
     currency="TL",
     test_mode=0,                 # keep as you had it (0 or 1 depending on sandbox)
     non_3d=0,                    # use 3D flow
