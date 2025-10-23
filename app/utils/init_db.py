@@ -415,6 +415,23 @@ CREATE TABLE IF NOT EXISTS restaurant_package_prices (
     updated_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS dealers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    surname VARCHAR(100) NOT NULL,
+    address TEXT NOT NULL,
+    account_type VARCHAR(20) NOT NULL,
+    country_id INT NOT NULL,
+    city_id INT NOT NULL,
+    state_id INT NOT NULL,
+    tax_office VARCHAR(100),
+    phone VARCHAR(20),
+    tax_number VARCHAR(20),
+    iban VARCHAR(34),
+    resume TEXT,
+    status VARCHAR(30) DEFAULT 'pendingApproval',
+    created_at TIMESTAMP DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS courier_ratings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
