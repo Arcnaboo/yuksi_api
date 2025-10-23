@@ -1,3 +1,4 @@
+import uuid
 from fastapi import UploadFile, HTTPException
 from app.services.filestack_service import FilestackService
 from app.utils.database_async import fetch_one
@@ -5,6 +6,10 @@ from typing import Dict
 
 # === HANDLE UPLOAD ===
 async def handle_upload(user_id: str, file: UploadFile) -> Dict[str, str]:
+    try :
+        uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user_id")    
     if not file:
         raise HTTPException(status_code=400, detail="File is required")
 

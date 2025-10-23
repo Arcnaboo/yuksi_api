@@ -21,7 +21,7 @@ async def get_states(country_id: int = Query(..., description="Country ID"),
                limit: int = Query(100, ge=1, le=500),
                offset: int = Query(0, ge=0)):
     # ülke var mı?
-    if not get_country_by_id(country_id):
+    if not await get_country_by_id(country_id):
         raise HTTPException(status_code=404, detail="Country not found")
     return await list_states_by_country(country_id, q=q, limit=limit, offset=offset)
 
@@ -31,6 +31,6 @@ async def get_cities(state_id: int = Query(..., description="State ID"),
                limit: int = Query(100, ge=1, le=1000),
                offset: int = Query(0, ge=0)):
     # state var mı?
-    if not get_state_by_id(state_id):
+    if not await get_state_by_id(state_id):
         raise HTTPException(status_code=404, detail="State not found")
     return await list_cities_by_state(state_id, q=q, limit=limit, offset=offset)

@@ -2,6 +2,8 @@ from app.services import carrier_type_service as service
 
 async def create(data):
     id = await service.create_carrier_type(data)
+    if not id:
+        return {"success": False, "message": "Carrier type creation failed", "data": {}}
     return {"success": True, "message": "Carrier type created", "data": {"id": id}}
 
 async def get_all():

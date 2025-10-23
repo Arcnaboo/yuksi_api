@@ -17,6 +17,8 @@ async def create_carrier_type(data):
         data.km_price,
         str(data.image_file_id) if data.image_file_id else None,
     )
+    if not row:
+        return None
     return row["id"]
 
 
