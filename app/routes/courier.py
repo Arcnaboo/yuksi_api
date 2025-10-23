@@ -288,7 +288,7 @@ async def get_courier_profile(
     },
 )
 
-async def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))):
+async def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin","Restaurant"]))):
     return await ctrl.list_couriers()
 
 @router.get(
@@ -381,7 +381,7 @@ async def list_couriers( _claims = Depends(auth_controller.require_roles(["Couri
 )
 async def get_courier_documents(
     user_id: UUID = Path(..., description="The UUID of the courier user"),
-    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
+    _claims = Depends(auth_controller.require_roles(["Courier","Admin","Restaurant"]))
 ):
     return await ctrl.get_courier_documents(user_id)
 
