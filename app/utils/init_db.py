@@ -445,6 +445,15 @@ CREATE TABLE IF NOT EXISTS courier_ratings (
     UNIQUE(restaurant_id, courier_id, order_id)
 );
 
+CREATE TABLE IF NOT EXISTS courier_packages (
+    id SERIAL PRIMARY KEY,
+    package_name VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    price NUMERIC(10,2) NOT NULL,
+    duration_days INT NOT NULL
+);
+
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
