@@ -3,7 +3,7 @@ from app.controllers import dealer_controller as ctrl
 from app.models.dealer_model import DealerCreate, DealerUpdate, DealerStatusUpdate
 from app.controllers.auth_controller import require_roles
 
-router = APIRouter(prefix="/admin/dealers", tags=["Dealers"])
+router = APIRouter(prefix="/api/admin/dealers", tags=["Dealers"])
 
 # ✅ CREATE
 @router.post(
