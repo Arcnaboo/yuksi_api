@@ -6,7 +6,7 @@ from ..utils.database import db_cursor
 
 # ==================== KURYE ATAMA SERVISLERI ====================
 
-def assign_courier_to_order(
+async def assign_courier_to_order(
     order_id: str,
     restaurant_id: str,
     courier_id: str
@@ -49,7 +49,7 @@ def assign_courier_to_order(
 
 # ==================== KURYE PUANLAMA SERVISLERI ====================
 
-def create_courier_rating(
+async def create_courier_rating(
     restaurant_id: str,
     courier_id: str,
     order_id: str,
@@ -93,7 +93,7 @@ def create_courier_rating(
     except Exception as e:
         return None, str(e)
 
-def update_courier_rating(
+async def update_courier_rating(
     rating_id: str,
     restaurant_id: str,
     rating: Optional[int] = None,
@@ -143,7 +143,7 @@ def update_courier_rating(
     except Exception as e:
         return False, str(e)
 
-def delete_courier_rating(
+async def delete_courier_rating(
     rating_id: str,
     restaurant_id: str
 ) -> Tuple[bool, Optional[str]]:
@@ -163,7 +163,7 @@ def delete_courier_rating(
     except Exception as e:
         return False, str(e)
 
-def get_courier_ratings(
+async def get_courier_ratings(
     restaurant_id: str,
     courier_id: Optional[str] = None,
     limit: int = 50,
@@ -203,7 +203,7 @@ def get_courier_ratings(
         
         return cur.fetchall() or []
 
-def get_courier_rating_summary(courier_id: str) -> Optional[Dict[str, Any]]:
+async def get_courier_rating_summary(courier_id: str) -> Optional[Dict[str, Any]]:
     """Kurye puanlama özeti"""
     with db_cursor(dict_cursor=True) as cur:
         # Kurye bilgileri
@@ -255,7 +255,7 @@ def get_courier_rating_summary(courier_id: str) -> Optional[Dict[str, Any]]:
             "recent_ratings": recent_ratings
         }
 
-def get_available_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+async def get_available_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
     """Mevcut kuryeleri getir"""
     with db_cursor(dict_cursor=True) as cur:
         cur.execute("""

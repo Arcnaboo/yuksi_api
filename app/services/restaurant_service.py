@@ -4,7 +4,10 @@ from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.security import hash_pwd
 
 
+<<<<<<< HEAD
 # === REGISTER ===
+=======
+>>>>>>> master
 async def restaurant_register(
     email: str,
     password: str,
@@ -68,6 +71,7 @@ async def restaurant_register(
         return None, str(e)
 
 
+<<<<<<< HEAD
 # === LIST RESTAURANTS ===
 async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     query = """
@@ -75,6 +79,9 @@ async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, 
         FROM restaurants
         ORDER BY created_at DESC
         LIMIT $1 OFFSET $2;
+=======
+async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+>>>>>>> master
     """
     rows = await fetch_all(query, limit, offset)
     if not rows:

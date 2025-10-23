@@ -3,6 +3,7 @@ import random
 import string
 from datetime import datetime
 import uuid
+from app.utils.database import db_cursor
 from app.utils.database_async import fetch_one, fetch_all, execute
 
 
@@ -76,6 +77,39 @@ async def create_order(
 
 # === Sipariş Detayı ===
 async def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any]]:
+    """Sipariş detayını getir"""
+    with db_cursor(dict_cursor=True) as cur:
+        # Sipariş bilgileri
+        cur.execute("""
+            SELECT o.*, r.name as restaurant_name
+            FROM orders o
+            LEFT JOIN restaurants r ON r.id = o.restaurant_id
+            WHERE o.id = %s AND o.restaurant_id = %s
+        """, (order_id, restaurant_id))
+        
+        order = cur.fetchone()
+        if not order:
+            return None
+        
+        # Ürünleri getir
+        cur.execute("""
+            SELECT id, product_name, price, quantity, total
+            FROM order_items
+            WHERE order_id = %s
+            ORDER BY created_at
+        """, (order_id,))
+        
+        items = cur.fetchall()
+        order['items'] = items or []
+        
+        return order
+
+async def update_order(
+    order_id: str,
+    restaurant_id: str,
+    **kwargs
+) -> Tuple[bool, Optional[str]]:
+    """Sipariş güncelle"""
     try:
         uuid.UUID(order_id)
         uuid.UUID(restaurant_id)
@@ -159,6 +193,7 @@ async def update_order(order_id: str, restaurant_id: str, **kwargs) -> Tuple[boo
 
 # === Sipariş Sil ===
 async def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optional[str]]:
+    """Sipariş sil"""
     try:
         uuid.UUID(order_id)
         uuid.UUID(restaurant_id)
@@ -178,6 +213,69 @@ async def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optiona
 
 # === Sipariş Listesi ===
 async def list_orders(
+    restaurant_id: str,
+    status: Optional[str] = None,
+    order_type: Optional[str] = None,
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+) -> Tuple[List[Dict[str, Any]], int, float]:
+    """Sipariş listesi"""
+    with db_cursor(dict_cursor=True) as cur:
+        # WHERE koşulları
+        where_conditions = ["o.restaurant_id = %s"]
+        params = [restaurant_id]
+        
+        if status:
+            where_conditions.append("o.status = %s")
+            params.append(status)
+        
+        if order_type:
+            where_conditions.append("o.type = %s")
+            params.append(order_type)
+        
+        if search:
+            where_conditions.append("(o.code ILIKE %s OR o.customer ILIKE %s OR o.phone ILIKE %s)")
+            search_param = f"%{search}%"
+            params.extend([search_param, search_param, search_param])
+        
+        if start_date:
+            where_conditions.append("o.created_at >= %s")
+            params.append(start_date)
+        
+        if end_date:
+            where_conditions.append("o.created_at <= %s")
+            params.append(end_date)
+        
+        where_clause = " AND ".join(where_conditions)
+        
+        # Siparişleri getir
+        cur.execute(f"""
+            SELECT o.id, o.code, o.customer, o.phone, o.address, o.delivery_address, o.type, o.amount, o.status, o.created_at
+            FROM orders o
+            WHERE {where_clause}
+            ORDER BY o.created_at DESC
+            LIMIT %s OFFSET %s
+        """, params + [limit, offset])
+        
+        orders = cur.fetchall()
+        
+        # Toplam sayı
+        cur.execute(f"""
+            SELECT COUNT(*) as total_count, COALESCE(SUM(amount), 0) as total_amount
+            FROM orders o
+            WHERE {where_clause}
+        """, params)
+        
+        stats = cur.fetchone()
+        total_count = stats['total_count']
+        total_amount = float(stats['total_amount'])
+        
+        return orders, total_count, total_amount
+
+async def get_order_history(
     restaurant_id: str,
     status: Optional[str] = None,
     order_type: Optional[str] = None,
@@ -260,7 +358,7 @@ async def get_order_history(
         return [], 0, 0
     return await list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
     """Sipariş geçmişi (list_orders ile aynı ama farklı response formatı)"""
-    return list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
+    return await list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
 
 
 
