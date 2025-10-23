@@ -24,9 +24,9 @@ router = APIRouter(
     description="Yeni restoran kaydı oluşturur.",
     response_model=RestaurantRegisterResponse
 )
-def restaurant_register(req: RestaurantRegisterReq):
+async def restaurant_register(req: RestaurantRegisterReq):
     """Restaurant kayıt endpoint"""
-    result = ctrl.restaurant_register(req)
+    result = await ctrl.restaurant_register(req)
     if not result.get("success"):
         return result
     return result["data"]
@@ -40,9 +40,9 @@ def restaurant_register(req: RestaurantRegisterReq):
     description="Tüm restoranları listeler.",
     response_model=List[RestaurantListItem]
 )
-def list_restaurants():
+async def list_restaurants():
     """Restaurant listesi endpoint"""
-    result = ctrl.list_restaurants()
+    result = await ctrl.list_restaurants()
     return result["data"]
 
 

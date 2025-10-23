@@ -3,7 +3,7 @@ from ..utils.database import db_cursor
 from ..utils.security import hash_pwd
 
 
-def restaurant_register(
+async def restaurant_register(
     email: str,
     password: str,
     phone: str,
@@ -79,7 +79,7 @@ def restaurant_register(
         return restaurant_data, None
 
 
-def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
     Tüm restoranları listeler.
     Returns: List of restaurant dicts

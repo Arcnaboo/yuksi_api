@@ -13,7 +13,7 @@ def generate_order_code() -> str:
     random_part = ''.join(random.choices(string.digits, k=3))
     return f"ORD-{date_part}{random_part}"
 
-def create_order(
+async def create_order(
     restaurant_id: str,
     customer: str,
     phone: str,
@@ -72,7 +72,7 @@ def create_order(
     except Exception as e:
         return None, str(e)
 
-def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any]]:
+async def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any]]:
     """Sipariş detayını getir"""
     with db_cursor(dict_cursor=True) as cur:
         # Sipariş bilgileri
@@ -100,7 +100,7 @@ def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any]]:
         
         return order
 
-def update_order(
+async def update_order(
     order_id: str,
     restaurant_id: str,
     **kwargs
@@ -151,7 +151,7 @@ def update_order(
     except Exception as e:
         return False, str(e)
 
-def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optional[str]]:
+async def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optional[str]]:
     """Sipariş sil"""
     try:
         with db_cursor() as cur:
@@ -162,7 +162,7 @@ def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optional[str]
     except Exception as e:
         return False, str(e)
 
-def list_orders(
+async def list_orders(
     restaurant_id: str,
     status: Optional[str] = None,
     order_type: Optional[str] = None,
@@ -225,7 +225,7 @@ def list_orders(
         
         return orders, total_count, total_amount
 
-def get_order_history(
+async def get_order_history(
     restaurant_id: str,
     status: Optional[str] = None,
     order_type: Optional[str] = None,
@@ -236,7 +236,7 @@ def get_order_history(
     offset: int = 0
 ) -> Tuple[List[Dict[str, Any]], int, float]:
     """Sipariş geçmişi (list_orders ile aynı ama farklı response formatı)"""
-    return list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
+    return await list_orders(restaurant_id, status, order_type, search, start_date, end_date, limit, offset)
 
 
 

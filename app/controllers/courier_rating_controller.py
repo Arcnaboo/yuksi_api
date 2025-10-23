@@ -11,7 +11,7 @@ from ..models.courier_rating_model import (
 
 async def assign_courier_to_order(restaurant_id: str, order_id: str, courier_id: str) -> Dict[str, Any]:
     """Siparişe kurye ata controller"""
-    success, error = svc.assign_courier_to_order(order_id, restaurant_id, courier_id)
+    success, error = await svc.assign_courier_to_order(order_id, restaurant_id, courier_id)
     
     if not success:
         return {"success": False, "message": error, "data": {}}
@@ -22,7 +22,7 @@ async def assign_courier_to_order(restaurant_id: str, order_id: str, courier_id:
 
 async def create_courier_rating(restaurant_id: str, courier_id: str, req: CourierRatingCreateReq) -> Dict[str, Any]:
     """Kurye puanlama oluştur controller"""
-    result, error = svc.create_courier_rating(
+    result, error = await svc.create_courier_rating(
         restaurant_id=restaurant_id,
         courier_id=courier_id,
         order_id=str(req.order_id),
@@ -41,7 +41,7 @@ async def update_courier_rating(
     req: CourierRatingUpdateReq
 ) -> Dict[str, Any]:
     """Kurye puanlamasını güncelle controller"""
-    success, error = svc.update_courier_rating(
+    success, error = await svc.update_courier_rating(
         rating_id=rating_id,
         restaurant_id=restaurant_id,
         rating=req.rating,
@@ -55,7 +55,7 @@ async def update_courier_rating(
 
 async def delete_courier_rating(restaurant_id: str, rating_id: str) -> Dict[str, Any]:
     """Kurye puanlamasını sil controller"""
-    success, error = svc.delete_courier_rating(
+    success, error = await svc.delete_courier_rating(
         rating_id=rating_id,
         restaurant_id=restaurant_id
     )
@@ -72,7 +72,7 @@ async def get_courier_ratings(
     offset: int = 0
 ) -> Dict[str, Any]:
     """Kurye puanlamalarını getir controller"""
-    ratings = svc.get_courier_ratings(
+    ratings = await svc.get_courier_ratings(
         restaurant_id=restaurant_id,
         courier_id=courier_id,
         limit=limit,
@@ -83,7 +83,7 @@ async def get_courier_ratings(
 
 async def get_courier_rating_summary(courier_id: str) -> Dict[str, Any]:
     """Kurye puanlama özeti controller"""
-    summary = svc.get_courier_rating_summary(courier_id=courier_id)
+    summary = await svc.get_courier_rating_summary(courier_id=courier_id)
     
     if not summary:
         return {"success": False, "message": "Courier not found", "data": {}}
@@ -92,7 +92,7 @@ async def get_courier_rating_summary(courier_id: str) -> Dict[str, Any]:
 
 async def get_couriers(restaurant_id: str, limit: int = 50, offset: int = 0) -> Dict[str, Any]:
     """Mevcut kuryeleri getir controller"""
-    couriers = svc.get_available_couriers(limit=limit, offset=offset)
+    couriers = await svc.get_available_couriers(limit=limit, offset=offset)
     
     return {"success": True, "message": "Couriers retrieved", "data": couriers}
 
