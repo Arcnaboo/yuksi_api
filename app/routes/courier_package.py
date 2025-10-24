@@ -3,25 +3,25 @@ from app.controllers import courier_package_controller as ctrl
 from app.models.courier_package_model import CourierPackageCreate, CourierPackageUpdate
 from app.controllers.auth_controller import require_roles
 
-router = APIRouter(prefix="/api/admin/packages", tags=["Courier Packages"])
+router = APIRouter(prefix="/api/packages", tags=["Courier Packages"])
 
-# ✅ CREATE
+# ✅ CREATE (Sadece Admin)
 @router.post(
     "",
-    summary="Create Courier Package",
-    description="Creates a new courier package.",
+    summary="Yeni Kurye Paketi Oluştur",
+    description="Admin yeni bir kurye paketi ekleyebilir.",
     dependencies=[Depends(require_roles(["Admin"]))],
 )
 async def create_package(body: CourierPackageCreate):
     return await ctrl.create_package(body.dict())
 
 
-# ✅ LIST
+# ✅ LIST (Admin + Courier)
 @router.get(
     "",
-    summary="List Courier Packages",
-    description="Lists all courier packages.",
-    dependencies=[Depends(require_roles(["Admin"]))],
+    summary="Paketleri Listele",
+    description="Admin veya Courier mevcut paketleri görüntüleyebilir.",
+    dependencies=[Depends(require_roles(["Admin", "Courier"]))],
 )
 async def get_packages(
     limit: int = Query(100, ge=1, le=500),
@@ -30,37 +30,37 @@ async def get_packages(
     return await ctrl.list_packages(limit, offset)
 
 
-# ✅ GET BY ID
+# ✅ GET BY ID (Admin + Courier)
 @router.get(
     "/{package_id}",
-    summary="Get Courier Package by ID",
-    description="Returns a single courier package by its ID.",
-    dependencies=[Depends(require_roles(["Admin"]))],
+    summary="Paket Detayı",
+    description="Admin veya Courier belirli bir paketin detayını görebilir.",
+    dependencies=[Depends(require_roles(["Admin", "Courier"]))],
 )
-async def get_package(package_id: int = Path(..., ge=1)):
+async def get_package(package_id: str = Path(..., description="UUID formatında paket kimliği")):
     return await ctrl.get_package_by_id(package_id)
 
 
-# ✅ UPDATE
+# ✅ UPDATE (Sadece Admin)
 @router.put(
     "/{package_id}",
-    summary="Update Courier Package",
-    description="Updates a courier package.",
+    summary="Paketi Güncelle",
+    description="Admin paket bilgilerini günceller.",
     dependencies=[Depends(require_roles(["Admin"]))],
 )
 async def update_package(
-    package_id: int = Path(..., ge=1),
+    package_id: str = Path(..., description="UUID formatında paket kimliği"),
     body: CourierPackageUpdate = ...,
 ):
     return await ctrl.update_package(package_id, body.dict(exclude_unset=True))
 
 
-# ✅ DELETE
+# ✅ DELETE (Sadece Admin)
 @router.delete(
     "/{package_id}",
-    summary="Delete Courier Package",
-    description="Deletes a courier package.",
+    summary="Paketi Sil",
+    description="Admin mevcut bir paketi siler.",
     dependencies=[Depends(require_roles(["Admin"]))],
 )
-async def delete_package(package_id: int = Path(..., ge=1)):
+async def delete_package(package_id: str = Path(..., description="UUID formatında paket kimliği")):
     return await ctrl.delete_package(package_id)

@@ -446,7 +446,7 @@ CREATE TABLE IF NOT EXISTS courier_ratings (
 );
 
 CREATE TABLE IF NOT EXISTS courier_packages (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     package_name VARCHAR(100) NOT NULL,
     description VARCHAR(255),
     price NUMERIC(10,2) NOT NULL,

@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from app.utils.database import db_cursor
-
+import uuid
 
 # ✅ CREATE
 async def create_package(data: dict) -> Dict[str, Any]:
@@ -29,7 +29,7 @@ async def list_packages(limit: int = 100, offset: int = 0) -> Dict[str, Any]:
                     price AS price,
                     duration_days AS durationDays
                 FROM courier_packages
-                ORDER BY id DESC
+                ORDER BY package_name ASC
                 LIMIT %s OFFSET %s;
             """, (limit, offset))
             rows = cur.fetchall() or []
@@ -39,8 +39,9 @@ async def list_packages(limit: int = 100, offset: int = 0) -> Dict[str, Any]:
 
 
 # ✅ GET BY ID
-async def get_package_by_id(package_id: int) -> Dict[str, Any]:
+async def get_package_by_id(package_id: str) -> Dict[str, Any]:
     try:
+        uuid.UUID(package_id)  # Geçerli UUID kontrolü
         with db_cursor(dict_cursor=True) as cur:
             cur.execute("""
                 SELECT
@@ -61,11 +62,12 @@ async def get_package_by_id(package_id: int) -> Dict[str, Any]:
 
 
 # ✅ UPDATE
-async def update_package(package_id: int, fields: Dict[str, Any]) -> Dict[str, Any]:
+async def update_package(package_id: str, fields: Dict[str, Any]) -> Dict[str, Any]:
     try:
         if not fields:
             return {"success": False, "message": "No fields to update", "data": {}}
 
+        uuid.UUID(package_id)
         set_clause = ", ".join([f"{k} = %({k})s" for k in fields.keys()])
         params = {**fields, "id": package_id}
 
@@ -86,8 +88,9 @@ async def update_package(package_id: int, fields: Dict[str, Any]) -> Dict[str, A
 
 
 # ✅ DELETE
-async def delete_package(package_id: int) -> Dict[str, Any]:
+async def delete_package(package_id: str) -> Dict[str, Any]:
     try:
+        uuid.UUID(package_id)
         with db_cursor(dict_cursor=True) as cur:
             cur.execute("""
                 DELETE FROM courier_packages
