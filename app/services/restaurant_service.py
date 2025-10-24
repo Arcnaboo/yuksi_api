@@ -4,6 +4,7 @@ from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.security import hash_pwd
 
 
+
 # === REGISTER ===
 async def restaurant_register(
     email: str,
@@ -321,3 +322,45 @@ async def get_restaurant_courier_stats(restaurant_id: str) -> Optional[Dict[str,
     except Exception as e:
         return None
     
+async def admin_update_restaurant(restaurant_id: str, fields: Dict[str, Any]) -> Tuple[bool, str | None]:
+    """Admin tarafından restoran güncelleme"""
+    try:
+        if not fields:
+            return False, "No fields to update"
+
+        # Şifre yok, sadece tabloya ait alanlar
+        update_fields = []
+        params = []
+        i = 1
+
+        for key, value in fields.items():
+            if key in ["opening_hour", "closing_hour"] and isinstance(value, str):
+                h, m = value.split(":")
+                value = time(int(h), int(m))
+            update_fields.append(f"{key} = ${i}")
+            params.append(value)
+            i += 1
+
+        params.append(restaurant_id)
+        query = f"UPDATE restaurants SET {', '.join(update_fields)} WHERE id = ${i};"
+
+        result = await execute(query, *params)
+        if result.endswith(" 0"):
+            return False, "Restaurant not found"
+
+        return True, None
+
+    except Exception as e:
+        return False, str(e)
+
+
+# === ADMIN DELETE RESTAURANT ===
+async def admin_delete_restaurant(restaurant_id: str) -> Tuple[bool, Optional[str]]:
+    """Admin tarafından restoran silme"""
+    try:
+        result = await execute("DELETE FROM restaurants WHERE id = $1;", restaurant_id)
+        if result == "DELETE 0":
+            return False, "Restaurant not found"
+        return True, None
+    except Exception as e:
+        return False, str(e)

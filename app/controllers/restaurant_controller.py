@@ -113,3 +113,17 @@ async def remove_courier_from_restaurant(
         return {"success": False, "message": error, "data": {}}
     
     return {"success": True, "message": "Courier removed from restaurant successfully", "data": {}}
+async def admin_update_restaurant(restaurant_id: str, fields: Dict[str, Any]) -> Dict[str, Any]:
+    """Admin restoran güncelleme controller"""
+    success, error = await svc.admin_update_restaurant(restaurant_id, fields)
+    if not success:
+        return {"success": False, "message": error or "Update failed", "data": {}}
+    return {"success": True, "message": "Restaurant updated successfully", "data": {}}
+
+
+async def admin_delete_restaurant(restaurant_id: str) -> Dict[str, Any]:
+    """Admin restoran silme controller"""
+    success, error = await svc.admin_delete_restaurant(restaurant_id)
+    if not success:
+        return {"success": False, "message": error or "Delete failed", "data": {}}
+    return {"success": True, "message": "Restaurant deleted successfully", "data": {}}

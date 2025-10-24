@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Body
 from typing import Any, List, Union
 from fastapi import APIRouter, Body, Path, Query, Depends, HTTPException
+from ..controllers.auth_controller import require_roles
+from ..models.restaurant_model import RestaurantAdminUpdateReq
 from typing import List, Dict, Any, Optional
 from ..models.restaurant_model import (
     RestaurantRegisterReq,
@@ -126,7 +128,35 @@ async def remove_courier_from_restaurant(
     return await ctrl.remove_courier_from_restaurant(restaurant_id, assignment_id)
 
 
+# ✅ ADMIN UPDATE RESTAURANT
+@router.put(
+    "/{restaurant_id}",
+    summary="Admin: Restoran Güncelle",
+    description="Yalnızca Admin tarafından restoran bilgilerini günceller.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+    response_model=Dict[str, Any]
+)
+async def admin_update_restaurant(
+    restaurant_id: str = Path(..., description="Restoran UUID"),
+    body: RestaurantAdminUpdateReq = ...,
+):
+    """Admin restoran güncelleme endpoint"""
+    return await ctrl.admin_update_restaurant(restaurant_id, body.dict(exclude_unset=True))
 
+
+# ✅ ADMIN DELETE RESTAURANT
+@router.delete(
+    "/{restaurant_id}",
+    summary="Admin: Restoran Sil",
+    description="Yalnızca Admin tarafından restoranı siler.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+    response_model=Dict[str, Any]
+)
+async def admin_delete_restaurant(
+    restaurant_id: str = Path(..., description="Restoran UUID")
+):
+    """Admin restoran silme endpoint"""
+    return await ctrl.admin_delete_restaurant(restaurant_id)
 
 
 

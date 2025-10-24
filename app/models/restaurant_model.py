@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from uuid import UUID
-
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import Optional
 
 class RestaurantRegisterReq(BaseModel):
     """Restaurant kayıt request modeli"""
@@ -63,3 +64,39 @@ class RestaurantProfileUpdateReq(BaseModel):
     closingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Kapanış saati (HH:MM)")
     model_config = ConfigDict(extra="forbid")
 
+
+
+class RestaurantAdminUpdateReq(BaseModel):
+    """Admin tarafından restoran güncelleme modeli (tablo yapısına birebir uyumlu)"""
+    email: Optional[EmailStr] = Field(None, description="Restoran e-posta adresi")
+    phone: Optional[str] = Field(None, min_length=7, max_length=20, description="Telefon numarası")
+    country_id: Optional[int] = Field(None, ge=1, description="Ülke ID")
+    name: Optional[str] = Field(None, description="Restoran adı")
+    contact_person: Optional[str] = Field(None, description="İletişim kişisi")
+    tax_number: Optional[str] = Field(None, description="Vergi numarası")
+    address_line1: Optional[str] = Field(None, description="Adres satırı 1")
+    address_line2: Optional[str] = Field(None, description="Adres satırı 2")
+    state_id: Optional[int] = Field(None, ge=1, description="İlçe ID")
+    city_id: Optional[int] = Field(None, ge=1, description="Şehir ID")
+    opening_hour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Açılış saati (HH:MM)")
+    closing_hour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Kapanış saati (HH:MM)")
+
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "example": {
+                "email": "info@sofradan.com",
+                "phone": "+905551234567",
+                "country_id": 225,
+                "name": "Sofradan Bursa Şubesi",
+                "contact_person": "Ali Kaya",
+                "tax_number": "1234567890",
+                "address_line1": "Yeni Mahalle 45. Sokak No:12",
+                "address_line2": "Kat:1 Daire:3",
+                "state_id": 101,
+                "city_id": 6,
+                "opening_hour": "09:00",
+                "closing_hour": "23:00"
+            }
+        }
+    )
