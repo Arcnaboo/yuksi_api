@@ -456,11 +456,12 @@ CREATE TABLE IF NOT EXISTS courier_packages (
 CREATE TABLE IF NOT EXISTS courier_package_subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     courier_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
-    package_id INT REFERENCES courier_packages(id) ON DELETE CASCADE,
+    package_id UUID REFERENCES courier_packages(id) ON DELETE CASCADE,
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS admin_jobs (

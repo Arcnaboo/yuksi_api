@@ -19,9 +19,9 @@ async def create_package(body: CourierPackageCreate):
 # ✅ LIST (Admin + Courier)
 @router.get(
     "",
-    summary="List Courier Packages",
-    description="Lists all courier packages.",
-    dependencies=[Depends(require_roles(["Admin","Courier"]))],
+    summary="Paketleri Listele",
+    description="Admin veya Courier mevcut paketleri görüntüleyebilir.",
+    dependencies=[Depends(require_roles(["Admin", "Courier"]))],
 )
 async def get_packages(
     limit: int = Query(100, ge=1, le=500),
