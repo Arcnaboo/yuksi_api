@@ -453,6 +453,25 @@ CREATE TABLE IF NOT EXISTS courier_packages (
     duration_days INT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS admin_jobs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delivery_type TEXT NOT NULL,
+    carrier_type TEXT NOT NULL,
+    vehicle_type TEXT NOT NULL,
+    pickup_address TEXT NOT NULL,
+    pickup_coordinates JSONB NOT NULL,
+    dropoff_address TEXT NOT NULL,
+    dropoff_coordinates JSONB NOT NULL,
+    special_notes TEXT,
+    campaign_code TEXT,
+    extra_services JSONB,
+    extra_services_total NUMERIC DEFAULT 0,
+    total_price NUMERIC NOT NULL,
+    payment_method TEXT NOT NULL,
+    image_file_ids JSONB DEFAULT '[]',
+    created_by_admin BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
