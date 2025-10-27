@@ -5,6 +5,41 @@ from ..models.order_model import (
     OrderCreateReq, OrderUpdateReq, OrderResponse, OrderHistoryItem, OrderListResponse
 )
 
+async def reject_order_by_courier(
+    courier_id: str,
+    order_id: str
+) -> Dict[str, Any]:
+    success, error = await svc.reject_order_by_courier(courier_id, order_id)
+    if not success:
+        return {"success": False, "message": error, "data": {}}
+    return {"success": True, "message": "Order rejected successfully", "data": {}}
+
+
+async def accept_order_by_courier(
+    courier_id: str,
+    order_id: str
+) -> Dict[str, Any]:
+    success, error = await svc.accept_order_by_courier(courier_id, order_id)
+    if not success:
+        return {"success": False, "message": error, "data": {}}
+    return {"success": True, "message": "Order accepted successfully", "data": {}}
+
+async def get_courier_orders_log(
+    courier_id: str,
+    limit: int = 50,
+    offset: int = 0
+    ) -> Dict[str, Any]:
+    logs, total_count = await svc.get_courier_orders_log(courier_id, limit, offset)
+    return {
+        "success": True,
+        "message": "Courier orders log retrieved successfully",
+        "data": {
+            "logs": logs,
+            "total_count": total_count
+        }
+    }
+
+
 async def create_order(restaurant_id: str, req: OrderCreateReq) -> Dict[str, Any]:
     """Sipariş oluştur controller"""
     # Ürünleri dict'e çevir

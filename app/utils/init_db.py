@@ -48,6 +48,10 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
     CREATE TYPE courier_document_status AS ENUM ('evrak_bekleniyor', 'inceleme_bekleniyor', 'eksik_belge', 'reddedildi', 'onaylandi');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE courier_order_action AS ENUM ('kabul_etti','reddetti');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
 # -----------------------------------------------------------
@@ -311,6 +315,15 @@ CREATE TABLE IF NOT EXISTS orders (
     special_requests TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS courier_orders_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    courier_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    action courier_order_action NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(courier_id, order_id)
 );
 
 CREATE TABLE IF NOT EXISTS order_items (

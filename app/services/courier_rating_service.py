@@ -23,7 +23,7 @@ async def assign_courier_to_order(
             order = cur.fetchone()
             if not order:
                 return False, "Order not found"
-            
+            print(order)
             if order[1] != 'paket_servis':
                 return False, "Only package service orders can be assigned to couriers"
             

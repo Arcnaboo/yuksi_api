@@ -462,3 +462,124 @@ async def get_order_courier_gps(order_id: str, restaurant_id: str) -> Tuple[Opti
     except Exception as e:
         print(f"Error getting order courier GPS: {e}")
         return None, str(e)
+    
+async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool, Optional[str]]:
+    try:
+        uuid.UUID(courier_id)
+        uuid.UUID(order_id)
+    except:
+        return False, "Hatalı UUID"  
+    try:
+        order = await fetch_one(
+            "SELECT id FROM orders WHERE id=$1 AND courier_id=$2;",
+            order_id, courier_id
+        )
+        if not order:
+            return False, "Sipariş bulunamadı veya kurye yetkili değil"
+
+        await execute(
+            """
+            INSERT INTO courier_orders_log (courier_id, order_id, action)
+            VALUES ($1, $2, 'reddetti')
+            ON CONFLICT (courier_id, order_id) DO NOTHING;
+            """,
+            courier_id, order_id
+        )
+
+        await execute(
+            """
+            UPDATE orders
+            SET courier_id = NULL, status = 'kurye_cagrildi', updated_at = NOW()
+            WHERE id = $1;
+            """,
+            order_id
+        )
+
+        return True, None
+
+    except Exception as e:
+        return False, str(e)
+    
+async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool, Optional[str]]:
+    try:
+        uuid.UUID(courier_id)
+        uuid.UUID(order_id)
+    except:
+        return False, "Hatalı UUID"  
+    try:
+        order = await fetch_one(
+            "SELECT id FROM orders WHERE id=$1 AND courier_id = $2;",
+            order_id, courier_id
+        )
+        if not order:
+            return False, "Sipariş bulunamadı veya zaten bir kurye tarafından kabul edildi"
+
+        await execute(
+            """
+            INSERT INTO courier_orders_log (courier_id, order_id, action)
+            VALUES ($1, $2, 'kabul_etti')
+            ON CONFLICT (courier_id, order_id) DO NOTHING;
+            """,
+            courier_id, order_id
+        )
+
+        await execute(
+            """
+            UPDATE orders
+            SET status = 'kuryeye_verildi', updated_at = NOW()
+            WHERE id = $1;
+            """,
+            order_id
+        )
+
+        return True, None
+
+    except Exception as e:
+        return False, str(e)
+    
+
+async def get_courier_orders_log(
+    courier_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> Tuple[List[Dict[str, Any]], int]:
+    try:
+        uuid.UUID(courier_id)
+    except Exception:
+        return [], 0
+
+    offset_value = max(0, int(offset or 0))
+    limit_value = int(limit or 50)
+    if limit_value <= 0 or limit_value > 100:
+        limit_value = 50
+
+    try:
+        rows = await fetch_all("""
+            SELECT 
+                col.id,
+                col.order_id,
+                col.action,
+                col.created_at,
+                o.code   AS order_code,
+                o.status AS order_status,
+                o.type   AS order_type,
+                o.amount AS order_amount,
+                r.name   AS restaurant_name,
+                COUNT(*) OVER() AS total_count
+            FROM courier_orders_log AS col
+            LEFT JOIN orders      AS o ON o.id = col.order_id
+            LEFT JOIN restaurants AS r ON r.id = o.restaurant_id
+            WHERE col.courier_id = $1
+            ORDER BY col.created_at DESC NULLS LAST
+            LIMIT $2 OFFSET $3
+        """, courier_id, limit_value, offset_value)
+
+        logs = [dict(row) for row in rows] if rows else []
+        total_count = int(rows[0]["total_count"]) if rows else 0
+        for item in logs:
+            item.pop("total_count", None)
+
+        return logs, total_count
+
+    except Exception:
+        return [], 0

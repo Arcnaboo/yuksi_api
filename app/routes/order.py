@@ -89,7 +89,43 @@ async def get_order_history(
     )
 
 
+@router.post(
+    "/courier/{courier_id}/orders/{order_id}/reject",
+    summary="Reject Order by Courier",
+    description="Kuryenin bir siparişi reddetmesi",
+    response_model=dict
+)
+async def reject_order_by_courier(
+    courier_id: str = Path(..., description="Courier ID"),
+    order_id: str = Path(..., description="Order ID")
+):
+    return await ctrl.reject_order_by_courier(courier_id, order_id)
 
+
+@router.post(
+    "/courier/{courier_id}/orders/{order_id}/accept",
+    summary="Accept Order by Courier",
+    description="Kuryenin bir siparişi kabul etmesi",
+    response_model=dict
+)
+async def accept_order_by_courier(
+    courier_id: str = Path(..., description="Courier ID"),
+    order_id: str = Path(..., description="Order ID")
+):
+    return await ctrl.accept_order_by_courier(courier_id, order_id)
+
+@router.get(
+    "/courier/{courier_id}/orders-log",
+    summary="Get Courier Orders Log",
+    description="Kuryenin sipariş kabul/red loglarını getirir.",
+    response_model=dict
+)
+async def get_courier_orders_log(
+    courier_id: str = Path(..., description="Courier ID"),
+    limit: int = Query(50, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Page offset")
+):
+    return await ctrl.get_courier_orders_log(courier_id, limit, offset)
 
 # order.py'nin sonuna ekle
 
