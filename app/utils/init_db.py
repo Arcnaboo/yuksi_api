@@ -428,6 +428,34 @@ CREATE TABLE IF NOT EXISTS restaurant_package_prices (
     updated_at TIMESTAMP DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS companies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_tracking_no TEXT NOT NULL UNIQUE,               -- 🔒 unique
+    assigned_kilometers INT NOT NULL,
+    consumed_kilometers INT NOT NULL DEFAULT 0,             -- kalan = assigned - consumed
+    special_commission_rate NUMERIC(5,2) NOT NULL,
+    is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+    can_receive_payments BOOLEAN NOT NULL DEFAULT TRUE,
+    city_id BIGINT NOT NULL,
+    district_id BIGINT NOT NULL,
+    location TEXT NOT NULL,
+    company_name TEXT NOT NULL,
+    company_phone TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',                  -- active | inactive
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS company_managers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    name_surname TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(company_id, email)                                -- aynı şirkette aynı email tekil
+);
 
 CREATE TABLE IF NOT EXISTS dealers (
     id SERIAL PRIMARY KEY,
