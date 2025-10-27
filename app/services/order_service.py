@@ -406,3 +406,59 @@ async def get_courier_assigned_orders(
         
     except Exception as e:
         return []
+
+
+async def get_order_courier_gps(order_id: str, restaurant_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Siparişe atanan kuryenin canlı GPS konumunu getir"""
+    try:
+        # Siparişi al ve restoran kontrolü yap
+        order = await fetch_one("""
+            SELECT id, courier_id, restaurant_id, code, customer
+            FROM orders
+            WHERE id = $1 AND restaurant_id = $2
+        """, order_id, restaurant_id)
+        
+        if not order:
+            return None, "Order not found or unauthorized"
+        
+        # Siparişe kurye atanmamış
+        courier_id = order.get("courier_id")
+        if not courier_id:
+            return None, "No courier assigned to this order"
+        
+        # Kuryenin GPS konumunu ve bilgilerini al
+        courier_data = await fetch_one("""
+            SELECT 
+                d.id as courier_id,
+                CONCAT(d.first_name, ' ', d.last_name) as courier_name,
+                d.phone as courier_phone,
+                d.email as courier_email,
+                g.latitude,
+                g.longitude,
+                g.updated_at as location_updated_at
+            FROM drivers d
+            LEFT JOIN gps_table g ON g.driver_id = d.id
+            WHERE d.id = $1
+        """, courier_id)
+        
+        if not courier_data:
+            return None, "Courier not found"
+        
+        # GPS yoksa
+        if courier_data.get("latitude") is None or courier_data.get("longitude") is None:
+            return {
+                "courier_id": courier_data.get("courier_id"),
+                "courier_name": courier_data.get("courier_name"),
+                "courier_phone": courier_data.get("courier_phone"),
+                "courier_email": courier_data.get("courier_email"),
+                "latitude": None,
+                "longitude": None,
+                "location_updated_at": None,
+                "message": "No GPS location available yet"
+            }, None
+        
+        return dict(courier_data), None
+        
+    except Exception as e:
+        print(f"Error getting order courier GPS: {e}")
+        return None, str(e)

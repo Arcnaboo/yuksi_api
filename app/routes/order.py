@@ -108,6 +108,19 @@ async def get_courier_assigned_orders(
     return await ctrl.get_courier_assigned_orders(courier_id, limit, offset)
 
 
+@router.get(
+    "/{restaurant_id}/orders/{order_id}/courier-gps",
+    summary="Get Order Courier GPS Location",
+    description="Siparişe atanan kuryenin canlı GPS konumunu getirir.",
+    response_model=dict
+)
+async def get_order_courier_gps(
+    restaurant_id: str = Path(..., description="Restaurant ID"),
+    order_id: str = Path(..., description="Order ID")
+):
+    """Siparişe atanan kuryenin GPS konumunu getir endpoint"""
+    return await ctrl.get_order_courier_gps(restaurant_id, order_id)
+
 
 
 

@@ -165,3 +165,22 @@ async def get_courier_assigned_orders(
         }
     }
 
+
+async def get_order_courier_gps(
+    restaurant_id: str,
+    order_id: str
+) -> Dict[str, Any]:
+    """Siparişe atanan kuryenin GPS konumunu getir controller"""
+    courier_data, error = await svc.get_order_courier_gps(order_id, restaurant_id)
+    
+    if error:
+        return {"success": False, "message": error, "data": {}}
+    
+    if not courier_data:
+        return {"success": False, "message": "Courier GPS data not found", "data": {}}
+    
+    return {
+        "success": True,
+        "message": "Order courier GPS location retrieved successfully",
+        "data": courier_data
+    }

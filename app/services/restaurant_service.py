@@ -364,3 +364,38 @@ async def admin_delete_restaurant(restaurant_id: str) -> Tuple[bool, Optional[st
         return True, None
     except Exception as e:
         return False, str(e)
+
+
+# === GET RESTAURANT COURIERS GPS ===
+async def get_restaurant_couriers_gps(restaurant_id: str) -> List[Dict[str, Any]]:
+    """Restoranın kuryelerinin canlı GPS konumlarını getir"""
+    try:
+        rows = await fetch_all("""
+            SELECT 
+                d.id as courier_id,
+                CONCAT(d.first_name, ' ', d.last_name) as courier_name,
+                d.phone as courier_phone,
+                d.email as courier_email,
+                g.latitude,
+                g.longitude,
+                g.updated_at as location_updated_at,
+                rc.assigned_at,
+                rc.notes
+            FROM restaurant_couriers rc
+            INNER JOIN drivers d ON d.id = rc.courier_id
+            LEFT JOIN gps_table g ON g.driver_id = d.id
+            WHERE rc.restaurant_id = $1
+            ORDER BY g.updated_at DESC
+        """, restaurant_id)
+        
+        # asyncpg.Record objelerini dict'e çevir
+        result = []
+        if rows:
+            for row in rows:
+                result.append(dict(row))
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error getting restaurant couriers GPS: {e}")
+        return []

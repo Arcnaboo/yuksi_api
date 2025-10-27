@@ -127,3 +127,21 @@ async def admin_delete_restaurant(restaurant_id: str) -> Dict[str, Any]:
     if not success:
         return {"success": False, "message": error or "Delete failed", "data": {}}
     return {"success": True, "message": "Restaurant deleted successfully", "data": {}}
+
+
+async def get_restaurant_couriers_gps(restaurant_id: str) -> Dict[str, Any]:
+    """Restoranın kuryelerinin GPS konumlarını getir controller"""
+    couriers = await svc.get_restaurant_couriers_gps(restaurant_id)
+    
+    if not couriers:
+        return {
+            "success": True,
+            "message": "No couriers found or no GPS data available",
+            "data": {"couriers": []}
+        }
+    
+    return {
+        "success": True,
+        "message": "Restaurant couriers GPS locations retrieved successfully",
+        "data": {"couriers": couriers}
+    }

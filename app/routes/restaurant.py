@@ -159,6 +159,20 @@ async def admin_delete_restaurant(
     return await ctrl.admin_delete_restaurant(restaurant_id)
 
 
+# ✅ GET RESTAURANT COURIERS GPS
+@router.get(
+    "/{restaurant_id}/couriers/gps",
+    summary="Get Restaurant Couriers GPS Locations",
+    description="Restoranın kendi kuryelerinin canlı GPS konumlarını getirir.",
+    response_model=Dict[str, Any]
+)
+async def get_restaurant_couriers_gps(
+    restaurant_id: str = Path(..., description="Restoran UUID")
+):
+    """Restoranın kuryelerinin GPS konumlarını getir endpoint"""
+    return await ctrl.get_restaurant_couriers_gps(restaurant_id)
+
+
 
 # from fastapi import APIRouter, Body
 # from typing import Any, List, Union
