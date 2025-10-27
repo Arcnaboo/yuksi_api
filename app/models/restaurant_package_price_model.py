@@ -1,11 +1,14 @@
 from pydantic import BaseModel
+from uuid import UUID
+from typing import Optional
 
 class RestaurantPackagePriceBase(BaseModel):
-    restaurant_id: str
+    id: Optional[UUID] = None  # ✅ artık UUID
+    restaurant_id: UUID
     unit_price: float
-    min_package: int | None = None
-    max_package: int | None = None
-    note: str | None = None
+    min_package: Optional[int] = None
+    max_package: Optional[int] = None
+    note: Optional[str] = None
 
     class Config:
         json_schema_extra = {

@@ -406,14 +406,15 @@ CREATE TABLE IF NOT EXISTS city_prices (
 );
 
 CREATE TABLE IF NOT EXISTS restaurant_package_prices (
-    id SERIAL PRIMARY KEY,
-    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL UNIQUE REFERENCES restaurants(id) ON DELETE CASCADE,  
     unit_price NUMERIC(10,2) NOT NULL,
     min_package INT DEFAULT 0,
     max_package INT DEFAULT 0,
     note TEXT,
     updated_at TIMESTAMP DEFAULT now()
 );
+
 
 CREATE TABLE IF NOT EXISTS dealers (
     id SERIAL PRIMARY KEY,
