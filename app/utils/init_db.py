@@ -437,7 +437,7 @@ CREATE TABLE IF NOT EXISTS companies (
     is_visible BOOLEAN NOT NULL DEFAULT TRUE,
     can_receive_payments BOOLEAN NOT NULL DEFAULT TRUE,
     city_id BIGINT NOT NULL,
-    district_id BIGINT NOT NULL,
+    state_id BIGINT NOT NULL,
     location TEXT NOT NULL,
     company_name TEXT NOT NULL,
     company_phone TEXT NOT NULL,

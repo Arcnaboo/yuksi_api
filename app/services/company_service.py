@@ -9,7 +9,7 @@ async def create_company(data: Dict[str, Any]) -> Tuple[bool, str | Dict[str, An
         row = await fetch_one("""
             INSERT INTO companies (
                 company_tracking_no, assigned_kilometers, special_commission_rate,
-                is_visible, can_receive_payments, city_id, district_id, location,
+                is_visible, can_receive_payments, city_id, state_id, location,
                 company_name, company_phone, description
             )
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
@@ -21,7 +21,7 @@ async def create_company(data: Dict[str, Any]) -> Tuple[bool, str | Dict[str, An
         data["isVisible"],
         data["canReceivePayments"],
         data["cityId"],
-        data["districtId"],
+        data["stateId"],
         data["location"],
         data["companyName"],
         data["companyPhone"],
@@ -53,10 +53,12 @@ async def list_companies(limit: int, offset: int, city_id: int | None, status: s
                 c.company_name AS "companyName",
                 c.company_phone AS "companyPhone",
                 c.city_id AS "cityId",
-                c.district_id AS "districtId",
+                c.state_id AS "stateId",
                 c.special_commission_rate AS "specialCommissionRate",
                 c.assigned_kilometers AS "assignedKilometers",
                 c.consumed_kilometers AS "consumedKilometers",
+                c.can_receive_payments AS "canReceivePayments",
+                c.is_visible AS "isVisible",
                 (c.assigned_kilometers - c.consumed_kilometers) AS "remainingKilometers",
                 c.status AS "status"
             FROM companies c
@@ -78,10 +80,12 @@ async def get_company(company_id: str) -> Tuple[bool, Dict[str, Any] | str]:
                 c.company_name AS "companyName",
                 c.company_phone AS "companyPhone",
                 c.city_id AS "cityId",
-                c.district_id AS "districtId",
+                c.state_id AS "stateId",
                 c.special_commission_rate AS "specialCommissionRate",
                 c.assigned_kilometers AS "assignedKilometers",
                 c.consumed_kilometers AS "consumedKilometers",
+                c.is_visible AS "isVisible",
+                C.can_receive_payments AS "canReceivePayments",
                 (c.assigned_kilometers - c.consumed_kilometers) AS "remainingKilometers",
                 c.status AS "status",
                 c.is_visible AS "isVisible",
@@ -111,7 +115,7 @@ async def update_company(company_id: str, fields: Dict[str, Any]) -> Tuple[bool,
             "isVisible": "is_visible",
             "canReceivePayments": "can_receive_payments",
             "cityId": "city_id",
-            "districtId": "district_id",
+            "stateId": "state_id",
             "location": "location",
             "companyName": "company_name",
             "companyPhone": "company_phone",

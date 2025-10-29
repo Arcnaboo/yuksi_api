@@ -11,7 +11,7 @@ class CompanyCreate(BaseModel):
     isVisible: bool = True
     canReceivePayments: bool = True
     cityId: int = Field(..., ge=1)
-    districtId: int = Field(..., ge=1)
+    stateId: int = Field(..., ge=1)
     location: str
     companyName: str
     companyPhone: str
@@ -29,7 +29,7 @@ class CompanyUpdate(BaseModel):
     isVisible: Optional[bool]
     canReceivePayments: Optional[bool]
     cityId: Optional[int]
-    districtId: Optional[int]
+    stateId: Optional[int]
     location: Optional[str]
     companyName: Optional[str]
     companyPhone: Optional[str]
@@ -45,7 +45,7 @@ class CompanyListItem(BaseModel):
     companyName: str
     companyPhone: str
     cityId: int
-    districtId: int
+    stateId: int
     specialCommissionRate: float
     assignedKilometers: int
     consumedKilometers: int
