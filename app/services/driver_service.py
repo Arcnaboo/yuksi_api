@@ -1,4 +1,5 @@
 from app.utils.database_async import fetch_one, fetch_all, execute
+from typing import Optional
 
 
 # === UPSERT VEHICLE ===
@@ -52,18 +53,36 @@ async def finalize_profile(driver_id: str):
 
 
 # === SET ONLINE STATUS ===
-async def set_online(driver_id: str, online: bool):
-    if online:
-        query = """
-            INSERT INTO driver_status (driver_id, online)
-            VALUES ($1, TRUE)
-            ON CONFLICT (driver_id) DO UPDATE
-            SET online=TRUE, updated_at=NOW();
-        """
-        await execute(query, driver_id)
-    else:
-        query = "UPDATE driver_status SET online=FALSE, updated_at=NOW() WHERE driver_id=$1;"
-        await execute(query, driver_id)
+
+async def set_online(driver_id: str, online: bool, at: Optional[str] = None):
+    last = await fetch_one(
+        "SELECT online FROM driver_status WHERE driver_id = $1::uuid",
+        driver_id
+    )
+    if last is not None and last["online"] == online:
+        return {"changed": False, "inserted_event": False}
+
+    sql = """
+    WITH ts AS (
+      SELECT COALESCE($3::timestamptz, NOW()) AS ts
+    ),
+    ins_event AS (
+      INSERT INTO driver_presence_events (driver_id, is_online, at_utc)
+      SELECT $1::uuid, $2, ts.ts FROM ts
+      RETURNING 1
+    ),
+    up_status AS (
+      INSERT INTO driver_status (driver_id, online, updated_at)
+      SELECT $1::uuid, $2, ts.ts FROM ts
+      ON CONFLICT (driver_id) DO UPDATE
+        SET online = EXCLUDED.online,
+            updated_at = EXCLUDED.updated_at
+      RETURNING 1
+    )
+    SELECT 1;
+    """
+    await execute(sql, driver_id, online, at)
+    return {"changed": True, "inserted_event": True}
 
 
 # === GET EARNINGS ===

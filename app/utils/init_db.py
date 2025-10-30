@@ -164,9 +164,16 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 
 CREATE TABLE IF NOT EXISTS driver_status (
-    driver_id       UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
-    online          BOOLEAN DEFAULT FALSE,
-    updated_at      TIMESTAMPTZ DEFAULT NOW()
+  driver_id  UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
+  online     BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS driver_presence_events (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id  UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  is_online  BOOLEAN NOT NULL,
+  at_utc     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -570,6 +577,7 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_type);
 CREATE INDEX IF NOT EXISTS ix_banners_active ON banners(active);
 CREATE INDEX IF NOT EXISTS ix_banners_priority ON banners(priority DESC);
+CREATE INDEX IF NOT EXISTS idx_presence_driver_time ON driver_presence_events (driver_id, at_utc);
 """
 
 # SQL dump dosyaları burada beklenir: app/sql/10_countries.sql vb.
