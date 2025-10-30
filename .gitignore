@@ -77,3 +77,4 @@ config.local.json
 settings.local.py
 pyproject.toml
 /UNKNOWN.egg-info/
+/test
