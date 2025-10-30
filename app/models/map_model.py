@@ -10,7 +10,10 @@ class RouteRequest(BaseModel):
     end: Coordinate   # (lon, lat)
 
 class RouteResponse(BaseModel):
-    id: str
-    distance: float  # in meters
-    duration: float  # in seconds
-    geometry: list[Coordinate]  # list of (lat, lon) coordinates
+    order_id: str
+    route_polyline: str
+    distance: float
+    duration: float
+    driver: Coordinate
+    pickup: Coordinate
+    dropoff: Coordinate

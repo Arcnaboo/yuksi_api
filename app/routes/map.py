@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 from ..controllers import map_controller, auth_controller
-from ..models.map_model import RouteRequest, RouteResponse
+from ..models.map_model import RouteResponse
 
 router = APIRouter(prefix="/map", tags=["Map"])
 
-@router.post("/route", response_model=RouteResponse)
-async def create_route(req: RouteRequest):
-    return await map_controller.create_route(req.start, req.end)
+# Todo: Authenticate driver before creating route
+@router.get("/route/{order_id}", response_model=RouteResponse)
+async def create_route(order_id: str):
+    return await map_controller.create_route("test", order_id)
