@@ -172,7 +172,20 @@ async def admin_update_restaurant(
     body: RestaurantAdminUpdateReq = ...,
 ):
     """Admin restoran güncelleme endpoint"""
-    return await ctrl.admin_update_restaurant(restaurant_id, body.dict(exclude_unset=True))
+    fields = body.dict(exclude_unset=True, by_alias=True)
+    # fullAddress desteği: adres_line1/2 yerine tek alanla güncelleme ve bölme
+    full_addr = fields.pop("fullAddress", None) or getattr(body, "full_address", None)
+    if full_addr:
+        import re
+        parts = [p.strip() for p in re.split(r",|;|\n", str(full_addr)) if p.strip()]
+        if parts:
+            fields["address_line1"] = parts[0]
+            if "address_line2" not in fields:
+                fields["address_line2"] = ", ".join(parts[1:]) if len(parts) > 1 else ""
+        else:
+            fields["address_line1"] = str(full_addr).strip()
+            fields.setdefault("address_line2", "")
+    return await ctrl.admin_update_restaurant(restaurant_id, fields)
 
 
 # ✅ ADMIN DELETE RESTAURANT

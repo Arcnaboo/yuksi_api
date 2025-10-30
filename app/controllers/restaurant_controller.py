@@ -49,13 +49,24 @@ async def get_restaurant_profile(restaurant_id: str):
 
 async def update_restaurant_profile(restaurant_id: str, req):
     """Restaurant profil güncelleme controller"""
+    # fullAddress geldiyse addressLine1/2'ye böl
+    address_line1 = req.addressLine1
+    address_line2 = req.addressLine2
+    full_addr = getattr(req, "full_address", None)
+    if full_addr:
+        import re
+        parts = [p.strip() for p in re.split(r",|;|\n", str(full_addr)) if p.strip()]
+        if parts:
+            address_line1 = parts[0]
+            if address_line2 is None:
+                address_line2 = ", ".join(parts[1:]) if len(parts) > 1 else ""
     success, error = await svc.update_restaurant_profile(
         restaurant_id=restaurant_id,
         email=req.email,
         phone=req.phone,
         contact_person=req.contactPerson,
-        address_line1=req.addressLine1,
-        address_line2=req.addressLine2,
+        address_line1=address_line1,
+        address_line2=address_line2,
         opening_hour=req.openingHour,
         closing_hour=req.closingHour,
         latitude=req.latitude,

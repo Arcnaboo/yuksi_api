@@ -66,13 +66,29 @@ class RestaurantProfileUpdateReq(BaseModel):
     email: Optional[str] = Field(None, description="E-posta adresi")
     phone: Optional[str] = Field(None, min_length=7, max_length=20, description="Telefon numarası")
     contactPerson: Optional[str] = Field(None, description="İletişim kişisi")
-    addressLine1: Optional[str] = Field(None, description="Adres satır 1")
-    addressLine2: Optional[str] = Field(None, description="Adres satır 2")
+    addressLine1: Optional[str] = Field(None, description="Adres satır 1", exclude=True)
+    addressLine2: Optional[str] = Field(None, description="Adres satır 2", exclude=True)
+    full_address: Optional[str] = Field(None, alias="fullAddress", description="Tam adres (addressLine1/2 yerine)")
     openingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Açılış saati (HH:MM)")
     closingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Kapanış saati (HH:MM)")
     latitude: Optional[float] = Field(None, ge=-90, le=90)
     longitude: Optional[float] = Field(None, ge=-180, le=180)
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        json_schema_extra={
+            "example": {
+                "email": "info@sofradan.com",
+                "phone": "+905551234567",
+                "contactPerson": "Ali Kaya",
+                "fullAddress": "FSM Bulv. No:10, Kat:2 Daire:5",
+                "openingHour": "09:00",
+                "closingHour": "23:00",
+                "latitude": 40.195123,
+                "longitude": 29.060456
+            }
+        }
+    )
 
 
 
@@ -84,8 +100,10 @@ class RestaurantAdminUpdateReq(BaseModel):
     name: Optional[str] = Field(None, description="Restoran adı")
     contact_person: Optional[str] = Field(None, description="İletişim kişisi")
     tax_number: Optional[str] = Field(None, description="Vergi numarası")
-    address_line1: Optional[str] = Field(None, description="Adres satırı 1")
-    address_line2: Optional[str] = Field(None, description="Adres satırı 2")
+    address_line1: Optional[str] = Field(None, description="Adres satırı 1", exclude=True)
+    address_line2: Optional[str] = Field(None, description="Adres satırı 2", exclude=True)
+    # Tek alanla tam adres girişi için alias desteği
+    full_address: Optional[str] = Field(None, alias="fullAddress", description="Tam adres (address_line1/2 yerine)")
     state_id: Optional[int] = Field(None, ge=1, description="İlçe ID")
     city_id: Optional[int] = Field(None, ge=1, description="Şehir ID")
     opening_hour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Açılış saati (HH:MM)")
@@ -95,6 +113,7 @@ class RestaurantAdminUpdateReq(BaseModel):
 
     model_config = ConfigDict(
         extra="forbid",
+        populate_by_name=True,
         json_schema_extra={
             "example": {
                 "email": "info@sofradan.com",
@@ -103,8 +122,7 @@ class RestaurantAdminUpdateReq(BaseModel):
                 "name": "Sofradan Bursa Şubesi",
                 "contact_person": "Ali Kaya",
                 "tax_number": "1234567890",
-                "address_line1": "Yeni Mahalle 45. Sokak No:12",
-                "address_line2": "Kat:1 Daire:3",
+                "fullAddress": "Yeni Mahalle 45. Sokak No:12, Kat:1 Daire:3",
                 "state_id": 101,
                 "city_id": 6,
                 "opening_hour": "09:00",
