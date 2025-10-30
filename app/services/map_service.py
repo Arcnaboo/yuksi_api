@@ -1,6 +1,7 @@
 import uuid
 import requests
 
+from fastapi import HTTPException
 from app.utils.database_async import fetch_one
 from app.services.gps_service import get_latest
 from ..models.map_model import Coordinate
@@ -8,9 +9,8 @@ from ..models.map_model import Coordinate
 async def create_route(driver_id: str, order_id: str):
     try:
         uuid.UUID(order_id)
-        uuid.UUID(driver_id)
     except ValueError:
-        return None
+        raise HTTPException(status_code=400, detail="Invalid order ID format")
     query = """
         SELECT pickup_lat, pickup_lng, dropoff_lat, dropoff_lng
         FROM orders
@@ -18,20 +18,20 @@ async def create_route(driver_id: str, order_id: str):
     """
     row = await fetch_one(query, order_id)
     if not row:
-        return None
+        raise HTTPException(status_code=404, detail="Order not found")
     pickup = Coordinate(lgn=row["pickup_lng"], lat=row["pickup_lat"])
     dropoff = Coordinate(lgn=row["dropoff_lng"], lat=row["dropoff_lat"])
-
-    driver_location, err = await get_latest(driver_id)
+    
+    driver_location, err = await get_latest(str(driver_id))
     if err or not driver_location:
-        return None
+        raise HTTPException(status_code=404, detail=f"Driver location not found: {err}")
     driver_coords = Coordinate(lat=driver_location["latitude"], lgn=driver_location["longitude"])
 
     url = f"http://router.project-osrm.org/route/v1/driving/{driver_coords.lat},{driver_coords.lgn};{pickup.lat},{pickup.lgn};{dropoff.lat},{dropoff.lgn}?overview=full&geometries=polyline"
     
     response = requests.get(url)
     if response.status_code != 200:
-        return None
+        raise HTTPException(status_code=500, detail="Error fetching route from OSRM")
     
     data = response.json()
     encoded = data["routes"][0]["geometry"]
