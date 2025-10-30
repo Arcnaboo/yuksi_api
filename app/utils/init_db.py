@@ -71,7 +71,8 @@ CREATE TABLE IF NOT EXISTS drivers (
     is_active       BOOLEAN DEFAULT FALSE,
     deleted         BOOLEAN DEFAULT FALSE,
     deleted_at      TIMESTAMPTZ,
-    created_at      TIMESTAMPTZ DEFAULT NOW()
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Geo referans tabloları

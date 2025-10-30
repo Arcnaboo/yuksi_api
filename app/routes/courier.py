@@ -3,6 +3,7 @@ from ..models.courier_model import (
     CourierRegisterStep1Req,
     CourierRegisterStep2Req,
     CourierRegisterStep3Req,
+    CourierProfileUpdateReq
 )
 from ..controllers import courier_controller as ctrl
 from ..controllers import auth_controller
@@ -464,3 +465,42 @@ async def delete_courier_user(
     _claims = Depends(auth_controller.require_roles(["Admin"]))
 ):
     return await ctrl.delete_courier_user(user_id)
+
+@router.put(
+    "/{user_id}/profile/update",
+    summary="Update Courier Profile",
+    description="Updates the profile information of a courier by user ID.",
+    responses={
+        200: {
+            "description": "Courier profile updated successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Courier profile updated successfully",
+                                "data": {}
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Courier not found",
+                            "value": {
+                                "success": False,
+                                "message": "Courier not found",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def update_courier_profile(
+    user_id: str = Path(..., description="The UUID of the courier user"),
+    req: CourierProfileUpdateReq = Body(...),
+    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
+):
+    return await ctrl.update_courier_profile(user_id, req)

@@ -280,3 +280,61 @@ async def delete_courier_user(driver_id: UUID) -> Optional[str]:
     """, driver_id)
 
     return None
+
+
+async def update_courier_profile(
+    driver_id: str,
+    first_name: Optional[str] = None,
+    last_name:  Optional[str] = None,
+    email:      Optional[str] = None,
+    phone:      Optional[str] = None,
+    country_id: Optional[int] = None,
+) -> Optional[str]:
+    exists = await fetch_one("SELECT 1 FROM drivers WHERE id = $1::uuid", driver_id)
+    if exists is None:
+        return "Kurye kullanıcısı bulunamadı"
+
+    if email is not None:
+        dup = await fetch_one(
+            "SELECT 1 FROM drivers WHERE LOWER(email)=LOWER($1) AND id <> $2::uuid AND (deleted IS DISTINCT FROM TRUE)",
+            email, driver_id
+        )
+        if dup:
+            return "Bu email zaten kullanılıyor"
+    if phone is not None:
+        dup = await fetch_one(
+            "SELECT 1 FROM drivers WHERE phone=$1 AND id <> $2::uuid AND (deleted IS DISTINCT FROM TRUE)",
+            phone, driver_id
+        )
+        if dup:
+            return "Bu telefon numarası zaten kullanılıyor"
+
+    sets = []
+    params = []
+    i = 1
+
+    if first_name is not None:
+        sets.append(f"first_name = ${i}"); params.append(first_name.strip()); i += 1
+    if last_name is not None:
+        sets.append(f"last_name  = ${i}"); params.append(last_name.strip());  i += 1
+    if email is not None:
+        sets.append(f"email      = ${i}"); params.append(email.strip().lower()); i += 1
+    if phone is not None:
+        sets.append(f"phone      = ${i}"); params.append(phone.strip()); i += 1
+    if country_id is not None:
+        sets.append(f"country_id = ${i}"); params.append(country_id); i += 1
+
+    if not sets:
+        return None  
+
+    sets.append("updated_at = NOW()")
+
+    sql = f"""
+    UPDATE drivers
+    SET {', '.join(sets)}
+    WHERE id = ${i}::uuid
+    """
+    params.append(driver_id)
+
+    await execute(sql, *params)
+    return None

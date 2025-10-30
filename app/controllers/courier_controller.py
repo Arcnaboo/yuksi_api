@@ -65,3 +65,18 @@ async def delete_courier_user(user_id: UUID):
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Courier user deleted", "data": {}}
+
+
+async def update_courier_profile(user_id: str, req):
+    claims = req
+    err = await svc.update_courier_profile(
+        driver_id=user_id,
+        first_name=req.firstName,
+        last_name=req.lastName,
+        email=(req.email.lower().strip() if req.email else None),
+        phone=(req.phone.strip() if req.phone else None),
+        country_id=req.countryId,
+    )
+    if err:
+        return {"success": False, "message": err, "data": {}}
+    return {"success": True, "message": "Courier profile updated", "data": {}}

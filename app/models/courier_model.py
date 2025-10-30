@@ -1,6 +1,6 @@
 # app/models/model.py  (Pydantic v2 uyumlu)
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
-from typing import List
+from typing import List, Optional
 from enum import Enum
 from uuid import UUID
 
@@ -89,3 +89,19 @@ class CourierRegisterStep3Req(BaseModel):
             ]
         },
     )
+
+
+class CourierProfileUpdateReq(BaseModel):
+    firstName: Optional[str] = Field(None, min_length=1)
+    lastName:  Optional[str] = Field(None, min_length=1)
+    email:     Optional[EmailStr] = None
+    phone:     Optional[str] = Field(None, min_length=7, max_length=20)
+    countryId: Optional[int] = Field(None, ge=1)
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def _at_least_one_field(self):
+        if not any([self.firstName, self.lastName, self.email, self.phone, self.countryId]):
+            raise ValueError("En az bir alan güncellenmelidir")
+        return self
