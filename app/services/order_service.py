@@ -23,6 +23,10 @@ async def create_order(
     phone: str,
     address: str,
     delivery_address: str,
+    pickup_lat: float,
+    pickup_lng: float,
+    dropoff_lat: float,
+    dropoff_lng: float,
     order_type: str,
     amount: float,
     carrier_type: str = "kurye",
@@ -46,12 +50,14 @@ async def create_order(
             """
             INSERT INTO orders (
                 restaurant_id, code, customer, phone, address, delivery_address,
+                pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
                 type, amount, carrier_type, vehicle_type, cargo_type, special_requests
             )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
             RETURNING id, created_at;
             """,
             restaurant_id, code, customer, phone, address, delivery_address,
+            pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
             order_type, amount, carrier_type, vehicle_type, cargo_type, special_requests
         )
 
@@ -383,6 +389,10 @@ async def get_courier_assigned_orders(
                 o.created_at as order_created_at,
                 o.updated_at as order_updated_at,
                 o.delivery_address,
+                o.pickup_lat,
+                o.pickup_lng,
+                o.dropoff_lat,
+                o.dropoff_lng,
                 o.customer as customer_name,
                 o.phone as customer_phone,
                 o.amount,
