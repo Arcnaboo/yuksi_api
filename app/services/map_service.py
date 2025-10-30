@@ -1,9 +1,10 @@
 import uuid
 import polyline
 import requests
+from ..models.map_model import Coordinate
 
-async def create_route(start: tuple[float, float], end: tuple[float, float]):
-    url = f"http://router.project-osrm.org/route/v1/driving/{start[0]},{start[1]};{end[0]},{end[1]}?overview=full&geometries=polyline"
+async def create_route(start: Coordinate, end: Coordinate):
+    url = f"http://router.project-osrm.org/route/v1/driving/{start.lgn},{start.lat};{end.lgn},{end.lat}?overview=full&geometries=polyline"
     response = requests.get(url)
     data = response.json()
 

@@ -5,5 +5,5 @@ from ..models.map_model import RouteRequest, RouteResponse
 router = APIRouter(prefix="/map", tags=["Map"])
 
 @router.post("/route", response_model=RouteResponse)
-async def get_route(req: RouteRequest, driver=Depends(auth_controller.get_current_driver)):
+async def create_route(req: RouteRequest):
     return await map_controller.create_route(req.start, req.end)
