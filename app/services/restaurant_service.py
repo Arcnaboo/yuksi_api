@@ -18,6 +18,8 @@ async def restaurant_register(
     address_line2: str,
     state_id: int,
     city_id: int,
+    latitude: float,
+    longitude: float,
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Yeni restoran kaydı oluşturur"""
     try:
@@ -41,14 +43,14 @@ async def restaurant_register(
             INSERT INTO restaurants (
                 email, password_hash, phone, country_id, name, 
                 contact_person, tax_number, address_line1, address_line2,
-                state_id, city_id
+                state_id, city_id, latitude, longitude
             )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-            RETURNING id, email, name, contact_person, tax_number, phone, address_line1, address_line2;
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+            RETURNING id, email, name, contact_person, tax_number, phone, address_line1, address_line2, latitude, longitude;
             """,
             email, pwd_hash, phone, country_id, name,
             contact_person, tax_number, address_line1, address_line2,
-            state_id, city_id
+            state_id, city_id, latitude, longitude
         )
 
         if not row:
@@ -61,7 +63,9 @@ async def restaurant_register(
             "contactPerson": row["contact_person"],
             "taxNumber": row["tax_number"],
             "phone": row["phone"],
-            "fullAddress": f"{row['address_line1'] or ''} {row['address_line2'] or ''}".strip()
+            "fullAddress": f"{row['address_line1'] or ''} {row['address_line2'] or ''}".strip(),
+            "latitude": float(row["latitude"]) if row.get("latitude") is not None else None,
+            "longitude": float(row["longitude"]) if row.get("longitude") is not None else None
         }
 
         return restaurant_data, None
@@ -72,7 +76,7 @@ async def restaurant_register(
 # === LIST RESTAURANTS ===
 async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     query = """
-        SELECT id, email, name, contact_person, tax_number, phone, address_line1, address_line2
+        SELECT id, email, name, contact_person, tax_number, phone, address_line1, address_line2, latitude, longitude
         FROM restaurants
         ORDER BY created_at DESC
         LIMIT $1 OFFSET $2;
@@ -90,6 +94,8 @@ async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, 
             "taxNumber": r["tax_number"],
             "phone": r["phone"],
             "fullAddress": f"{r['address_line1'] or ''} {r['address_line2'] or ''}".strip(),
+            "latitude": float(r["latitude"]) if r.get("latitude") is not None else None,
+            "longitude": float(r["longitude"]) if r.get("longitude") is not None else None,
         }
         for r in rows
     ]
@@ -101,7 +107,7 @@ async def get_restaurant_profile(restaurant_id: str) -> Optional[Dict[str, Any]]
         row = await fetch_one(
             """
             SELECT email, phone, contact_person, address_line1, address_line2, 
-                   opening_hour, closing_hour
+                   opening_hour, closing_hour, latitude, longitude
             FROM restaurants 
             WHERE id=$1;
             """,
@@ -118,6 +124,8 @@ async def get_restaurant_profile(restaurant_id: str) -> Optional[Dict[str, Any]]
             "addressLine2": row.get("address_line2") or "",
             "openingHour": row["opening_hour"].strftime("%H:%M") if row.get("opening_hour") else None,
             "closingHour": row["closing_hour"].strftime("%H:%M") if row.get("closing_hour") else None,
+            "latitude": float(row.get("latitude")) if row.get("latitude") is not None else None,
+            "longitude": float(row.get("longitude")) if row.get("longitude") is not None else None,
         }
     except Exception as e:
         print(f"Error getting restaurant profile: {e}")
@@ -134,6 +142,8 @@ async def update_restaurant_profile(
     address_line2: Optional[str] = None,
     opening_hour: Optional[str] = None,
     closing_hour: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
 ) -> Tuple[bool, Optional[str]]:
     try:
         update_fields = []
@@ -169,6 +179,14 @@ async def update_restaurant_profile(
             h, m = closing_hour.split(":")
             update_fields.append(f"closing_hour = ${i}")
             params.append(time(int(h), int(m)))
+            i += 1
+        if latitude is not None:
+            update_fields.append(f"latitude = ${i}")
+            params.append(latitude)
+            i += 1
+        if longitude is not None:
+            update_fields.append(f"longitude = ${i}")
+            params.append(longitude)
             i += 1
 
         if not update_fields:

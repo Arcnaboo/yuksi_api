@@ -253,6 +253,12 @@ CREATE TABLE IF NOT EXISTS restaurants (
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Restaurant koordinat sütunları
+ALTER TABLE restaurants
+    ADD COLUMN IF NOT EXISTS latitude DECIMAL(9,6);
+ALTER TABLE restaurants
+    ADD COLUMN IF NOT EXISTS longitude DECIMAL(9,6);
+
 
 -- init_db.py'ye ekle (DDL kısmına)
 CREATE TABLE IF NOT EXISTS restaurant_couriers (

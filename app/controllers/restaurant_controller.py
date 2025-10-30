@@ -16,6 +16,8 @@ async def restaurant_register(req):
         address_line2=req.addressLine2 or "",
         state_id=req.stateId,     # .NET stateId → bizim state_id
         city_id=req.cityId,       # .NET cityId → bizim city_id
+        latitude=req.latitude,
+        longitude=req.longitude,
     )
     
     if err:
@@ -55,7 +57,9 @@ async def update_restaurant_profile(restaurant_id: str, req):
         address_line1=req.addressLine1,
         address_line2=req.addressLine2,
         opening_hour=req.openingHour,
-        closing_hour=req.closingHour
+        closing_hour=req.closingHour,
+        latitude=req.latitude,
+        longitude=req.longitude
     )
     
     if not success:

@@ -17,6 +17,8 @@ class RestaurantRegisterReq(BaseModel):
     addressLine2: Optional[str] = ""
     cityId: int = Field(..., ge=1)
     stateId: int = Field(..., ge=1)
+    latitude: float = Field(..., ge=-90, le=90, description="Restoran enlem")
+    longitude: float = Field(..., ge=-180, le=180, description="Restoran boylam")
 
     model_config = ConfigDict(extra="forbid")
 
@@ -41,6 +43,8 @@ class RestaurantListItem(BaseModel):
     taxNumber: str
     phone: str
     fullAddress: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class RestaurantProfileResponse(BaseModel):
@@ -52,6 +56,8 @@ class RestaurantProfileResponse(BaseModel):
     addressLine2: Optional[str] = ""
     openingHour: Optional[str] = None
     closingHour: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class RestaurantProfileUpdateReq(BaseModel):
     """Restaurant profil güncelleme modeli"""
@@ -62,6 +68,8 @@ class RestaurantProfileUpdateReq(BaseModel):
     addressLine2: Optional[str] = Field(None, description="Adres satır 2")
     openingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Açılış saati (HH:MM)")
     closingHour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Kapanış saati (HH:MM)")
+    latitude: Optional[float] = Field(None, ge=-90, le=90)
+    longitude: Optional[float] = Field(None, ge=-180, le=180)
     model_config = ConfigDict(extra="forbid")
 
 
@@ -80,6 +88,8 @@ class RestaurantAdminUpdateReq(BaseModel):
     city_id: Optional[int] = Field(None, ge=1, description="Şehir ID")
     opening_hour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Açılış saati (HH:MM)")
     closing_hour: Optional[str] = Field(None, pattern=r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$", description="Kapanış saati (HH:MM)")
+    latitude: Optional[float] = Field(None, ge=-90, le=90, description="Restoran enlem")
+    longitude: Optional[float] = Field(None, ge=-180, le=180, description="Restoran boylam")
 
     model_config = ConfigDict(
         extra="forbid",
@@ -96,7 +106,9 @@ class RestaurantAdminUpdateReq(BaseModel):
                 "state_id": 101,
                 "city_id": 6,
                 "opening_hour": "09:00",
-                "closing_hour": "23:00"
+                "closing_hour": "23:00",
+                "latitude": 40.195123,
+                "longitude": 29.060456
             }
         }
     )
