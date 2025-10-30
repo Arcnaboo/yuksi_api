@@ -35,6 +35,10 @@ class OrderCreateReq(BaseModel):
     phone: str = Field(..., min_length=7, description="Telefon numarası")
     address: str = Field(..., min_length=1, description="Gönderici adresi")
     delivery_address: str = Field(..., min_length=1, description="Teslimat adresi")
+    pickup_lat: float = Field(..., ge=-90, le=90, description="Alış konumu enlem")
+    pickup_lng: float = Field(..., ge=-180, le=180, description="Alış konumu boylam")
+    dropoff_lat: float = Field(..., ge=-90, le=90, description="Teslim konumu enlem")
+    dropoff_lng: float = Field(..., ge=-180, le=180, description="Teslim konumu boylam")
     type: DeliveryType = Field(..., description="Teslimat tipi")
     amount: float = Field(..., gt=0, description="Toplam tutar")
     carrier_type: str = Field(default="kurye", description="Taşıyıcı tipi")
@@ -48,6 +52,10 @@ class OrderUpdateReq(BaseModel):
     phone: Optional[str] = Field(None, min_length=7)
     address: Optional[str] = Field(None, min_length=1)
     delivery_address: Optional[str] = Field(None, min_length=1)
+    pickup_lat: Optional[float] = Field(None, ge=-90, le=90)
+    pickup_lng: Optional[float] = Field(None, ge=-180, le=180)
+    dropoff_lat: Optional[float] = Field(None, ge=-90, le=90)
+    dropoff_lng: Optional[float] = Field(None, ge=-180, le=180)
     type: Optional[DeliveryType] = None
     status: Optional[OrderStatus] = None
     amount: Optional[float] = Field(None, gt=0)

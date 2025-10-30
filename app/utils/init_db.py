@@ -317,6 +317,16 @@ CREATE TABLE IF NOT EXISTS orders (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Koordinat sütunları (tüm siparişler için)
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS pickup_lat DECIMAL(9,6);
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS pickup_lng DECIMAL(9,6);
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS dropoff_lat DECIMAL(9,6);
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS dropoff_lng DECIMAL(9,6);
+
 CREATE TABLE IF NOT EXISTS courier_orders_log (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     courier_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
