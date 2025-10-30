@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/admin/jobs", tags=["Admin Jobs"])
     "",
     summary="Yeni Yük Oluştur (Admin)",
     description="Admin tarafından manuel olarak yeni bir yük kaydı oluşturulur.",
-    dependencies=[Depends(require_roles(["Admin"]))],
+    dependencies=[Depends(require_roles(["Admin", "Restaurant"]))],
 )
 async def create_admin_job(
     req: AdminJobCreate = Body(
