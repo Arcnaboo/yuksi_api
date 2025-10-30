@@ -474,9 +474,11 @@ CREATE TABLE IF NOT EXISTS company_managers (
 );
 
 CREATE TABLE IF NOT EXISTS dealers (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     surname VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
     address TEXT NOT NULL,
     account_type VARCHAR(20) NOT NULL,
     country_id INT NOT NULL,

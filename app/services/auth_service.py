@@ -97,6 +97,7 @@ async def register(first_name: str, last_name: str, email: str, phone: str, pass
 
 # === LOGIN ===
 async def login(email: str, password: str):
+    # Courier
     row = await fetch_one(
         "SELECT id, email, password_hash, deleted FROM drivers WHERE email=$1;", email
     )
@@ -110,6 +111,7 @@ async def login(email: str, password: str):
             user_type="courier",
         )
 
+    # Restaurant
     r = await fetch_one(
         "SELECT id, email, password_hash FROM restaurants WHERE email=$1;", email
     )
@@ -121,6 +123,22 @@ async def login(email: str, password: str):
             user_type="restaurant",
         )
 
+    # ✅ Dealer login (doğru konum ve indent!)
+    d = await fetch_one(
+        "SELECT id, email, password_hash, status FROM dealers WHERE email=$1;", email
+    )
+    if d and verify_pwd(password, d["password_hash"]):
+        if d.get("status") != "active":
+            return "not_active"
+
+        return await _generate_tokens_net_style(
+            user_id=str(d["id"]),  # UUID ise string
+            email=d["email"],
+            roles=["Dealer"],
+            user_type="dealer",
+        )
+
+    # Admin
     a = await fetch_one(
         "SELECT id, email, password_hash FROM system_admins WHERE email=$1;", email
     )
