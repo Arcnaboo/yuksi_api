@@ -35,7 +35,7 @@ async def assign_courier_to_order(
             # Siparişe kurye ata ve durumu güncelle
             cur.execute("""
                 UPDATE orders 
-                SET courier_id=%s, status='kuryeye_verildi', updated_at=NOW()
+                SET courier_id=%s, status='kurye_cagrildi', updated_at=NOW()
                 WHERE id=%s AND restaurant_id=%s
             """, (courier_id, order_id, restaurant_id))
             
