@@ -76,7 +76,10 @@ async def restaurant_register(
 # === LIST RESTAURANTS ===
 async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     query = """
-        SELECT id, email, name, contact_person, tax_number, phone, address_line1, address_line2, latitude, longitude
+        SELECT id, email, name, contact_person, tax_number, phone,
+               address_line1, address_line2,
+               latitude, longitude,
+               opening_hour, closing_hour
         FROM restaurants
         ORDER BY created_at DESC
         LIMIT $1 OFFSET $2;
@@ -96,6 +99,8 @@ async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, 
             "fullAddress": f"{r['address_line1'] or ''} {r['address_line2'] or ''}".strip(),
             "latitude": float(r["latitude"]) if r.get("latitude") is not None else None,
             "longitude": float(r["longitude"]) if r.get("longitude") is not None else None,
+            "openingHour": r["opening_hour"].strftime("%H:%M") if r.get("opening_hour") else None,
+            "closingHour": r["closing_hour"].strftime("%H:%M") if r.get("closing_hour") else None,
         }
         for r in rows
     ]

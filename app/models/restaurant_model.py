@@ -45,6 +45,8 @@ class RestaurantListItem(BaseModel):
     fullAddress: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    openingHour: Optional[str] = None
+    closingHour: Optional[str] = None
 
 
 class RestaurantProfileResponse(BaseModel):
