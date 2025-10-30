@@ -26,7 +26,8 @@ async def create_route(driver_id: str, order_id: str):
     if err or not driver_location:
         raise HTTPException(status_code=404, detail=f"Driver location not found: {err}")
     driver_coords = Coordinate(lat=driver_location["latitude"], lgn=driver_location["longitude"])
-
+    
+    # added fix for lat/lgn order
     url = f"http://router.project-osrm.org/route/v1/driving/{driver_coords.lgn},{driver_coords.lat};{pickup.lgn},{pickup.lat};{dropoff.lgn},{dropoff.lat}?overview=full&geometries=polyline"
     
     response = requests.get(url)
