@@ -4,7 +4,6 @@ from ..models.map_model import RouteResponse
 
 router = APIRouter(prefix="/map", tags=["Map"])
 
-# Todo: Authenticate driver before creating route
 @router.get("/route/{order_id}", response_model=RouteResponse)
-async def create_route(order_id: str):
-    return await map_controller.create_route("test", order_id)
+async def create_route(order_id: str, driver=Depends(auth_controller.get_current_driver)):
+    return await map_controller.create_route(driver, order_id)
