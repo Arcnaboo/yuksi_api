@@ -94,21 +94,76 @@ async def delete_package_price(id: UUID):
 
 @router.get("/my-price", dependencies=[Depends(require_roles(["Restaurant"]))])
 async def get_my_price(claims: dict = Depends(require_roles(["Restaurant"]))):
-    from app.services import restaurant_package_price_service as service
+    from app.utils.database import db_cursor
     restaurant_id = claims.get("userId")  # token'dan geliyor
+    
+    try:
+        with db_cursor(dict_cursor=True) as cur:
+            cur.execute("""
+                SELECT 
+                    id,
+                    restaurant_id,
+                    unit_price,
+                    min_package,
+                    max_package,
+                    note,
+                    updated_at
+                FROM restaurant_package_prices
+                WHERE restaurant_id = %s;
+            """, (restaurant_id,))
+            package_info = cur.fetchone()
+        
+        if not package_info:
+            return {
+                "success": False,
+                "message": "Paket bilgisi bulunamadı",
+                "data": {}
+            }
+        
+        return {
+            "success": True,
+            "message": "Paket fiyat bilgileri başarıyla getirildi",
+            "data": package_info
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+            "data": {}
+        }
 
-    # Paket durumunu hesapla (fiyat + sayı bilgileri)
+
+@router.get("/package-status", dependencies=[Depends(require_roles(["Restaurant"]))])
+async def get_package_status(claims: dict = Depends(require_roles(["Restaurant"]))):
+    """
+    Restaurant'ın paket durumunu gösterir:
+    - max_package: Toplam paket hakkı
+    - delivered_count: Teslim edilen paket sayısı
+    - total_count: Toplam paket sipariş sayısı
+    - remaining_packages: Kalan paket sayısı
+    - has_package_left: Paket hakkı var mı?
+    """
+    from app.services import restaurant_package_price_service as service
+    restaurant_id = claims.get("userId")
+    
+    if not restaurant_id:
+        return {
+            "success": False,
+            "message": "Restaurant ID not found in token",
+            "data": {}
+        }
+    
     ok, package_status, error = await service.get_restaurant_package_status(restaurant_id)
     
     if not ok:
         return {
             "success": False,
-            "message": error or "Paket bilgisi bulunamadı",
+            "message": error or "Paket durumu bilgisi bulunamadı",
             "data": {}
         }
-
+    
     return {
         "success": True,
-        "message": "Paket bilgileri başarıyla getirildi",
+        "message": "Paket durumu başarıyla getirildi",
         "data": package_status
     }
