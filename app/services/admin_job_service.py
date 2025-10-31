@@ -89,11 +89,16 @@ async def admin_create_job(data: Dict[str, Any]) -> Tuple[bool, str | None]:
 
 # --- READ (liste) ---
 async def admin_get_jobs(limit: int = 50, offset: int = 0, delivery_type: str | None = None) -> Tuple[bool, List[Dict[str, Any]] | str]:
-    """Admin tarafından yük listesini getirir"""
+    """Admin tarafından yük listesini getirir (sadece admin'in oluşturduğu yükler)"""
     try:
         filters = []
         params = []
         i = 1
+
+        # Sadece admin'in oluşturduğu yükleri getir (created_by_admin = TRUE)
+        filters.append(f"created_by_admin = ${i}")
+        params.append(True)
+        i += 1
 
         if delivery_type:
             filters.append(f"delivery_type = ${i}")

@@ -160,3 +160,17 @@ async def get_restaurant_couriers_gps(restaurant_id: str) -> Dict[str, Any]:
         "message": "Restaurant couriers GPS locations retrieved successfully",
         "data": {"couriers": couriers}
     }
+
+
+async def get_nearby_couriers(restaurant_id: str, limit: int = 50) -> Dict[str, Any]:
+    """Restorana yakın kuryeleri getir controller (aktif ve online, max 10km)"""
+    couriers = await svc.get_nearby_couriers(restaurant_id, limit)
+    
+    return {
+        "success": True,
+        "message": "Yakındaki kuryeler başarıyla getirildi",
+        "data": {
+            "couriers": couriers,
+            "total": len(couriers)
+        }
+    }

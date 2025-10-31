@@ -427,3 +427,70 @@ async def get_restaurant_couriers_gps(restaurant_id: str) -> List[Dict[str, Any]
     except Exception as e:
         print(f"Error getting restaurant couriers GPS: {e}")
         return []
+
+
+# === GET NEARBY COURIERS (max 10km, sorted by distance, active and online only) ===
+async def get_nearby_couriers(restaurant_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+    """Restorana 10 km içindeki aktif ve online kuryeleri mesafeye göre sırala (en yakından en uzağa)"""
+    try:
+        rows = await fetch_all("""
+            WITH restaurant_location AS (
+                SELECT latitude, longitude
+                FROM restaurants
+                WHERE id = $1
+                  AND latitude IS NOT NULL
+                  AND longitude IS NOT NULL
+            ),
+            courier_distances AS (
+                SELECT 
+                    d.id as courier_id,
+                    CONCAT(d.first_name, ' ', d.last_name) as courier_name,
+                    d.phone,
+                    d.email,
+                    g.latitude,
+                    g.longitude,
+                    g.updated_at as location_updated_at,
+                    (
+                        6371000 * acos(
+                            LEAST(1.0, 
+                                cos(radians(rl.latitude)) * 
+                                cos(radians(g.latitude)) * 
+                                cos(radians(g.longitude) - radians(rl.longitude)) + 
+                                sin(radians(rl.latitude)) * 
+                                sin(radians(g.latitude))
+                            )
+                        )
+                    ) AS distance_meters
+                FROM drivers d
+                INNER JOIN gps_table g ON g.driver_id = d.id
+                INNER JOIN driver_status ds ON ds.driver_id = d.id
+                CROSS JOIN restaurant_location rl
+                WHERE d.is_active = true
+                  AND d.deleted = false
+                  AND COALESCE(ds.online, false) = true
+                  AND g.latitude IS NOT NULL
+                  AND g.longitude IS NOT NULL
+            )
+            SELECT *
+            FROM courier_distances
+            WHERE distance_meters <= 10000
+            ORDER BY distance_meters ASC
+            LIMIT $2;
+        """, restaurant_id, limit)
+        
+        # asyncpg.Record objelerini dict'e çevir ve distance_km ekle
+        result = []
+        if rows:
+            for row in rows:
+                row_dict = dict(row)
+                # Mesafeyi kilometreye çevir
+                distance_meters = float(row_dict.get("distance_meters", 0))
+                row_dict["distance_km"] = round(distance_meters / 1000, 2)
+                row_dict["distance_meters"] = round(distance_meters, 2)
+                result.append(row_dict)
+        
+        return result
+        
+    except Exception as e:
+        print(f"Error getting nearby couriers: {e}")
+        return []

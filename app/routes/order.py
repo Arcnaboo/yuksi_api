@@ -201,6 +201,28 @@ async def get_order_courier_gps(
     return await ctrl.get_order_courier_gps(restaurant_id, order_id)
 
 
+# ✅ GET NEARBY COURIERS (max 10km, sorted by distance, active and online only)
+@router.get(
+    "/couriers/nearby",
+    summary="Get Nearby Couriers (max 10km, active and online)",
+    description="Restorana 10 km içindeki aktif ve online olan tüm kuryeleri mesafeye göre sıralar (en yakından en uzağa). Restaurant token'dan otomatik olarak alınır.",
+    response_model=dict
+)
+async def get_nearby_couriers(
+    limit: int = Query(50, ge=1, le=200, description="Maksimum kurye sayısı"),
+    claims: dict = Depends(auth_controller.require_roles(["Restaurant"]))
+):
+    """Restorana yakın kuryeleri getir endpoint (max 10 km, sadece aktif ve online)"""
+    from ..controllers import restaurant_controller as restaurant_ctrl
+    
+    # Restaurant ID'yi token'dan al
+    restaurant_id = claims.get("userId") or claims.get("sub")
+    if not restaurant_id:
+        raise HTTPException(status_code=403, detail="Token'da restoran ID bulunamadı")
+    
+    return await restaurant_ctrl.get_nearby_couriers(str(restaurant_id), limit)
+
+
 
 
 
