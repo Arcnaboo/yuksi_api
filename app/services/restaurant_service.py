@@ -243,7 +243,7 @@ async def assign_courier_to_restaurant(
             other_restaurant_id = str(other_restaurant_assignment.get("restaurant_id"))
             # Eğer aynı restoranta atanmışsa, "zaten atanmış" mesajı ver
             if other_restaurant_id == restaurant_id:
-                return False, "Courier already assigned to this restaurant"
+                return False, "Bu kurye zaten bu restoranta atanmış"
             # Başka bir restoranta atanmışsa hata ver
             return False, "Bu kurye başka bir restoranta atanmış"
         
