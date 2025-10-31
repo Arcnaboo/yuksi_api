@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Tuple, Optional
 from app.utils.database_async import fetch_all, fetch_one, execute
 import json
+from datetime import date, time
 
 
 # --- CREATE ---
@@ -19,15 +20,49 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
             special_notes, campaign_code,
             extra_services, extra_services_total,
             total_price, payment_method, image_file_ids, 
-            created_by_admin, restaurant_id
+            created_by_admin, restaurant_id,
+            delivery_date, delivery_time
         )
         VALUES (
             $1,$2,$3,$4,$5,$6,$7,
-            $8,$9,$10,$11,$12,$13,$14,$15,$16
+            $8,$9,$10,$11,$12,$13,$14,$15,$16,
+            $17,$18
         )
         RETURNING id;
         """
 
+        # deliveryDate ve deliveryTime'i Python datetime objelerine dönüştür
+        delivery_date_obj = None
+        delivery_time_obj = None
+        
+        if data.get("deliveryDate"):
+            try:
+                # DD.MM.YYYY formatını parse et
+                date_str = data["deliveryDate"].strip()
+                if "." in date_str:
+                    parts = date_str.split(".")
+                    if len(parts) == 3:
+                        day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+                        delivery_date_obj = date(year, month, day)
+                    else:
+                        delivery_date_obj = None
+                else:
+                    # YYYY-MM-DD formatını da destekle
+                    delivery_date_obj = date.fromisoformat(date_str)
+            except (ValueError, TypeError, IndexError):
+                delivery_date_obj = None
+        
+        if data.get("deliveryTime"):
+            try:
+                # HH:MM formatını time objesine çevir
+                time_parts = data["deliveryTime"].split(":")
+                if len(time_parts) >= 2:
+                    delivery_time_obj = time(int(time_parts[0]), int(time_parts[1]))
+                else:
+                    delivery_time_obj = None
+            except (ValueError, TypeError, IndexError):
+                delivery_time_obj = None
+        
         params = [
             data["deliveryType"],
             data["carrierType"],
@@ -45,6 +80,8 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
             json.dumps(data.get("imageFileIds", [])),
             False,  # created_by_admin = FALSE
             str(restaurant_id),  # UUID string olarak kaydet
+            delivery_date_obj,  # Python date objesi
+            delivery_time_obj,  # Python time objesi
         ]
 
         row = await fetch_one(query, *params)
@@ -96,7 +133,9 @@ async def restaurant_get_jobs(limit: int = 50, offset: int = 0, delivery_type: s
             j.total_price AS "totalPrice",
             j.payment_method AS "paymentMethod",
             j.created_at AS "createdAt",
-            j.image_file_ids AS "imageFileIds"
+            j.image_file_ids AS "imageFileIds",
+            j.delivery_date AS "deliveryDate",
+            j.delivery_time AS "deliveryTime"
         FROM admin_jobs j
         {where_clause}
         ORDER BY j.created_at DESC
@@ -104,7 +143,18 @@ async def restaurant_get_jobs(limit: int = 50, offset: int = 0, delivery_type: s
         """
 
         rows = await fetch_all(query, *params)
-        return True, rows
+        
+        # Tarih ve saat formatlarını düzenle (DD.MM.YYYY ve HH:MM)
+        formatted_rows = []
+        for row in rows:
+            row_dict = dict(row) if not isinstance(row, dict) else row
+            if row_dict.get("deliveryDate"):
+                row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
+            if row_dict.get("deliveryTime"):
+                row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
+            formatted_rows.append(row_dict)
+        
+        return True, formatted_rows
 
     except Exception as e:
         return False, str(e)
@@ -160,7 +210,9 @@ async def restaurant_update_job(job_id: str, fields: Dict[str, Any], restaurant_
             "extraServicesTotal": "extra_services_total",
             "totalPrice": "total_price",
             "paymentMethod": "payment_method",
-            "imageFileIds": "image_file_ids"
+            "imageFileIds": "image_file_ids",
+            "deliveryDate": "delivery_date",
+            "deliveryTime": "delivery_time"
         }
 
         for key, value in fields.items():
@@ -168,6 +220,39 @@ async def restaurant_update_job(job_id: str, fields: Dict[str, Any], restaurant_
             if column in ["pickup_coordinates", "dropoff_coordinates", "extra_services", "image_file_ids"]:
                 update_fields.append(f"{column} = ${i}")
                 params.append(json.dumps(value))
+            elif column == "delivery_date":
+                # deliveryDate string'ini Python date objesine çevir (DD.MM.YYYY veya YYYY-MM-DD)
+                if value:
+                    try:
+                        date_str = str(value).strip()
+                        if "." in date_str:
+                            parts = date_str.split(".")
+                            if len(parts) == 3:
+                                day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+                                params.append(date(year, month, day))
+                            else:
+                                params.append(None)
+                        else:
+                            params.append(date.fromisoformat(date_str))
+                    except (ValueError, TypeError, IndexError):
+                        params.append(None)
+                else:
+                    params.append(None)
+                update_fields.append(f"{column} = ${i}")
+            elif column == "delivery_time":
+                # deliveryTime string'ini Python time objesine çevir
+                if value:
+                    try:
+                        time_parts = value.split(":")
+                        if len(time_parts) >= 2:
+                            params.append(time(int(time_parts[0]), int(time_parts[1])))
+                        else:
+                            params.append(None)
+                    except (ValueError, TypeError, IndexError):
+                        params.append(None)
+                else:
+                    params.append(None)
+                update_fields.append(f"{column} = ${i}")
             else:
                 update_fields.append(f"{column} = ${i}")
                 params.append(value)

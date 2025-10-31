@@ -32,6 +32,9 @@ class AdminJobCreate(BaseModel):
     
     paymentMethod: Literal["cash", "card", "transfer"] = Field(..., description="Ödeme yöntemi")
     imageFileIds: Optional[List[str]] = Field(default_factory=list, description="Yük görsellerinin fileId listesi")
+    
+    deliveryDate: Optional[str] = Field(None, description="Gönderi tarihi (DD.MM.YYYY formatında, örn: 31.10.2025)")
+    deliveryTime: Optional[str] = Field(None, description="Gönderi saati (HH:MM formatında, örn: 11:52)")
 
     model_config = ConfigDict(
         extra="forbid",
@@ -55,7 +58,9 @@ class AdminJobCreate(BaseModel):
                 "imageFileIds": [
                     "f232f2b8-2e42-46f8-b3b5-d91a62f8b001",
                     "a93cf2a9-8fd1-45b3-982a-cb67a86c90e2"
-                ]
+                ],
+                "deliveryDate": "15.11.2025",
+                "deliveryTime": "14:30"
             }
         }
     )
@@ -79,4 +84,6 @@ class AdminJobUpdateReq(BaseModel):
     extraServicesTotal: Optional[float] = None
     totalPrice: Optional[float] = None
     paymentMethod: Optional[str] = None
-    imageFileIds: Optional[List[str]] = None    
+    imageFileIds: Optional[List[str]] = None
+    deliveryDate: Optional[str] = Field(None, description="Gönderi tarihi (DD.MM.YYYY formatında, örn: 31.10.2025)")
+    deliveryTime: Optional[str] = Field(None, description="Gönderi saati (HH:MM formatında, örn: 11:52)")    

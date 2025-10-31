@@ -550,12 +550,20 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
     image_file_ids JSONB DEFAULT '[]',
     created_by_admin BOOLEAN DEFAULT FALSE,
     restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
+    delivery_date DATE,
+    delivery_time TIME,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Restaurant jobs desteği için restaurant_id kolonu (mevcut tablolar için)
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE;
+
+-- Gönderi tarihi ve saati kolonları (mevcut tablolar için)
+ALTER TABLE admin_jobs
+    ADD COLUMN IF NOT EXISTS delivery_date DATE;
+ALTER TABLE admin_jobs
+    ADD COLUMN IF NOT EXISTS delivery_time TIME;
 
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
