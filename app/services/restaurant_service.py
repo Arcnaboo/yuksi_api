@@ -233,14 +233,19 @@ async def assign_courier_to_restaurant(
         if not courier["is_active"]:
             return False, "Courier is not active"
         
-        # Zaten atanmış mı kontrol et
-        existing = await fetch_one("""
-            SELECT id FROM restaurant_couriers 
-            WHERE restaurant_id = $1 AND courier_id = $2
-        """, restaurant_id, courier_id)
+        # Kurye başka bir restoranta atanmış mı kontrol et
+        other_restaurant_assignment = await fetch_one("""
+            SELECT restaurant_id FROM restaurant_couriers 
+            WHERE courier_id = $1
+        """, courier_id)
         
-        if existing:
-            return False, "Courier already assigned to this restaurant"
+        if other_restaurant_assignment:
+            other_restaurant_id = str(other_restaurant_assignment.get("restaurant_id"))
+            # Eğer aynı restoranta atanmışsa, "zaten atanmış" mesajı ver
+            if other_restaurant_id == restaurant_id:
+                return False, "Courier already assigned to this restaurant"
+            # Başka bir restoranta atanmışsa hata ver
+            return False, "Bu kurye başka bir restoranta atanmış"
         
         # Atama yap
         await execute("""
