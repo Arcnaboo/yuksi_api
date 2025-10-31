@@ -92,6 +92,67 @@ async def admin_get_jobs(limit: int = 50, offset: int = 0, delivery_type: str | 
         return False, str(e)
 
 
+# --- READ RESTAURANT JOBS (Admin görünümü) ---
+async def admin_get_restaurant_jobs(
+    limit: int = 50, 
+    offset: int = 0, 
+    delivery_type: str | None = None,
+    restaurant_id: str | None = None
+) -> Tuple[bool, List[Dict[str, Any]] | str]:
+    """Admin tarafından tüm restaurantların yüklerini getirir"""
+    try:
+        filters = []
+        params = []
+        i = 1
+
+        # Sadece restaurant tarafından oluşturulan yükler (restaurant_id NULL olmayan)
+        filters.append("restaurant_id IS NOT NULL")
+        
+        if restaurant_id:
+            filters.append(f"j.restaurant_id = ${i}")
+            params.append(str(restaurant_id))
+            i += 1
+
+        if delivery_type:
+            filters.append(f"j.delivery_type = ${i}")
+            params.append(delivery_type)
+            i += 1
+
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        params.extend([limit, offset])
+
+        query = f"""
+        SELECT
+            j.id,
+            j.delivery_type AS "deliveryType",
+            j.carrier_type AS "carrierType",
+            j.vehicle_type AS "vehicleType",
+            j.pickup_address AS "pickupAddress",
+            j.pickup_coordinates AS "pickupCoordinates",
+            j.dropoff_address AS "dropoffAddress",
+            j.dropoff_coordinates AS "dropoffCoordinates",
+            j.special_notes AS "specialNotes",
+            j.total_price AS "totalPrice",
+            j.payment_method AS "paymentMethod",
+            j.created_at AS "createdAt",
+            j.image_file_ids AS "imageFileIds",
+            j.restaurant_id AS "restaurantId",
+            r.name AS "restaurantName",
+            r.email AS "restaurantEmail"
+        FROM admin_jobs j
+        LEFT JOIN restaurants r ON j.restaurant_id = r.id
+        {where_clause}
+        ORDER BY j.created_at DESC
+        LIMIT ${i} OFFSET ${i + 1};
+        """
+
+        rows = await fetch_all(query, *params)
+        return True, rows
+
+    except Exception as e:
+        return False, str(e)
+
+
 # --- UPDATE ---
 async def admin_update_job(job_id: str, fields: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """Admin tarafından yük güncelleme servisi"""

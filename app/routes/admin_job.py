@@ -61,6 +61,21 @@ async def get_admin_jobs(
 ):
     return await ctrl.admin_get_jobs(limit, offset, deliveryType)
 
+# === GET RESTAURANT JOBS ===
+@router.get(
+    "/restaurants",
+    summary="Tüm Restaurant Yükleri (Admin)",
+    description="Admin tarafından tüm restaurantların oluşturduğu yükleri listeler.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+)
+async def get_restaurant_jobs(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    deliveryType: str | None = Query(None),
+    restaurantId: str | None = Query(None, description="Restaurant ID ile filtreleme (opsiyonel)")
+):
+    return await ctrl.admin_get_restaurant_jobs(limit, offset, deliveryType, restaurantId)
+
 
 # === UPDATE ===
 @router.put(
