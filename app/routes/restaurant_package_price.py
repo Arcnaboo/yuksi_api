@@ -94,36 +94,21 @@ async def delete_package_price(id: UUID):
 
 @router.get("/my-price", dependencies=[Depends(require_roles(["Restaurant"]))])
 async def get_my_price(claims: dict = Depends(require_roles(["Restaurant"]))):
-    from app.utils.database import db_cursor
+    from app.services import restaurant_package_price_service as service
     restaurant_id = claims.get("userId")  # token'dan geliyor
 
-    try:
-        with db_cursor(dict_cursor=True) as cur:
-            cur.execute("""
-                SELECT 
-                    id,
-                    restaurant_id,
-                    unit_price,
-                    min_package,
-                    max_package,
-                    note,
-                    updated_at
-                FROM restaurant_package_prices
-                WHERE restaurant_id = %s;
-            """, (restaurant_id,))
-            price = cur.fetchone()
-
-        if not price:
-            return {
-                "success": False,
-                "message": "No package price found for this restaurant",
-                "data": {}
-            }
-
+    # Paket durumunu hesapla (fiyat + sayı bilgileri)
+    ok, package_status, error = await service.get_restaurant_package_status(restaurant_id)
+    
+    if not ok:
         return {
-            "success": True,
-            "message": "Package price fetched successfully",
-            "data": price
+            "success": False,
+            "message": error or "Paket bilgisi bulunamadı",
+            "data": {}
         }
-    except Exception as e:
-        return {"success": False, "message": str(e), "data": {}}
+
+    return {
+        "success": True,
+        "message": "Paket bilgileri başarıyla getirildi",
+        "data": package_status
+    }

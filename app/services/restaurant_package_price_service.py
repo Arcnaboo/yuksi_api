@@ -1,4 +1,67 @@
 from app.utils.database import db_cursor
+from typing import Dict, Any, Optional, Tuple
+
+
+# ✅ RESTAURANT PAKET DURUMUNU HESAPLA
+async def get_restaurant_package_status(restaurant_id: str) -> Tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
+    """Restaurant'ın paket durumunu hesapla (kalan paket, teslim edilen, toplam)"""
+    try:
+        with db_cursor(dict_cursor=True) as cur:
+            # Paket fiyat bilgilerini getir
+            cur.execute("""
+                SELECT 
+                    id,
+                    restaurant_id,
+                    unit_price,
+                    min_package,
+                    max_package,
+                    note,
+                    updated_at
+                FROM restaurant_package_prices
+                WHERE restaurant_id = %s;
+            """, (restaurant_id,))
+            package_info = cur.fetchone()
+            
+            if not package_info:
+                return False, None, "Paket tanımı bulunamadı"
+            
+            max_package = package_info.get("max_package") or 0
+            
+            # Teslim edilmiş paket sayısını hesapla
+            cur.execute("""
+                SELECT COUNT(*) as delivered_count
+                FROM orders
+                WHERE restaurant_id = %s
+                  AND type = 'paket_servis'
+                  AND status = 'teslim_edildi';
+            """, (restaurant_id,))
+            delivered_result = cur.fetchone()
+            delivered_count = delivered_result.get("delivered_count", 0) if delivered_result else 0
+            
+            # Toplam paket sipariş sayısı (tüm durumlar)
+            cur.execute("""
+                SELECT COUNT(*) as total_count
+                FROM orders
+                WHERE restaurant_id = %s
+                  AND type = 'paket_servis';
+            """, (restaurant_id,))
+            total_result = cur.fetchone()
+            total_count = total_result.get("total_count", 0) if total_result else 0
+            
+            # Kalan paket sayısı
+            remaining_packages = max_package - delivered_count if max_package > 0 else None
+            
+            return True, {
+                "package_info": package_info,
+                "max_package": max_package,
+                "delivered_count": delivered_count,
+                "total_count": total_count,
+                "remaining_packages": remaining_packages,
+                "has_package_left": remaining_packages is None or remaining_packages > 0
+            }, None
+            
+    except Exception as e:
+        return False, None, str(e)
 
 
 # ✅ CREATE or UPDATE (UUID uyumlu)

@@ -23,9 +23,35 @@ async def assign_courier_to_order(
             order = cur.fetchone()
             if not order:
                 return False, "Order not found"
-            print(order)
+            
             if order[1] != 'paket_servis':
                 return False, "Only package service orders can be assigned to couriers"
+            
+            # Paket kontrolü - Restoranın kalan paketi var mı?
+            cur.execute("""
+                SELECT max_package
+                FROM restaurant_package_prices
+                WHERE restaurant_id = %s;
+            """, (restaurant_id,))
+            package_info = cur.fetchone()
+            
+            if package_info and package_info[0]:  # max_package tanımlıysa
+                max_package = package_info[0]
+                # Teslim edilmiş paket sayısını say
+                cur.execute("""
+                    SELECT COUNT(*) as delivered_count
+                    FROM orders
+                    WHERE restaurant_id = %s
+                      AND type = 'paket_servis'
+                      AND status = 'teslim_edildi';
+                """, (restaurant_id,))
+                delivered_result = cur.fetchone()
+                delivered_count = delivered_result[0] if delivered_result else 0
+                
+                # Kalan paket kontrolü
+                remaining_packages = max_package - delivered_count
+                if remaining_packages <= 0:
+                    return False, f"Paket hakkınız tükenmiş. Kalan paket: 0, Maksimum paket: {max_package}, Teslim edilen: {delivered_count}"
             
             # Kurye kontrolü
             cur.execute("SELECT id FROM drivers WHERE id=%s", (courier_id,))
