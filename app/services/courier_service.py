@@ -155,6 +155,7 @@ async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]
       d.deleted,
       d.deleted_at,
       ob.country_id,
+      COALESCE(ds.online, FALSE) AS is_online,
       c.name   AS country_name,
       ob.state_id,
       s.name   AS state_name,
@@ -167,6 +168,7 @@ async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]
     LEFT JOIN driver_onboarding ob ON ob.driver_id = d.id
     LEFT JOIN countries c ON c.id = ob.country_id
     LEFT JOIN states s ON s.id = ob.state_id
+    LEFT JOIN driver_status ds ON ds.driver_id = d.id
     ORDER BY d.created_at DESC
     LIMIT $1 OFFSET $2;
     """

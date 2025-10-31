@@ -55,12 +55,21 @@ async def finalize_profile(driver_id: str):
 # === SET ONLINE STATUS ===
 
 async def set_online(driver_id: str, online: bool, at: Optional[str] = None):
+    print("Setting online status for driver:", driver_id, "to", online, "at", at)
+    checkDriver = await fetch_one(
+        "SELECT id FROM drivers WHERE id = $1::uuid  AND is_active = TRUE AND (deleted IS NULL OR deleted = FALSE)",
+        driver_id
+    )
+    if not checkDriver:
+        return {"deleted": True}
+    
     last = await fetch_one(
         "SELECT online FROM driver_status WHERE driver_id = $1::uuid",
         driver_id
     )
     if last is not None and last["online"] == online:
         return {"changed": False, "inserted_event": False}
+
 
     sql = """
     WITH ts AS (

@@ -260,6 +260,7 @@ async def get_courier_profile(
                                         "email": "test@test.com",
                                         "createdAt": "2023-10-01T12:34:56Z",
                                         "countryId": 90,
+                                        "is_online": True,
                                         "countryName": "Turkey",
                                         "stateId": 34,
                                         "stateName": "Istanbul",

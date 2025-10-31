@@ -25,7 +25,13 @@ async def finalize_profile(driver):
     return {"success": True, "message": "Profile submitted for approval", "data": {}}
 
 async def go_online(driver):
-    await driver_service.set_online(driver["id"], True)
+    ok = await driver_service.set_online(driver["id"], True)
+    if ok.get("deleted"):
+        return {"success": False, "message": "Account inactive or deleted", "data": {}}
+
+    if not ok.get("changed", False):
+        return {"success": True, "message": "Already online", "data": {}}
+
     return {"success": True, "message": "You are online", "data": {}}
 
 async def go_offline(driver):
