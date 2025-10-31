@@ -3,7 +3,7 @@ from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.routes import contact, general_setting,dealer ,notification, package
-from .routes import (auth,admin, admin_job,driver,courier_package ,jobs, city_price,payments, system,restaurant_package_price,support_ticket,courier,carrier_type, geo, file, restaurant, subsection, 
+from .routes import (auth,admin,company_package, admin_job,driver,courier_package ,jobs, city_price,payments, system,restaurant_package_price,support_ticket,courier,carrier_type, geo, file, restaurant, subsection, 
                      cargotype, banner,company, paytr_route,order, gps_route, courier_rating,courier_package_subscriptions, map, restaurant_job)
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
@@ -109,6 +109,7 @@ app.include_router(courier_package_subscriptions.router)
 app.include_router(company.router)
 app.include_router(restaurant_job.router)
 app.include_router(map.router)
+app.include_router(company_package.router)
 setup_console_logging()
 
 @app.exception_handler(HTTPException)

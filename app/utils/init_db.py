@@ -532,6 +532,17 @@ CREATE TABLE IF NOT EXISTS courier_package_subscriptions (
     deleted_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS company_packages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    carrier_km INT NOT NULL,
+    requested_km INT NOT NULL,
+    price NUMERIC(10,2) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+
 CREATE TABLE IF NOT EXISTS admin_jobs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     delivery_type TEXT NOT NULL,

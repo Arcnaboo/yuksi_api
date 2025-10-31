@@ -1,42 +1,45 @@
-from app.services import city_price_service as service
+from app.services import company_package_service as service
 
-async def list_prices():
-    rows, err = await service.list_city_prices()
+
+async def list_packages():
+    rows, err = await service.list_company_packages()
     if err:
         return {"success": False, "message": err, "data": []}
-    return {"success": True, "message": "City prices listed", "data": rows}
+    return {"success": True, "message": "Company packages listed", "data": rows}
 
 
-async def get_price(id: int):
-    row, err = await service.get_city_price(id)
-    if err:
-        return {"success": False, "message": err, "data": {}}
-    return {"success": True, "message": "City price fetched", "data": row}
+async def get_package(package_id: str):
+    row, err = await service.get_company_package(package_id)
+    if err or not row:
+        return {"success": False, "message": err or "Package not found", "data": {}}
+    return {"success": True, "message": "Company package fetched", "data": row}
 
 
-async def create_price(data: dict):
-    row, err = await service.create_city_price(
-        data["route_name"], data["country_id"], data["state_id"], data["city_id"],
-        data["courier_price"], data["minivan_price"], data["panelvan_price"],
-        data["kamyonet_price"], data["kamyon_price"]
+async def create_package(data: dict):
+    row, err = await service.create_company_package(
+        data["carrier_km"],
+        data["requested_km"],
+        data["price"]
     )
     if err:
         return {"success": False, "message": err, "data": {}}
-    return {"success": True, "message": "City price created", "data": row}
+    return {"success": True, "message": "Company package created", "data": row}
 
 
-async def update_price(id: int, data: dict):
-    ok, err = await service.update_city_price(
-        id, data["route_name"], data["country_id"], data["state_id"], data["city_id"],
-        data["courier_price"], data["minivan_price"], data["panelvan_price"],
-        data["kamyonet_price"], data["kamyon_price"]
+async def update_package(package_id: str, data: dict):
+    ok, err = await service.update_company_package(
+        package_id,
+        data["carrier_km"],
+        data["requested_km"],
+        data["price"]
     )
-    if err:
-        return {"success": False, "message": err, "data": {}}
-    return {"success": True, "message": "City price updated", "data": {}}
+    if err or not ok:
+        return {"success": False, "message": err or "Package not found", "data": {}}
+    return {"success": True, "message": "Company package updated", "data": {"id": package_id}}
 
-async def delete_price(id: int):
-    ok, err = await service.delete_city_price(id)
-    if err:
-        return {"success": False, "message": err, "data": {}}
-    return {"success": True, "message": "City price deleted", "data": {"id": id}}    
+
+async def delete_package(package_id: str):
+    ok, err = await service.delete_company_package(package_id)
+    if err or not ok:
+        return {"success": False, "message": err or "Package not found", "data": {}}
+    return {"success": True, "message": "Company package deleted", "data": {"id": package_id}}
