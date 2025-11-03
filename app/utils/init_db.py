@@ -576,6 +576,10 @@ ALTER TABLE admin_jobs
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS delivery_time TIME;
 
+-- Bayi yükleri desteği için dealer_id kolonu (mevcut tablolar için)
+ALTER TABLE admin_jobs
+    ADD COLUMN IF NOT EXISTS dealer_id UUID REFERENCES dealers(id) ON DELETE CASCADE;
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
