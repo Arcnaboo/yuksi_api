@@ -5,7 +5,7 @@ async def list_company_packages():
     try:
         with db_cursor(dict_cursor=True) as cur:
             cur.execute("""
-                SELECT id, carrier_km, requested_km, price, created_at
+                SELECT id, carrier_km, requested_km, price,is_active, created_at
                 FROM company_packages
                 ORDER BY created_at DESC;
             """)
@@ -20,7 +20,7 @@ async def get_company_package(id: str):
     try:
         with db_cursor(dict_cursor=True) as cur:
             cur.execute("""
-                SELECT id, carrier_km, requested_km, price, created_at
+                SELECT id, carrier_km, requested_km, price, is_active, created_at
                 FROM company_packages
                 WHERE id = %s;
             """, (id,))
@@ -47,16 +47,18 @@ async def create_company_package(carrier_km: int, requested_km: int, price: floa
 
 
 # ✅ Paket Güncelle
-async def update_company_package(id: str, requested_km: int, price: float):
+
+async def update_company_package(id: str, carrier_km: int, requested_km: int, price: float):
     try:
         with db_cursor() as cur:
             cur.execute("""
                 UPDATE company_packages
-                SET requested_km = %s,
+                SET carrier_km = %s,
+                    requested_km = %s,
                     price = %s
                 WHERE id = %s
                 RETURNING id;
-            """, (requested_km, price, id))
+            """, (carrier_km, requested_km, price, id))
             updated = cur.fetchone()
 
         if not updated:
@@ -66,6 +68,7 @@ async def update_company_package(id: str, requested_km: int, price: float):
 
     except Exception as e:
         return False, str(e)
+
 
 
 # ✅ Paket Sil

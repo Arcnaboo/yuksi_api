@@ -32,6 +32,7 @@ async def create_package(data: dict):
 async def update_package(id: str, data: dict):
     ok, err = await service.update_company_package(
         id,
+        data.get("carrier_km"),
         data.get("requested_km"),
         data.get("price")
     )
