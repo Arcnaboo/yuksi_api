@@ -616,6 +616,15 @@ ALTER TABLE admin_jobs
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS dealer_id UUID REFERENCES dealers(id) ON DELETE CASCADE;
 
+-- Bayi-Restoran ilişki tablosu
+CREATE TABLE IF NOT EXISTS dealer_restaurants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    dealer_id UUID NOT NULL REFERENCES dealers(id) ON DELETE CASCADE,
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(dealer_id, restaurant_id)
+);
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
@@ -638,6 +647,8 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_courier_ratings_restaurant_id ON courier_ratings(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_courier_ratings_courier_id ON courier_ratings(courier_id);
 CREATE INDEX IF NOT EXISTS idx_courier_ratings_order_id ON courier_ratings(order_id);
+CREATE INDEX IF NOT EXISTS idx_dealer_restaurants_dealer_id ON dealer_restaurants(dealer_id);
+CREATE INDEX IF NOT EXISTS idx_dealer_restaurants_restaurant_id ON dealer_restaurants(restaurant_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, user_type);
 CREATE INDEX IF NOT EXISTS ix_banners_active ON banners(active);
