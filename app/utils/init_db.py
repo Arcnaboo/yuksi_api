@@ -566,6 +566,42 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS chats (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    is_group BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS chat_participants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
+    user_type TEXT NOT NULL,
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(chat_id, user_id, user_type)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sender_id UUID NOT NULL,
+    sender_type TEXT NOT NULL,
+    receiver_id UUID NOT NULL,
+    receiver_type TEXT NOT NULL,
+    content TEXT NOT NULL,
+    sent_at TIMESTAMPTZ DEFAULT NOW(),
+    delivered_at TIMESTAMPTZ,
+    read_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
+    message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+    inserted_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(chat_id, message_id)
+);
+
 -- Restaurant jobs desteği için restaurant_id kolonu (mevcut tablolar için)
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE;
