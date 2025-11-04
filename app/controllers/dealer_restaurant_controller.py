@@ -133,3 +133,53 @@ async def dealer_remove_restaurant(dealer_id: str, restaurant_id: str) -> Dict[s
         "data": {"restaurant_id": restaurant_id}
     }
 
+
+
+async def dealer_get_restaurant_order_history(
+    dealer_id: str,
+    restaurant_id: str,
+    status: str | None = None,
+    order_type: str | None = None,
+    search: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+    limit: int = 50,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """Bayinin belirli bir restoranının sipariş geçmişini getir controller"""
+    success, orders, total_count, total_amount, error = await svc.dealer_get_restaurant_order_history(
+        dealer_id=dealer_id,
+        restaurant_id=restaurant_id,
+        status=status,
+        order_type=order_type,
+        search=search,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset
+    )
+    
+    if not success:
+        return {
+            "success": False,
+            "message": error or "Sipariş geçmişi getirilemedi",
+            "data": {
+                "orders": [],
+                "total_count": 0,
+                "total_amount": 0.0
+            }
+        }
+    
+    return {
+        "success": True,
+        "message": "Sipariş geçmişi başarıyla getirildi",
+        "data": {
+            "orders": orders if orders else [],
+            "total_count": total_count if total_count is not None else 0,
+            "total_amount": total_amount if total_amount is not None else 0.0
+        }
+    }
+
+
+
+

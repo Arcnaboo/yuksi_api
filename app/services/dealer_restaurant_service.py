@@ -349,3 +349,59 @@ async def dealer_remove_restaurant(
     except Exception as e:
         return False, str(e)
 
+
+async def dealer_get_restaurant_order_history(
+    dealer_id: str,
+    restaurant_id: str,
+    status: Optional[str] = None,
+    order_type: Optional[str] = None,
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+) -> Tuple[bool, Optional[List[Dict[str, Any]]], Optional[int], Optional[float], Optional[str]]:
+    """
+    Bayinin kendisine ait bir restoranın sipariş geçmişini getirir.
+    Returns: (success, orders_list_or_none, total_count_or_none, total_amount_or_none, error_message)
+    """
+    try:
+        # Bayi kontrolü
+        dealer = await fetch_one("SELECT id FROM dealers WHERE id = $1", dealer_id)
+        if not dealer:
+            return False, None, None, None, "Bayi bulunamadı"
+        
+        # Restoranın bayinin kendisine ait olup olmadığını kontrol et
+        link = await fetch_one(
+            "SELECT id FROM dealer_restaurants WHERE dealer_id = $1 AND restaurant_id = $2",
+            dealer_id, restaurant_id
+        )
+        if not link:
+            return False, None, None, None, "Bu restoran bu bayisine bağlı değil"
+        
+        # Sipariş geçmişini getir (order_service'i kullan)
+        from app.services import order_service
+        orders, total_count, total_amount = await order_service.get_order_history(
+            restaurant_id=restaurant_id,
+            status=status,
+            order_type=order_type,
+            search=search,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+            offset=offset
+        )
+        
+        # UUID'leri string'e çevir
+        formatted_orders = []
+        for order in orders:
+            order_dict = dict(order) if not isinstance(order, dict) else order
+            if order_dict.get("id"):
+                order_dict["id"] = str(order_dict["id"])
+            formatted_orders.append(order_dict)
+        
+        return True, formatted_orders, total_count, total_amount, None
+        
+    except Exception as e:
+        return False, None, None, None, str(e)
+

@@ -128,3 +128,38 @@ async def remove_restaurant(
     
     return await ctrl.dealer_remove_restaurant(str(dealer_id), str(restaurant_id))
 
+
+# ✅ GET: Bayinin restoranının sipariş geçmişini getir
+@router.get(
+    "/{restaurant_id}/order-history",
+    summary="Restoran Sipariş Geçmişini Getir",
+    description="Bayinin kendisine ait bir restoranın sipariş geçmişini listeler.",
+    dependencies=[Depends(require_roles(["Dealer"]))],
+)
+async def get_restaurant_order_history(
+    restaurant_id: UUID = Path(..., description="Sipariş geçmişini görüntülemek istediğiniz restoranın UUID'si"),
+    status: str | None = Query(None, description="Sipariş durumu filtresi"),
+    order_type: str | None = Query(None, description="Sipariş tipi filtresi"),
+    search: str | None = Query(None, description="Kod, müşteri adı veya telefon numarasında arama"),
+    start_date: str | None = Query(None, description="Başlangıç tarihi (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Bitiş tarihi (YYYY-MM-DD)"),
+    limit: int = Query(50, ge=1, le=200, description="Sayfa boyutu"),
+    offset: int = Query(0, ge=0, description="Sayfalama offset"),
+    claims: dict = Depends(require_roles(["Dealer"]))
+):
+    """Bayinin belirli bir restoranının sipariş geçmişini getir endpoint"""
+    dealer_id = claims.get("userId") or claims.get("sub")
+    if not dealer_id:
+        raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
+    
+    return await ctrl.dealer_get_restaurant_order_history(
+        str(dealer_id),
+        str(restaurant_id),
+        status=status,
+        order_type=order_type,
+        search=search,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset
+    )
