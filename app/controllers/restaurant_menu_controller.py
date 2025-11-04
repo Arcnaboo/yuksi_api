@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from uuid import UUID
-from ..models.restourant_menu_model import CreateMenuReq, UpdateMenuReq
-from ..services import restourant_menu_service as service
+from ..models.restaurant_menu_model import CreateMenuReq, UpdateMenuReq
+from ..services import restaurant_menu_service as service
 
 
 # ----------------------------------------------------

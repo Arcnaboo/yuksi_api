@@ -2,7 +2,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from datetime import datetime
 from ..utils.database_async import fetch_all, fetch_one
-from ..models.restourant_menu_model import CreateMenuReq, UpdateMenuReq, MenuResponse
+from ..models.restaurant_menu_model import CreateMenuReq, UpdateMenuReq, MenuResponse
 
 TABLE = "restaurant_menus"
 
