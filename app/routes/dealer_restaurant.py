@@ -65,6 +65,25 @@ async def get_dealer_restaurants(
     return await ctrl.dealer_get_restaurants(str(dealer_id), limit, offset)
 
 
+# ✅ GET: Bayinin belirli bir restoranının profilini getir
+@router.get(
+    "/{restaurant_id}",
+    summary="Restoran Profilini Getir",
+    description="Bayinin kendisine ait bir restoranın detaylı profilini getirir.",
+    dependencies=[Depends(require_roles(["Dealer"]))],
+)
+async def get_restaurant_profile(
+    restaurant_id: UUID = Path(..., description="Profilini görüntülemek istediğiniz restoranın UUID'si"),
+    claims: dict = Depends(require_roles(["Dealer"]))
+):
+    """Bayinin belirli bir restoranının profilini getir endpoint"""
+    dealer_id = claims.get("userId") or claims.get("sub")
+    if not dealer_id:
+        raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
+    
+    return await ctrl.dealer_get_restaurant_profile(str(dealer_id), str(restaurant_id))
+
+
 # ✅ DELETE: Restoran bağlantısını kaldır
 @router.delete(
     "/{restaurant_id}",

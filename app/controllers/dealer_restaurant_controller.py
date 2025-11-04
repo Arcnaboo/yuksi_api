@@ -71,6 +71,24 @@ async def dealer_get_restaurants(dealer_id: str, limit: int = 50, offset: int = 
     }
 
 
+async def dealer_get_restaurant_profile(dealer_id: str, restaurant_id: str) -> Dict[str, Any]:
+    """Bayinin belirli bir restoranının profilini getir controller"""
+    success, profile, error = await svc.dealer_get_restaurant_profile(dealer_id, restaurant_id)
+    
+    if not success:
+        return {
+            "success": False,
+            "message": error or "Restoran profili getirilemedi",
+            "data": {}
+        }
+    
+    return {
+        "success": True,
+        "message": "Restoran profili başarıyla getirildi",
+        "data": profile
+    }
+
+
 async def dealer_remove_restaurant(dealer_id: str, restaurant_id: str) -> Dict[str, Any]:
     """Bayiden restoran bağlantısını kaldır controller"""
     success, error = await svc.dealer_remove_restaurant(dealer_id, restaurant_id)
