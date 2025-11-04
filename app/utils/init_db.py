@@ -653,6 +653,13 @@ CREATE TABLE IF NOT EXISTS restaurant_menus (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS pool_orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    message TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);

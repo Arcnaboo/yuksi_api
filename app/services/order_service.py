@@ -5,6 +5,7 @@ from datetime import datetime
 import uuid
 from app.utils.database import db_cursor
 from app.utils.database_async import fetch_one, fetch_all, execute
+from app.services.pool_service import try_push_to_pool
 
 
 # === Kod Üretimi ===
@@ -505,6 +506,7 @@ async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
             order_id
         )
 
+        await try_push_to_pool(order_id)
         return True, None
 
     except Exception as e:
