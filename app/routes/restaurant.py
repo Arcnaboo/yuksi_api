@@ -46,7 +46,7 @@ async def restaurant_register(req: RestaurantRegisterReq):
     response_model= Union[List[RestaurantListItem]]
 )
 async def list_restaurants(
-    _=Depends(require_roles(["Admin"]))
+    _=Depends(require_roles(["Admin", "Dealer"]))
 ):
     """Restaurant listesi endpoint"""
     result = await ctrl.list_restaurants()
