@@ -1,11 +1,10 @@
 from typing import List
 from fastapi import APIRouter, Depends
-from uuid import UUID
 from ..models.restaurant_menu_model import CreateMenuReq, UpdateMenuReq, MenuResponse
 from ..controllers import restaurant_menu_controller
 from ..controllers.auth_controller import require_roles
 
-router = APIRouter(prefix="/menus", tags=["Menus"])
+router = APIRouter(prefix="/api/Restaurant/Menu", tags=["Restaurant Menu"])
 
 # -------------------------------
 # CREATE
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/menus", tags=["Menus"])
     response_model=MenuResponse
 )
 async def create_menu(
-    restaurant_id: UUID,
+    restaurant_id: str,
     req: CreateMenuReq,
     claims: dict = Depends(require_roles(["Restaurant", "Admin"]))
 ):

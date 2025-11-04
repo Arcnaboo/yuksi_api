@@ -1,14 +1,22 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class CreateMenuReq(BaseModel):
     name: str
     info: str
     price: float
     image_url: str
-    restourant_id: str
 
 class UpdateMenuReq(CreateMenuReq):
-    id: str
+    name: str
+    info: str
+    price: float
+    image_url: str
 
-class MenuResponse(CreateMenuReq):
+class MenuResponse(BaseModel):
     id: str
+    name: str
+    info: str
+    price: float
+    image_url: str
+    restaurant_id: str
