@@ -250,6 +250,72 @@ async def dealer_get_restaurant_profile(
         return False, None, str(e)
 
 
+async def dealer_get_restaurant_couriers(
+    dealer_id: str,
+    restaurant_id: str,
+    limit: int = 50,
+    offset: int = 0
+) -> Tuple[bool, Optional[List[Dict[str, Any]]], Optional[str]]:
+    """
+    Bayinin kendisine ait bir restoranın kuryelerini getirir.
+    Returns: (success, couriers_list_or_none, error_message)
+    """
+    try:
+        # Bayi kontrolü
+        dealer = await fetch_one("SELECT id FROM dealers WHERE id = $1", dealer_id)
+        if not dealer:
+            return False, None, "Bayi bulunamadı"
+        
+        # Restoranın bayinin kendisine ait olup olmadığını kontrol et
+        link = await fetch_one(
+            "SELECT id FROM dealer_restaurants WHERE dealer_id = $1 AND restaurant_id = $2",
+            dealer_id, restaurant_id
+        )
+        if not link:
+            return False, None, "Bu restoran bu bayisine bağlı değil"
+        
+        # Restoranın kuryelerini getir
+        rows = await fetch_all("""
+            SELECT 
+                rc.id,
+                rc.restaurant_id,
+                rc.courier_id,
+                rc.assigned_at,
+                rc.notes,
+                rc.created_at,
+                d.first_name,
+                d.last_name,
+                d.email,
+                d.phone,
+                d.is_active,
+                CONCAT(d.first_name, ' ', d.last_name) as courier_name
+            FROM restaurant_couriers rc
+            LEFT JOIN drivers d ON d.id = rc.courier_id
+            WHERE rc.restaurant_id = $1
+            ORDER BY rc.assigned_at DESC
+            LIMIT $2 OFFSET $3
+        """, restaurant_id, limit, offset)
+        
+        # asyncpg.Record objelerini dict'e çevir ve UUID'leri string'e çevir
+        result = []
+        if rows:
+            for row in rows:
+                row_dict = dict(row)
+                # UUID'leri string'e çevir
+                if row_dict.get("id"):
+                    row_dict["id"] = str(row_dict["id"])
+                if row_dict.get("restaurant_id"):
+                    row_dict["restaurant_id"] = str(row_dict["restaurant_id"])
+                if row_dict.get("courier_id"):
+                    row_dict["courier_id"] = str(row_dict["courier_id"])
+                result.append(row_dict)
+        
+        return True, result, None
+        
+    except Exception as e:
+        return False, None, str(e)
+
+
 async def dealer_remove_restaurant(
     dealer_id: str,
     restaurant_id: str,

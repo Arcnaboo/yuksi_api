@@ -625,6 +625,14 @@ CREATE TABLE IF NOT EXISTS dealer_restaurants (
     UNIQUE(dealer_id, restaurant_id)
 );
 
+CREATE TABLE IF NOT EXISTS extra_services (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    carrier_type TEXT NOT NULL DEFAULT 'courier',
+    service_name TEXT NOT NULL,
+    price NUMERIC(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
