@@ -633,6 +633,18 @@ CREATE TABLE IF NOT EXISTS gps_table (
 );
 CREATE INDEX IF NOT EXISTS idx_gps_updated_at ON gps_table(updated_at DESC);
 
+-- Restoran Menü tablosu --
+CREATE TABLE IF NOT EXISTS restaurant_menus (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    info TEXT NOT NULL,
+    price NUMERIC NOT NULL,
+    image_url TEXT,
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
