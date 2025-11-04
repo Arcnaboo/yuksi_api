@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/Restaurant/Menu", tags=["Restaurant Menu"])
 # CREATE
 # -------------------------------
 @router.post(
-    "/",
+    "",
     summary="Create Menu",
     description="Yeni menü ekler.",
     response_model=MenuResponse
@@ -26,7 +26,7 @@ async def create_menu(
 # GET ALL
 # -------------------------------
 @router.get(
-    "/",
+    "",
     summary="Get All Menus",
     description="Tüm menüleri listeler.",
     response_model=List[MenuResponse]
@@ -41,7 +41,7 @@ async def get_all_menus(
 # GET ONE
 # -------------------------------
 @router.get(
-    "/{menu_id}/",
+    "/{menu_id}",
     summary="Get Menu",
     description="Belirli bir menüyü ID ile getirir.",
     response_model=MenuResponse
@@ -57,7 +57,7 @@ async def get_menu(
 # UPDATE
 # -------------------------------
 @router.put(
-    "/{menu_id}/",
+    "/{menu_id}",
     summary="Update Menu",
     description="Mevcut menüyü günceller.",
     response_model=MenuResponse
@@ -74,7 +74,7 @@ async def update_menu(
 # DELETE
 # -------------------------------
 @router.delete(
-    "/{menu_id}/",
+    "/{menu_id}",
     summary="Delete Menu",
     description="Belirli bir menüyü siler."
 )
