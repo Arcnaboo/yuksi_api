@@ -16,10 +16,10 @@ async def get_service(id: str):
 
 
 async def create_service(data: dict):
-    row, err = await svc.create_service(
-        data["carrier_type"],
-        data["service_name"],
-        data["price"]
+    row, err = await svc.create_service(     
+        data.get("carrier_type"),
+        data.get("service_name"),
+        data.get("price")
     )
     if err:
         return {"success": False, "message": err, "data": {}}
