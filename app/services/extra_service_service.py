@@ -18,7 +18,7 @@ async def get_service(id: str):
     )
     return row, None
 
-,
+
 # ✅ Oluştur
 async def create_service(carrier_type: str, service_name: str, price: float):
     row = await fetch_one(
