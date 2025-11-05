@@ -33,6 +33,10 @@ async def go_online(driver=Depends(auth_controller.get_current_driver)):
 async def go_offline(driver=Depends(auth_controller.get_current_driver)):
     return await driver_controller.go_offline(driver)
 
+@router.get("/work-hours/remaining")
+async def how_many_left_works_hour(driver=Depends(auth_controller.get_current_driver)):
+    return await driver_controller.how_many_left_works_hour(driver)
+
 @router.get("/earnings")
 async def earnings(driver=Depends(auth_controller.get_current_driver)):
     return await driver_controller.earnings(driver)
