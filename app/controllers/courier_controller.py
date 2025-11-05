@@ -27,6 +27,7 @@ async def courier_register3(user_id: str, req):
         req.vehicleType,
         req.vehicleCapacity,
         req.stateId,
+        req.dealer_id,
         req.vehicleYear,
         req.documents,
     )
@@ -80,3 +81,7 @@ async def update_courier_profile(user_id: str, req):
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Courier profile updated", "data": {}}
+
+async def get_dealers_by_state(state_id: int):
+    dealers = await svc.get_dealers_by_state(state_id)
+    return {"success": True, "message": "Dealers list", "data": dealers}

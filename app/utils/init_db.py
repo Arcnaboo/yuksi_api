@@ -237,6 +237,7 @@ CREATE TABLE IF NOT EXISTS driver_onboarding (
     vehicle_type     INT,
     vehicle_capacity INT,
     state_id         INT,
+    dealer_id        UUID DEFAULT NULL,
     vehicle_year     INT,
     step             INT DEFAULT 0,
     updated_at       TIMESTAMPTZ DEFAULT NOW()
