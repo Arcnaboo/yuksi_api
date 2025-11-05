@@ -27,7 +27,7 @@ async def create_subscription(data: dict) -> Dict[str, Any]:
         with db_cursor(dict_cursor=True) as cur:
             cur.execute("""
                 INSERT INTO courier_package_subscriptions (courier_id, package_id, start_date, end_date, is_active)
-                VALUES (%(courier_id)s, %(package_id)s, %(now_tr)s, %(calc_end_date)s, TRUE)
+                VALUES (%(courier_id)s, %(package_id)s, %(now_tr)s, %(calc_end_date)s, FALSE)
                 RETURNING id;
             """, params)
             row = cur.fetchone()
@@ -51,9 +51,13 @@ async def list_subscriptions(limit: int = 100, offset: int = 0) -> Dict[str, Any
                     p.package_name  AS "packageName",
                     p.description   AS "packageDescription",
                     p.price         AS "packagePrice",
-                    p.duration_days AS "packageDurationDays"
+                    p.duration_days AS "packageDurationDays",
+                    d.first_name    AS "courierFirstName",
+                    d.last_name     AS "courierLastName",
+                    d.phone         AS "courierPhone"
                 FROM courier_package_subscriptions AS s
                 JOIN courier_packages AS p ON p.id = s.package_id
+                JOIN drivers AS d ON d.id = s.courier_id
                 ORDER BY s.created_at DESC
                 LIMIT %s OFFSET %s;
             """, (limit, offset))
@@ -78,10 +82,13 @@ async def get_subscription_by_id(subscription_id: Union[str, UUID]) -> Dict[str,
                     p.package_name  AS "packageName",
                     p.description   AS "packageDescription",
                     p.price         AS "packagePrice",
-                    p.duration_days AS "packageDurationDays"
+                    p.duration_days AS "packageDurationDays",
+                    d.first_name    AS "courierFirstName",
+                    d.last_name     AS "courierLastName",
+                    d.phone         AS "courierPhone"
                 FROM courier_package_subscriptions AS s
-                LEFT JOIN courier_packages AS p
-                       ON p.id = s.package_id
+                LEFT JOIN courier_packages AS p ON p.id = s.package_id
+                LEFT JOIN drivers AS d ON d.id = s.courier_id       
                 WHERE s.id = %s;
             """, (str(subscription_id),))
             row = cur.fetchone()
@@ -108,10 +115,14 @@ async def get_subscription_by_courier_id(courier_id: Union[str, UUID]) -> Dict[s
                     p.package_name  AS "packageName",
                     p.description   AS "packageDescription",
                     p.price         AS "packagePrice",
-                    p.duration_days AS "packageDurationDays"
+                    p.duration_days AS "packageDurationDays",
+                    d.first_name    AS "courierFirstName",
+                    d.last_name     AS "courierLastName",
+                    d.phone         AS "courierPhone"
                 FROM courier_package_subscriptions AS s
                 LEFT JOIN courier_packages AS p
                        ON p.id = s.package_id
+                LEFT JOIN drivers AS d ON d.id = s.courier_id
                 WHERE s.courier_id = %s
                 ORDER BY s.created_at DESC
                 LIMIT 1;
