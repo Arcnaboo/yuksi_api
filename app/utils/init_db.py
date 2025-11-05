@@ -430,7 +430,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
 
 
 CREATE TABLE IF NOT EXISTS city_prices (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     route_name TEXT NOT NULL,
     country_id INT NOT NULL,
     state_id INT NOT NULL,
