@@ -20,14 +20,14 @@ async def get_campaign(id: str):
         return None, str(e)
 
 
-async def create_campaign(title, discount_rate, rule, content, file_id):
+async def create_campaign(title, discount_rate, rule, content):
     try:
         with db_cursor(dict_cursor=True) as cur:
             cur.execute(f"""
-                INSERT INTO {TABLE} (title, discount_rate, rule, content, file_id)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO {TABLE} (title, discount_rate, rule, content)
+                VALUES (%s, %s, %s, %s)
                 RETURNING *;
-            """, (title, discount_rate, rule, content, file_id))
+            """, (title, discount_rate, rule, content))
             return cur.fetchone(), None
     except Exception as e:
         return None, str(e)

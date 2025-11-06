@@ -640,7 +640,6 @@ CREATE TABLE IF NOT EXISTS campaigns (
     discount_rate FLOAT NOT NULL,
     rule TEXT,
     content TEXT,
-    file_id UUID,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
