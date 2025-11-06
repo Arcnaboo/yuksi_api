@@ -8,4 +8,3 @@ class PoolPushReq(BaseModel):
 class PoolOrderRes(BaseModel):
     order_id: UUID
     message: str | None = None
-    created_at: str

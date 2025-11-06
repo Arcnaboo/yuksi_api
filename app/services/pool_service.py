@@ -21,7 +21,7 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
             detail="Invalid driver ID"
         )    
 
-        # Driver konumu
+    # Driver konumu
     driver_location = await fetch_one(
         """
         SELECT latitude, longitude 
@@ -31,40 +31,45 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
         driver_id
     )
 
-    if not driver_location:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Driver location not found"
-        )
-
-    driver_lat = float(driver_location["latitude"])
-    driver_lng = float(driver_location["longitude"])
-
-
     offset = (page - 1) * size
 
-    query = f"""
-        SELECT 
-            p.order_id,
-            p.message,
-            p.created_at,
-            SQRT(
-                POWER(o.pickup_lat - {driver_lat}, 2) +
-                POWER(o.pickup_lng - {driver_lng}, 2)
-            ) AS distance
-        FROM {TABLE_NAME} AS p
-        JOIN orders AS o ON p.order_id = o.id
-        ORDER BY distance ASC
-        LIMIT $1 OFFSET $2;
-    """
+    if not driver_location:
+        # Driver konumu yoksa basit sorgu
+        query = f"""
+            SELECT
+                p.order_id,
+                p.message
+            FROM {TABLE_NAME} AS p
+            LIMIT $1 OFFSET $2;
+            """
+        
+        rows = await fetch_all(query, size, offset)
+        return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
+    else:
+        # Driver konumu varsa mesafeye göre sırala
+        driver_lat = float(driver_location["latitude"])
+        driver_lng = float(driver_location["longitude"])
 
-    rows = await fetch_all(query, size, offset)
-    return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
+        query = f"""
+            SELECT 
+                p.order_id,
+                p.message,
+                SQRT(
+                    POWER(o.pickup_lat - {driver_lat}, 2) +
+                    POWER(o.pickup_lng - {driver_lng}, 2)
+                ) AS distance
+            FROM {TABLE_NAME} AS p
+            JOIN orders AS o ON p.order_id = o.id
+            ORDER BY distance ASC
+            LIMIT $1 OFFSET $2;
+        """
+
+        rows = await fetch_all(query, size, offset)
+        return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
 
 async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     try:
         UUID(restaurant_id)
-        UUID(req.order_id)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -104,7 +109,7 @@ async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     query = f"""
         INSERT INTO {TABLE_NAME} (order_id, message)
         VALUES ($1, $2)
-        RETURNING order_id, message, created_at;
+        RETURNING order_id, message;
     """
 
     row = await fetch_one(query, req.order_id, req.message)
