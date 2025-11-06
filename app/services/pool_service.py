@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import HTTPException, status
 from ..models.pool_model import PoolPushReq, PoolOrderRes
-from ..utils.database_async import fetch_all, fetch_one
+from ..utils.database_async import fetch_all, fetch_one, execute
 
 TABLE_NAME = "pool_orders"
 
@@ -13,7 +13,7 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
     if page < 1 or size < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid pagination parameters"
+            detail="Sayfa numaraları sıfırdan büyük olmalı"
         )
     
     try:
@@ -21,7 +21,7 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid driver ID"
+            detail="Bilinmeyen sürücü ID"
         )    
 
     # Driver konumu
@@ -41,10 +41,28 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
         query = f"""
             SELECT
                 p.order_id,
-                p.message
-            FROM {TABLE_NAME} AS p
-            LIMIT $1 OFFSET $2;
-            """
+                p.message,
+                o.code AS order_code,
+                o.status AS order_status,
+                o.type AS order_type,
+                o.created_at AS order_created_at,
+                o.updated_at AS order_updated_at,
+                o.delivery_address,
+                o.pickup_lat,
+                o.pickup_lng,
+                o.dropoff_lat,
+                o.dropoff_lng,
+                o.customer AS customer_name,
+                o.phone AS customer_phone,
+                o.amount,
+                r.name AS restaurant_name,
+                r.address_line1 AS restaurant_address,
+                r.phone AS restaurant_phone
+            FROM pool_orders p
+            JOIN orders o ON o.id = p.order_id
+            LEFT JOIN restaurants r ON r.id = o.restaurant_id
+            LIMIT $1 OFFSET $2
+        """
         
         rows = await fetch_all(query, size, offset)
         return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
@@ -54,17 +72,34 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
         driver_lng = float(driver_location["longitude"])
 
         query = f"""
-            SELECT 
+            SELECT
                 p.order_id,
                 p.message,
+                o.code AS order_code,
+                o.status AS order_status,
+                o.type AS order_type,
+                o.created_at AS order_created_at,
+                o.updated_at AS order_updated_at,
+                o.delivery_address,
+                o.pickup_lat,
+                o.pickup_lng,
+                o.dropoff_lat,
+                o.dropoff_lng,
+                o.customer AS customer_name,
+                o.phone AS customer_phone,
+                o.amount,
+                r.name AS restaurant_name,
+                r.address_line1 AS restaurant_address,
+                r.phone AS restaurant_phone,
                 SQRT(
                     POWER(o.pickup_lat - {driver_lat}, 2) +
                     POWER(o.pickup_lng - {driver_lng}, 2)
                 ) AS distance
-            FROM {TABLE_NAME} AS p
-            JOIN orders AS o ON p.order_id = o.id
+            FROM pool_orders p
+            JOIN orders o ON p.order_id = o.id
+            LEFT JOIN restaurants r ON r.id = o.restaurant_id
             ORDER BY distance ASC
-            LIMIT $1 OFFSET $2;
+            LIMIT $1 OFFSET $2
         """
 
         rows = await fetch_all(query, size, offset)
@@ -74,31 +109,53 @@ async def get_my_pool_orders(restaurant_id: str, page: int = 1, size: int = 50):
     if page < 1 or size < 1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid pagination parameters"
+            detail="Sayfa numaraları sıfırdan büyük olmalı"
         )
-    
+
     try:
         UUID(restaurant_id)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid restaurant ID"
-        )    
+            detail="Bilinmeyen sürücü ID"
+        )
 
     offset = (page - 1) * size
 
     query = f"""
-        SELECT 
+        SELECT
             p.order_id,
-            p.message
-        FROM {TABLE_NAME} AS p
-        JOIN orders AS o ON p.order_id = o.id
+            p.message,
+            o.code AS order_code,
+            o.status AS order_status,
+            o.type AS order_type,
+            o.created_at AS order_created_at,
+            o.updated_at AS order_updated_at,
+            o.delivery_address,
+            o.pickup_lat,
+            o.pickup_lng,
+            o.dropoff_lat,
+            o.dropoff_lng,
+            o.customer AS customer_name,
+            o.phone AS customer_phone,
+            o.amount,
+            r.name AS restaurant_name,
+            r.address_line1 AS restaurant_address,
+            r.phone AS restaurant_phone
+        FROM {TABLE_NAME} p
+        JOIN orders o ON o.id = p.order_id
+        LEFT JOIN restaurants r ON r.id = o.restaurant_id
         WHERE o.restaurant_id = $1
-        LIMIT $2 OFFSET $3;
+        ORDER BY o.created_at DESC
+        LIMIT $2 OFFSET $3
     """
 
     rows = await fetch_all(query, restaurant_id, size, offset)
-    return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
+
+    result = [PoolOrderRes(**dict(row)) for row in rows]
+
+    return result
+
 
 async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     try:
@@ -106,14 +163,14 @@ async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format"
+            detail="Bilinmeyen UUID formatı"
         )    
 
     # Sipariş gerçekten bu restorana ait mi kontrol et
     order_check = await fetch_one(
         """
         SELECT id 
-        FROM orders 
+        FROM orders
         WHERE id = $1 AND restaurant_id = $2;
         """,
         req.order_id,
@@ -123,7 +180,7 @@ async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     if not order_check:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Order does not belong to this restaurant"
+            detail="Bu sipariş bu restorana ait değil"
         )
 
     # Pool kayıt kontrolü
@@ -135,21 +192,56 @@ async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     if exists:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Order already exists in pool"
+            detail="Sipariş zaten havuzda"
         )
 
     # Kayıt ekle
-    query = f"""
-        INSERT INTO {TABLE_NAME} (order_id, message)
-        VALUES ($1, $2)
-        RETURNING order_id, message;
-    """
+    row = await fetch_one(
+        """
+            WITH ins AS (
+                INSERT INTO pool_orders (order_id, message)
+                VALUES ($1, $2)
+                RETURNING order_id, message
+            ),
+            upd AS (
+                UPDATE orders
+                SET courier_id = NULL,
+                    status = 'siparis_havuza_atildi',
+                    updated_at = NOW()
+                WHERE id = $1
+                RETURNING *
+            )
+            SELECT
+                upd.id AS order_id,
+                $2 AS message,
+                upd.code AS order_code,
+                upd.status AS order_status,
+                upd.type AS order_type,
+                upd.created_at AS order_created_at,
+                upd.updated_at AS order_updated_at,
+                upd.delivery_address,
+                upd.pickup_lat,
+                upd.pickup_lng,
+                upd.dropoff_lat,
+                upd.dropoff_lng,
+                upd.customer AS customer_name,
+                upd.phone AS customer_phone,
+                upd.amount,
+                r.name AS restaurant_name,
+                r.address_line1 AS restaurant_address,
+                r.phone AS restaurant_phone
+            FROM upd
+            LEFT JOIN restaurants r ON r.id = upd.restaurant_id;
 
-    row = await fetch_one(query, req.order_id, req.message)
+        """,
+        req.order_id,
+        req.message
+    )
+
     if not row:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to push order to pool"
+            detail="Havuza gönderilirken bir hata oluştu"
         )
     
     data = dict(row)
@@ -162,7 +254,7 @@ async def delete_pool_order(order_id: str):
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid order ID format"
+            detail="Bilinmeyen UUID formatı"
         )
     
     query = f"""
@@ -175,7 +267,7 @@ async def delete_pool_order(order_id: str):
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found in pool"
+            detail="Sipariş havuzda değil"
         )
 
     return {"message": "Order deleted from pool", "order_id": order_id}
@@ -187,7 +279,7 @@ async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid UUID format"
+            detail="Bilinmeyen UUID formatı"
         )    
 
     # Siparişin bu restorana ait olup olmadığını kontrol et
@@ -205,7 +297,7 @@ async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
     if not order_check:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Order does not belong to this restaurant or not found in pool"
+            detail="Sipariş bu restorana ait değil veya havuzda değil"
         )
 
     # Kayıt sil
@@ -219,7 +311,7 @@ async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found in pool"
+            detail="Sipariş havuzda değil"
         )
 
     return {"message": "Order deleted from pool", "order_id": order_id}

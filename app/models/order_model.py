@@ -13,6 +13,7 @@ class DeliveryType(str, Enum):
 class OrderStatus(str, Enum):
     IPTAL = "iptal"
     HAZIRLANIYOR = "hazirlaniyor"
+    SIPARIS_HAVUZA_ATILDI = "siparis_havuza_atildi"
     KURYEYE_ISTEK_ATILDI = "kuryeye_istek_atildi"
     KURYE_REDDETTI = "kurye_reddetti"
     KURYE_CAGRILDI = "kurye_cagrildi"
