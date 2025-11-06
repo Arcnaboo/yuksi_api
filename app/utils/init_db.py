@@ -683,6 +683,23 @@ CREATE TABLE IF NOT EXISTS pool_orders (
     UNIQUE(order_id)
 );
 
+CREATE TABLE IF NOT EXISTS order_watchers (
+    order_id UUID PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE,
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    avalible_drivers UUID[],
+    rejected_drivers UUID[],
+    last_check TIMESTAMPTZ,
+    closed BOOLEAN DEFAULT false
+);
+
+-- Aktif izlemeleri hızlı almak için
+CREATE INDEX IF NOT EXISTS idx_order_watchers_closed
+    ON order_watchers (closed);
+
+-- Restorana bağlı aktif watcher sorguları için
+CREATE INDEX IF NOT EXISTS idx_order_watchers_restaurant_closed
+    ON order_watchers (restaurant_id, closed);
+
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);

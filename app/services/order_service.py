@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 from app.utils.database import db_cursor
 from app.utils.database_async import fetch_one, fetch_all, execute
-from app.services.pool_service import try_push_to_pool
+from app.services.order_watch_service import tick_watch, add_rejection, delete, create_watch, update_available_drivers
 
 
 # === Kod Üretimi ===
@@ -75,6 +75,9 @@ async def create_order(
                     """,
                     order_id, item["product_name"], item["price"], item["quantity"], total
                 )
+
+        # Order izleyiciyi başlat
+        await create_watch(uuid.UUID(str(order_id)))
 
         return {"id": str(order_id), "code": code, "created_at": created_at}, None
 
@@ -213,6 +216,10 @@ async def delete_order(order_id: str, restaurant_id: str) -> Tuple[bool, Optiona
         )
         if result.endswith(" 0"):
             return False, "Order not found"
+        
+        # Sipariş izleyicisini sil
+        await delete(uuid.UUID(order_id))
+
         return True, None
     except Exception as e:
         return False, str(e)
@@ -506,7 +513,10 @@ async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
             order_id
         )
 
-        # await try_push_to_pool(order_id)
+        # Sipariş izleyicisini güncelle
+        await update_available_drivers(uuid.UUID(order_id))
+        await add_rejection(uuid.UUID(order_id), uuid.UUID(courier_id))
+        await tick_watch(uuid.UUID(order_id))
         
         return True, None
 
@@ -544,6 +554,9 @@ async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
             """,
             order_id
         )
+
+        # Sipariş izleyicisini güncelle
+        await delete(uuid.UUID(order_id))
 
         return True, None
 

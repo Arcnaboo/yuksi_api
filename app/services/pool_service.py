@@ -5,6 +5,10 @@ from ..utils.database_async import fetch_all, fetch_one
 
 TABLE_NAME = "pool_orders"
 
+# TODO : Hata mesajlarını tükçeleştir
+# TODO : Havuza atıldığında orderın durumunu güncelle
+# TODO : get_pool_orders fonksiyonuna daha fazla detay ekle, normal orderlar nasıl geliyorsa öyle gelmeli
+
 async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
     if page < 1 or size < 1:
         raise HTTPException(
@@ -220,13 +224,33 @@ async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
 
     return {"message": "Order deleted from pool", "order_id": order_id}
 
-async def try_push_to_pool(order_id: str):
-    try:
-        order_id = UUID(order_id)
-    except ValueError:
+async def try_push_to_pool(order_id: UUID):
+    
+    print(f"Trying to push order {order_id} to pool...")
+
+    exists = await fetch_one(
+        f"SELECT order_id FROM {TABLE_NAME} WHERE order_id = $1;",
+        order_id
+    )
+
+    if exists:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid order ID format"
-        )    
-    
+            detail="Order already exists in pool"
+        )
+
+    # Kayıt ekle
+    query = f"""
+        INSERT INTO {TABLE_NAME} (order_id, message)
+        VALUES ($1, $2)
+        RETURNING order_id, message;
+    """
+
+    row = await fetch_one(query, order_id, "System auto-push")
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to push order to pool"
+        )
+
     # TODO : Implement logic to decide whether to push to pool
