@@ -5,10 +5,6 @@ from ..utils.database_async import fetch_all, fetch_one, execute
 
 TABLE_NAME = "pool_orders"
 
-# TODO : Hata mesajlarını tükçeleştir
-# TODO : Havuza atıldığında orderın durumunu güncelle
-# TODO : get_pool_orders fonksiyonuna daha fazla detay ekle, normal orderlar nasıl geliyorsa öyle gelmeli
-
 async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
     if page < 1 or size < 1:
         raise HTTPException(
@@ -317,8 +313,6 @@ async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
     return {"message": "Order deleted from pool", "order_id": order_id}
 
 async def try_push_to_pool(order_id: UUID):
-    
-    print(f"Trying to push order {order_id} to pool...")
 
     exists = await fetch_one(
         f"SELECT order_id FROM {TABLE_NAME} WHERE order_id = $1;",
@@ -332,17 +326,49 @@ async def try_push_to_pool(order_id: UUID):
         )
 
     # Kayıt ekle
-    query = f"""
-        INSERT INTO {TABLE_NAME} (order_id, message)
-        VALUES ($1, $2)
-        RETURNING order_id, message;
-    """
+    row = await fetch_one(
+        """
+            WITH ins AS (
+                INSERT INTO pool_orders (order_id, message)
+                VALUES ($1, $2)
+                RETURNING order_id, message
+            ),
+            upd AS (
+                UPDATE orders
+                SET courier_id = NULL,
+                    status = 'siparis_havuza_atildi',
+                    updated_at = NOW()
+                WHERE id = $1
+                RETURNING *
+            )
+            SELECT
+                upd.id AS order_id,
+                $2 AS message,
+                upd.code AS order_code,
+                upd.status AS order_status,
+                upd.type AS order_type,
+                upd.created_at AS order_created_at,
+                upd.updated_at AS order_updated_at,
+                upd.delivery_address,
+                upd.pickup_lat,
+                upd.pickup_lng,
+                upd.dropoff_lat,
+                upd.dropoff_lng,
+                upd.customer AS customer_name,
+                upd.phone AS customer_phone,
+                upd.amount,
+                r.name AS restaurant_name,
+                r.address_line1 AS restaurant_address,
+                r.phone AS restaurant_phone
+            FROM upd
+            LEFT JOIN restaurants r ON r.id = upd.restaurant_id;
 
-    row = await fetch_one(query, order_id, "System auto-push")
+        """,
+        order_id,
+        "System auto-push"
+    )
     if not row:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to push order to pool"
         )
-
-    # TODO : Implement logic to decide whether to push to pool
