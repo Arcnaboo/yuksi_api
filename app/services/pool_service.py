@@ -2,7 +2,6 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from ..models.pool_model import PoolPushReq, PoolOrderRes
 from ..utils.database_async import fetch_all, fetch_one
-from ..services.gps_service import get_latest
 
 TABLE_NAME = "pool_orders"
 
