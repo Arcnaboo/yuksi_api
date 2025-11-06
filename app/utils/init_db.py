@@ -42,7 +42,20 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'kurye_cagrildi', 'kuryeye_verildi', 'yolda', 'teslim_edildi');
+    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'kuryeye_istek_atildi', 'kurye_reddetti', 'kurye_cagrildi', 'kuryeye_verildi', 'yolda', 'teslim_edildi');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Mevcut enum'a yeni değerleri ekle (eğer yoksa)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'kuryeye_istek_atildi' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'order_status')) THEN
+        ALTER TYPE order_status ADD VALUE 'kuryeye_istek_atildi';
+    END IF;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'kurye_reddetti' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'order_status')) THEN
+        ALTER TYPE order_status ADD VALUE 'kurye_reddetti';
+    END IF;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
