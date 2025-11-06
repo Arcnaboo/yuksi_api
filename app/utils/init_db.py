@@ -634,6 +634,16 @@ CREATE TABLE IF NOT EXISTS extra_services (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS campaigns (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    discount_rate FLOAT NOT NULL,
+    rule TEXT,
+    content TEXT,
+    file_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS gps_table (
     driver_id UUID PRIMARY KEY REFERENCES drivers(id) ON DELETE CASCADE,
     latitude NUMERIC(10,6) NOT NULL,
