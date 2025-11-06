@@ -17,8 +17,7 @@ async def create_campaign(data: dict):
         data.get("title"),
         data.get("discount_rate"),
         data.get("rule"),
-        data.get("content"),
-        data.get("file_id")
+        data.get("content")
     )
     if err:
         return {"success": False, "message": err, "data": {}}
