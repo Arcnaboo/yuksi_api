@@ -654,10 +654,10 @@ CREATE TABLE IF NOT EXISTS restaurant_menus (
 );
 
 CREATE TABLE IF NOT EXISTS pool_orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     message TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(order_id)
 );
 
 -- Basit indexler (idempotent)

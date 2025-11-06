@@ -507,6 +507,7 @@ async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
         )
 
         await try_push_to_pool(order_id)
+        
         return True, None
 
     except Exception as e:

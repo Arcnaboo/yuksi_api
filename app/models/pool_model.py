@@ -1,11 +1,11 @@
+from uuid import UUID
 from pydantic import BaseModel
 
 class PoolPushReq(BaseModel):
-    order_id: str
+    order_id: UUID
     message: str | None = None
 
-class PoolOrderModel(BaseModel):
-    id: str
-    order_id: str
-    restaurant_id: str
+class PoolOrderRes(BaseModel):
+    order_id: UUID
+    message: str | None = None
     created_at: str

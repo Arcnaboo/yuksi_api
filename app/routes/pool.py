@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Body, Depends
-from ..models.pool_model import PoolPushReq
+from fastapi import APIRouter, Depends
+from typing import List
+from ..models.pool_model import PoolPushReq, PoolOrderRes
 from ..controllers import pool_controller as ctrl
 from ..controllers.auth_controller import require_roles
 
@@ -12,17 +13,28 @@ router = APIRouter(
     "",
     summary="Push to Pool",
     description="Push data to the pool",
+    response_model=PoolOrderRes
 )
 async def push_to_pool(req: PoolPushReq, claims: dict = Depends(require_roles(["Admin", "Restaurant"]))):
-    return ctrl.push_to_pool(req, claims)
+    return await ctrl.push_to_pool(req, claims)
 
 @router.get(
-    "",
+    "/",
     summary="Get Pool Orders",
     description="Retrieve orders from the pool",
+    response_model=List[PoolOrderRes]
 )
 async def get_pool_orders(claims: dict = Depends(require_roles(["Admin", "Courier"]))):
-    return await ctrl.get_pool_orders(claims)
+    return await ctrl.get_pool_orders(claims, page=1, size=50)
+
+@router.get(
+    "/{page}/{size}",
+    summary="Get Pool Orders",
+    description="Retrieve orders from the pool with pagination",
+    response_model=List[PoolOrderRes]
+)
+async def get_pool_orders(page: int, size: int, claims: dict = Depends(require_roles(["Admin", "Courier"]))):
+    return await ctrl.get_pool_orders(claims, page=page, size=size)
 
 @router.delete(
     "/{order_id}",
