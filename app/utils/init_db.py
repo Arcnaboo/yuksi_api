@@ -237,6 +237,7 @@ CREATE TABLE IF NOT EXISTS driver_onboarding (
     vehicle_type     INT,
     vehicle_capacity INT,
     state_id         INT,
+    dealer_id        UUID DEFAULT NULL,
     vehicle_year     INT,
     step             INT DEFAULT 0,
     updated_at       TIMESTAMPTZ DEFAULT NOW()
@@ -429,7 +430,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
 
 
 CREATE TABLE IF NOT EXISTS city_prices (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     route_name TEXT NOT NULL,
     country_id INT NOT NULL,
     state_id INT NOT NULL,
@@ -631,6 +632,16 @@ CREATE TABLE IF NOT EXISTS extra_services (
     service_name TEXT NOT NULL,
     price NUMERIC(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS campaigns (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    discount_rate FLOAT NOT NULL,
+    rule TEXT,
+    content TEXT,
+    file_id UUID,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS gps_table (

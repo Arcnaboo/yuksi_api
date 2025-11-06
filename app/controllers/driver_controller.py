@@ -26,12 +26,16 @@ async def finalize_profile(driver):
 
 async def go_online(driver):
     ok = await driver_service.set_online(driver["id"], True)
+    if ok.get("subscription_inactive_or_expired", False):
+        print("subscription inactive")
+        return {"success": False, "message": "Subscription inactive or expired", "data": {}}
     if ok.get("deleted"):
         return {"success": False, "message": "Account inactive or deleted", "data": {}}
 
     if not ok.get("changed", False):
         return {"success": True, "message": "Already online", "data": {}}
-
+    
+    
     return {"success": True, "message": "You are online", "data": {}}
 
 async def go_offline(driver):
@@ -45,3 +49,8 @@ async def earnings(driver):
 async def banners():
     rows = await driver_service.get_banners()
     return {"success": True, "message": "Banners", "data": rows}
+
+
+async def how_many_left_works_hour(driver):
+    count = await driver_service.how_many_left_works_hour(driver["id"])
+    return {"success": True, "message": "Remaining work hours", "data": {"remaining_hours": count}}

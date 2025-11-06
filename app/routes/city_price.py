@@ -1,27 +1,31 @@
-from fastapi import APIRouter, Depends
-from app.controllers import city_price_controller as ctrl
-from app.models.city_price_model import CityPriceCreate, CityPriceUpdate
-from app.controllers.auth_controller import require_roles
+from fastapi import APIRouter, Path, Depends
 from app.models.city_price_model import CityPriceBase
+from app.controllers.city_price_controller import *
+from app.controllers.auth_controller import require_roles
 
-router = APIRouter(prefix="/api/CityPrice", tags=["City Price"])
+router = APIRouter(prefix="/api/admin/city-prices", tags=["City Prices"])
 
-@router.get("/list", dependencies=[Depends(require_roles(["Admin"]))])
-async def list_prices():
-    return await ctrl.list_prices()
 
-@router.get("/get/{id}", dependencies=[Depends(require_roles(["Admin"]))])
-async def get_price(id: int):
-    return await ctrl.get_price(id)
+@router.get("", dependencies=[Depends(require_roles(["Admin"]))])
+async def list_route():
+    return await list_prices()
 
-@router.post("/create", dependencies=[Depends(require_roles(["Admin"]))])
-async def create_price(data: CityPriceBase):
-    return await ctrl.create_price(data.model_dump())
 
-@router.put("/update/{id}", dependencies=[Depends(require_roles(["Admin"]))])
-async def update_price(id: int, data: CityPriceBase):
-    return await ctrl.update_price(id, data.model_dump())
+@router.get("/{price_id}", dependencies=[Depends(require_roles(["Admin"]))])
+async def get_route(price_id: str = Path(...)):
+    return await get_price(price_id)
 
-@router.delete("/delete/{id}", dependencies=[Depends(require_roles(["Admin"]))])
-async def delete_price(id: int):
-    return await ctrl.delete_price(id)
+
+@router.post("", dependencies=[Depends(require_roles(["Admin"]))])
+async def create_route(body: CityPriceBase):
+    return await create_price(body.model_dump(by_alias=False))
+
+
+@router.put("/{price_id}", dependencies=[Depends(require_roles(["Admin"]))])
+async def update_route(price_id: str, body: CityPriceBase):
+    return await update_price(price_id, body.model_dump(exclude_unset=True, by_alias=False))
+
+
+@router.delete("/{price_id}", dependencies=[Depends(require_roles(["Admin"]))])
+async def delete_route(price_id: str):
+    return await delete_price(price_id)

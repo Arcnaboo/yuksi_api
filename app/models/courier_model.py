@@ -67,6 +67,7 @@ class CourierRegisterStep3Req(BaseModel):
     stateId: int = Field(..., ge=1)
     vehicleYear: int = Field(..., ge=1900)
     documents: List[DocumentItem] = Field(default_factory=list)
+    dealer_id: Optional[UUID] = Field(None, description="Opsiyonel bayi ID'si")
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -75,6 +76,7 @@ class CourierRegisterStep3Req(BaseModel):
                     "vehicleType": 0,
                     "vehicleCapacity": 100,
                     "stateId": 34,
+                    "dealer_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                     "vehicleYear": 2020,
                     "documents": [
                         {"docType": "VergiLevhasi", "fileId": "c9c9e6f4-9db9-4b1a-8f90-7c0f1fb2a4cd"},

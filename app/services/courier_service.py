@@ -79,6 +79,7 @@ async def courier_register_step3(
     vehicle_type: int,
     vehicle_capacity: int,
     state_id: int,
+    dealer_id: Optional[UUID],
     vehicle_year: int,
     documents: Optional[List[Dict[str, Any]]] = None
 ) -> Optional[str]:
@@ -86,16 +87,27 @@ async def courier_register_step3(
     if not exists:
         return "User not found"
 
+    if dealer_id is not None:
+        dealer_exists = await fetch_one("SELECT 1 FROM dealers WHERE id=$1", str(dealer_id))
+        if not dealer_exists:
+            return "Dealer not found"
+        
+    
     await execute(
-        """INSERT INTO driver_onboarding (driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year, step)
-           VALUES ($1, $2, $3, $4, $5, 3)
-           ON CONFLICT (driver_id) DO UPDATE SET
-             vehicle_type=EXCLUDED.vehicle_type,
-             vehicle_capacity=EXCLUDED.vehicle_capacity,
-             state_id=EXCLUDED.state_id,
-             vehicle_year=EXCLUDED.vehicle_year,
-             step=3;""",
-        driver_id, vehicle_type, vehicle_capacity, state_id, vehicle_year
+        """
+        INSERT INTO driver_onboarding
+            (driver_id, vehicle_type, vehicle_capacity, state_id, dealer_id, vehicle_year, step)
+        VALUES
+            ($1::uuid, $2, $3, $4, $5::uuid, $6, 3)
+        ON CONFLICT (driver_id) DO UPDATE SET
+            vehicle_type      = EXCLUDED.vehicle_type,
+            vehicle_capacity  = EXCLUDED.vehicle_capacity,
+            state_id          = EXCLUDED.state_id,
+            dealer_id         = EXCLUDED.dealer_id,
+            vehicle_year      = EXCLUDED.vehicle_year,
+            step              = 3;
+        """,
+        driver_id, vehicle_type, vehicle_capacity, state_id, dealer_id, vehicle_year
     )
 
     if not documents:
@@ -340,3 +352,20 @@ async def update_courier_profile(
 
     await execute(sql, *params)
     return None
+
+async def get_dealers_by_state(state_id: int) -> List[Dict[str, Any]]:
+    sql = """
+    SELECT
+      id,
+      name,
+      address,
+      phone,
+      email,
+      state_id,
+      created_at
+    FROM dealers
+    WHERE state_id = $1
+    ORDER BY name ASC;
+    """
+    rows = await fetch_all(sql, state_id)
+    return [dict(r) for r in rows] if rows else []

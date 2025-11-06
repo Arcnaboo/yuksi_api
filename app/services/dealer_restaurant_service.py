@@ -405,3 +405,65 @@ async def dealer_get_restaurant_order_history(
     except Exception as e:
         return False, None, None, None, str(e)
 
+
+async def dealer_get_restaurant_couriers_live_locations(
+    dealer_id: str,
+    restaurant_id: str
+) -> Tuple[bool, Optional[List[Dict[str, Any]]], Optional[str]]:
+    """
+    Bayinin kendisine ait bir restoranın kuryelerinin canlı GPS konumlarını getirir.
+    Returns: (success, couriers_gps_list_or_none, error_message)
+    """
+    try:
+        # Bayi kontrolü
+        dealer = await fetch_one("SELECT id FROM dealers WHERE id = $1", dealer_id)
+        if not dealer:
+            return False, None, "Bayi bulunamadı"
+        
+        # Restoranın bayinin kendisine ait olup olmadığını kontrol et
+        link = await fetch_one(
+            "SELECT id FROM dealer_restaurants WHERE dealer_id = $1 AND restaurant_id = $2",
+            dealer_id, restaurant_id
+        )
+        if not link:
+            return False, None, "Bu restoran bu bayisine bağlı değil"
+        
+        # Restoranın kuryelerinin GPS verilerini getir
+        rows = await fetch_all("""
+            SELECT 
+                d.id as courier_id,
+                CONCAT(d.first_name, ' ', d.last_name) as courier_name,
+                d.phone as courier_phone,
+                d.email as courier_email,
+                d.is_active,
+                g.latitude,
+                g.longitude,
+                g.updated_at as location_updated_at,
+                rc.assigned_at,
+                rc.notes
+            FROM restaurant_couriers rc
+            INNER JOIN drivers d ON d.id = rc.courier_id
+            LEFT JOIN gps_table g ON g.driver_id = d.id
+            WHERE rc.restaurant_id = $1
+            ORDER BY g.updated_at DESC NULLS LAST
+        """, restaurant_id)
+        
+        # asyncpg.Record objelerini dict'e çevir ve UUID'leri string'e çevir
+        result = []
+        if rows:
+            for row in rows:
+                row_dict = dict(row)
+                # UUID'leri string'e çevir
+                if row_dict.get("courier_id"):
+                    row_dict["courier_id"] = str(row_dict["courier_id"])
+                # Timestamp'leri ISO formatına çevir
+                if row_dict.get("location_updated_at"):
+                    row_dict["location_updated_at"] = row_dict["location_updated_at"].isoformat() if hasattr(row_dict["location_updated_at"], "isoformat") else str(row_dict["location_updated_at"])
+                if row_dict.get("assigned_at"):
+                    row_dict["assigned_at"] = row_dict["assigned_at"].isoformat() if hasattr(row_dict["assigned_at"], "isoformat") else str(row_dict["assigned_at"])
+                result.append(row_dict)
+        
+        return True, result, None
+        
+    except Exception as e:
+        return False, None, str(e)

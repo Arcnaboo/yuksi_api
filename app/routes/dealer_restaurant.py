@@ -107,6 +107,27 @@ async def get_restaurant_couriers(
     )
 
 
+# ✅ GET: Bayinin restoranının kuryelerinin canlı GPS konumlarını getir
+@router.get(
+    "/{restaurant_id}/couriers/live-locations",
+    summary="Restoran Kuryelerinin Canlı Konumları",
+    description="Bayinin kendisine ait bir restoranın kuryelerinin anlık GPS konumlarını getirir.",
+    dependencies=[Depends(require_roles(["Dealer"]))],
+)
+async def get_restaurant_couriers_live_locations(
+    restaurant_id: UUID = Path(..., description="Kurye konumlarını görüntülemek istediğiniz restoranın UUID'si"),
+    claims: dict = Depends(require_roles(["Dealer"]))
+):
+    """Bayinin belirli bir restoranının kuryelerinin canlı GPS konumlarını getir endpoint"""
+    dealer_id = claims.get("userId") or claims.get("sub")
+    if not dealer_id:
+        raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
+    
+    return await ctrl.dealer_get_restaurant_couriers_live_locations(
+        str(dealer_id), str(restaurant_id)
+    )
+
+
 
 
 

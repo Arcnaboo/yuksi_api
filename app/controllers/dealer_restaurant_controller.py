@@ -181,5 +181,28 @@ async def dealer_get_restaurant_order_history(
     }
 
 
+async def dealer_get_restaurant_couriers_live_locations(
+    dealer_id: str,
+    restaurant_id: str
+) -> Dict[str, Any]:
+    """Bayinin belirli bir restoranının kuryelerinin canlı GPS konumlarını getir controller"""
+    success, couriers_gps, error = await svc.dealer_get_restaurant_couriers_live_locations(
+        dealer_id, restaurant_id
+    )
+    
+    if not success:
+        return {
+            "success": False,
+            "message": error or "Kurye konumları getirilemedi",
+            "data": []
+        }
+    
+    return {
+        "success": True,
+        "message": "Kurye konumları başarıyla getirildi",
+        "data": couriers_gps if couriers_gps else []
+    }
+
+
 
 

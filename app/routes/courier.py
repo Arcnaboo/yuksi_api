@@ -174,7 +174,67 @@ async def courier_register2(
 )
 async def courier_register3(
     user_id: str = Path(..., description="Kullanıcının UUID değeri"),
-    req: CourierRegisterStep3Req = Body(...),
+    req: CourierRegisterStep3Req = Body(
+        ...,
+        openapi_examples={
+            "with_dealer": {
+                "summary": "Bayi ile (dealer_id gönderilir)",
+                "value": {
+                    "vehicleType": 0,
+                    "vehicleCapacity": 100,
+                    "stateId": 34,
+                    "vehicleYear": 2020,
+                    "dealer_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                    "documents": [
+                        {"docType": "VergiLevhasi", "fileId": "c9c9e6f4-9db9-4b1a-8f90-7c0f1fb2a4cd"},
+                        {"docType": "EhliyetOn",  "fileId": "5b2b1f16-6e87-4f2b-9d9e-1e0b0d0a1f22"},
+                        {"docType": "EhliyetArka","fileId": "3a1a2b3c-4d5e-6f70-8g90-1h2i3j4k5l6m"},
+                        {"docType": "RuhsatOn",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
+                        {"docType": "RuhsatArka",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
+                        {"docType": "KimlikOn","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                        {"docType": "KimlikArka","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                    ]
+                },
+            },
+            "without_dealer": {
+                "summary": "Bayi olmadan (alanı hiç gönderme)",
+                "value": {
+                    "vehicleType": 1,
+                    "vehicleCapacity": 80,
+                    "stateId": 6,
+                    "vehicleYear": 2018,
+                    "documents": [
+                        {"docType": "VergiLevhasi", "fileId": "c9c9e6f4-9db9-4b1a-8f90-7c0f1fb2a4cd"},
+                        {"docType": "EhliyetOn",  "fileId": "5b2b1f16-6e87-4f2b-9d9e-1e0b0d0a1f22"},
+                        {"docType": "EhliyetArka","fileId": "3a1a2b3c-4d5e-6f70-8g90-1h2i3j4k5l6m"},
+                        {"docType": "RuhsatOn",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
+                        {"docType": "RuhsatArka",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
+                        {"docType": "KimlikOn","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                        {"docType": "KimlikArka","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                    ]
+                },
+            },
+            "dealer_null": {
+                "summary": "Bayi null (opsiyonel/nullable alan)",
+                "value": {
+                    "vehicleType": 2,
+                    "vehicleCapacity": 120,
+                    "stateId": 35,
+                    "vehicleYear": 2022,
+                    "dealer_id": None,
+                    "documents": [
+                        {"docType": "VergiLevhasi", "fileId": "c9c9e6f4-9db9-4b1a-8f90-7c0f1fb2a4cd"},
+                        {"docType": "EhliyetOn",  "fileId": "5b2b1f16-6e87-4f2b-9d9e-1e0b0d0a1f22"},
+                        {"docType": "EhliyetArka","fileId": "3a1a2b3c-4d5e-6f70-8g90-1h2i3j4k5l6m"},
+                        {"docType": "RuhsatOn",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
+                        {"docType": "RuhsatArka",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
+                        {"docType": "KimlikOn","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                        {"docType": "KimlikArka","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                    ]
+                },
+            },
+        },
+    ),
 ):
     return await ctrl.courier_register3(user_id, req)
 
@@ -505,3 +565,51 @@ async def update_courier_profile(
     _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
 ):
     return await ctrl.update_courier_profile(user_id, req)
+
+
+@router.get(
+    "/{state_id}/get_dealers",
+    summary="Get Dealers by State",
+    description="Fetches a list of dealers operating in the specified state.",
+    responses={
+        200: {
+            "description": "Dealers retrieved successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Successful response",
+                            "value": {
+                                "success": True,
+                                "message": "Dealers list",
+                                "data": [
+                                    {
+                                        "dealer_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                                        "dealer_name": "Yuksi Dealer 1",
+                                        "state_id": 34,
+                                        "state_name": "Istanbul",
+                                        "address": "123 Yuksi St, Istanbul",
+                                        "phone": "5551234567",
+                                        "email": "dealer@yuksi.com"
+                                    }
+                                ]
+                            }
+                        },
+                        "not_found": {
+                            "summary": "No dealers found",
+                            "value": {
+                                "success": False,
+                                "message": "No dealers found in the specified city",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_dealers_by_state(
+    state_id: int = Path(..., description="The ID of the state to fetch dealers for")
+):
+    return await ctrl.get_dealers_by_state(state_id)
