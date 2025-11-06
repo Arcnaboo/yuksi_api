@@ -500,7 +500,7 @@ async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
         await execute(
             """
             UPDATE orders
-            SET courier_id = NULL, status = 'kurye_cagrildi', updated_at = NOW()
+            SET courier_id = NULL, status = 'kurye_reddetti', updated_at = NOW()
             WHERE id = $1;
             """,
             order_id
