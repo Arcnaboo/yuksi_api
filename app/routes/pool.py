@@ -19,28 +19,31 @@ async def push_to_pool(req: PoolPushReq, claims: dict = Depends(require_roles(["
     return await ctrl.push_to_pool(req, claims)
 
 @router.get(
-    "/",
-    summary="Get Pool Orders",
-    description="Retrieve orders from the pool",
+    "/my-orders",
+    summary="Get My Pool Orders",
+    description="Retrieve pool orders for the authenticated restaurant",
     response_model=List[PoolOrderRes]
 )
-async def get_pool_orders(claims: dict = Depends(require_roles(["Admin", "Courier"]))):
-    return await ctrl.get_pool_orders(claims, page=1, size=50)
+async def get_my_pool_orders(page: int = 1, size: int = 50,claims: dict = Depends(require_roles(["Admin", "Restaurant"]))):
+    return await ctrl.get_my_pool_orders(claims, page=page, size=size)
 
 @router.get(
-    "/{page}/{size}",
+    "/nearby-orders",
     summary="Get Pool Orders",
-    description="Retrieve orders from the pool with pagination",
-    response_model=List[PoolOrderRes]
+    description="Retrieve pool orders for the authenticated driver with nearest orders first",
+    response_model=List[PoolOrderRes],
 )
-async def get_pool_orders(page: int, size: int, claims: dict = Depends(require_roles(["Admin", "Courier"]))):
-    return await ctrl.get_pool_orders(claims, page=page, size=size)
+async def get_pool_orders(
+    page: int = 1,
+    size: int = 50,
+    claims: dict = Depends(require_roles(["Admin", "Courier"]))
+):
+    return await ctrl.get_nearby_pool_orders(claims, page=page, size=size)
 
 @router.delete(
     "/{order_id}",
     summary="Delete Pool Order",
     description="Delete an order from the pool",
 )
-async def delete_pool_order(order_id: str, claims: dict = Depends(require_roles(["Admin"]))):
+async def delete_pool_order(order_id: str, claims: dict = Depends(require_roles(["Admin", "Restaurant"]))):
     return await ctrl.delete_pool_order(order_id, claims)
-

@@ -65,6 +65,36 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
 
         rows = await fetch_all(query, size, offset)
         return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
+    
+async def get_my_pool_orders(restaurant_id: str, page: int = 1, size: int = 50):
+    if page < 1 or size < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid pagination parameters"
+        )
+    
+    try:
+        UUID(restaurant_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid restaurant ID"
+        )    
+
+    offset = (page - 1) * size
+
+    query = f"""
+        SELECT 
+            p.order_id,
+            p.message
+        FROM {TABLE_NAME} AS p
+        JOIN orders AS o ON p.order_id = o.id
+        WHERE o.restaurant_id = $1
+        LIMIT $2 OFFSET $3;
+    """
+
+    rows = await fetch_all(query, restaurant_id, size, offset)
+    return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
 
 async def push_to_pool(req: PoolPushReq, restaurant_id: str):
     try:
@@ -146,6 +176,49 @@ async def delete_pool_order(order_id: str):
 
     return {"message": "Order deleted from pool", "order_id": order_id}
 
+async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
+    try:
+        UUID(order_id)
+        UUID(restaurant_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid UUID format"
+        )    
+
+    # Siparişin bu restorana ait olup olmadığını kontrol et
+    order_check = await fetch_one(
+        """
+        SELECT p.order_id
+        FROM pool_orders AS p
+        JOIN orders AS o ON p.order_id = o.id
+        WHERE p.order_id = $1 AND o.restaurant_id = $2;
+        """,
+        order_id,
+        restaurant_id
+    )
+
+    if not order_check:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Order does not belong to this restaurant or not found in pool"
+        )
+
+    # Kayıt sil
+    query = f"""
+        DELETE FROM {TABLE_NAME}
+        WHERE order_id = $1
+        RETURNING order_id;
+    """
+
+    result = await fetch_one(query, order_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found in pool"
+        )
+
+    return {"message": "Order deleted from pool", "order_id": order_id}
 
 async def try_push_to_pool(order_id: str):
     try:
