@@ -12,6 +12,30 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
         if not restaurant_id:
             return False, "Restaurant ID bulunamadı."
         
+        # Paket kontrolü - Restoranın kalan paketi var mı?
+        package_info = await fetch_one("""
+            SELECT max_package
+            FROM restaurant_package_prices
+            WHERE restaurant_id = $1
+        """, restaurant_id)
+        
+        if package_info and package_info.get("max_package") is not None:
+            max_package = package_info.get("max_package")
+            # Teslim edilmiş paket sayısını say
+            delivered_result = await fetch_one("""
+                SELECT COUNT(*) as delivered_count
+                FROM orders
+                WHERE restaurant_id = $1
+                  AND type = 'paket_servis'
+                  AND status = 'teslim_edildi'
+            """, restaurant_id)
+            delivered_count = delivered_result.get("delivered_count", 0) if delivered_result else 0
+            
+            # Kalan paket kontrolü
+            remaining_packages = max_package - delivered_count
+            if remaining_packages <= 0:
+                return False, f"Paket hakkınız tükenmiş. Kalan paket: 0, Maksimum paket: {max_package}, Teslim edilen: {delivered_count}"
+        
         query = """
         INSERT INTO admin_jobs (
             delivery_type, carrier_type, vehicle_type,
@@ -87,8 +111,37 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
         row = await fetch_one(query, *params)
         if not row:
             return False, "Kayıt başarısız oldu."
+        
+        job_id = row["id"] if isinstance(row, dict) else row[0]
+        
+        # Paket sayısını azalt - Yeni bir order oluştur (paket_servis tipinde, teslim_edildi durumunda)
+        # Bu order sadece paket sayısını azaltmak için
+        if package_info and package_info.get("max_package") is not None:
+            from app.services.order_service import generate_order_code
+            
+            # Order kodu oluştur
+            order_code = await generate_order_code()
+            
+            # Yük için bir order oluştur (paket_servis tipinde, teslim_edildi durumunda)
+            # Bu order sadece paket sayısını azaltmak için
+            await execute("""
+                INSERT INTO orders (
+                    restaurant_id, code, type, status, amount, 
+                    customer, phone, address, delivery_address,
+                    pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
+                    carrier_type, vehicle_type,
+                    created_at, updated_at
+                )
+                VALUES (
+                    $1, $2, 'paket_servis', 'teslim_edildi', 0,
+                    'Restaurant Yük', '0000000000', 'Yük Teslimatı', 'Yük Teslimatı',
+                    0, 0, 0, 0,
+                    'kurye', '2_teker_motosiklet',
+                    NOW(), NOW()
+                )
+            """, restaurant_id, order_code)
 
-        return True, row["id"] if isinstance(row, dict) else row[0]
+        return True, job_id
 
     except Exception as e:
         return False, str(e)
