@@ -223,3 +223,13 @@ async def get_order_courier_gps(
         "message": "Order courier GPS location retrieved successfully",
         "data": courier_data
     }
+
+
+async def mark_order_as_delivered_by_courier(
+    courier_id: str,
+    order_id: str
+) -> Dict[str, Any]:
+    success, error = await svc.mark_order_as_delivered_by_courier(courier_id, order_id)
+    if not success:
+        return {"success": False, "message": error, "data": {}}
+    return {"success": True, "message": "Order marked as delivered successfully", "data": {}}

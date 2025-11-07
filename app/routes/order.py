@@ -224,6 +224,16 @@ async def get_nearby_couriers(
 
 
 
-
-
+#kurye siparişi teslim aldım ekle
+@router.post(
+    "/courier/{courier_id}/orders/{order_id}/courier-delivered",
+    summary="Mark Order as Delivered by Courier",
+    description="Kuryenin bir siparişi teslim aldığını işaretlemesi",
+    response_model=dict
+)
+async def mark_order_as_delivered_by_courier(
+    courier_id: str = Path(..., description="Courier ID"),
+    order_id: str = Path(..., description="Order ID")
+):
+    return await ctrl.mark_order_as_delivered_by_courier(courier_id, order_id)
 
