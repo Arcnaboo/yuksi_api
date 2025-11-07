@@ -5,6 +5,41 @@ from ..utils.database_async import fetch_all, fetch_one, execute
 
 TABLE_NAME = "pool_orders"
 
+
+async def _has_package_left(restaurant_id: str) -> tuple[bool, int | None]:
+    """Restoranın paket hakkı var mı? (kalan paket sayısını döndürür)."""
+    package_info = await fetch_one(
+        """
+        SELECT max_package
+        FROM restaurant_package_prices
+        WHERE restaurant_id = $1;
+        """,
+        restaurant_id,
+    )
+
+    if not package_info:
+        # Paket tanımı yoksa kısıtlama uygulama
+        return True, None
+
+    max_package = package_info.get("max_package")
+    if max_package is None:
+        return True, None
+
+    delivered_row = await fetch_one(
+        """
+        SELECT COUNT(*) AS delivered_count
+        FROM orders
+        WHERE restaurant_id = $1
+          AND type = 'paket_servis'
+          AND status = 'teslim_edildi';
+        """,
+        restaurant_id,
+    )
+
+    delivered_count = int(delivered_row.get("delivered_count", 0)) if delivered_row else 0
+    remaining = max_package - delivered_count
+    return remaining > 0, remaining
+
 async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
     if page < 1 or size < 1:
         raise HTTPException(
@@ -179,6 +214,14 @@ async def push_to_pool(req: PoolPushReq, restaurant_id: str):
             detail="Bu sipariş bu restorana ait değil"
         )
 
+    # Paket hakkı kontrolü
+    has_package, remaining = await _has_package_left(restaurant_id)
+    if not has_package:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Paket hakkınız tükenmiş. Siparişi havuza gönderemezsiniz."
+        )
+
     # Pool kayıt kontrolü
     exists = await fetch_one(
         f"SELECT order_id FROM {TABLE_NAME} WHERE order_id = $1;",
@@ -313,6 +356,21 @@ async def delete_pool_order_with_restaurant(order_id: str, restaurant_id: str):
     return {"message": "Order deleted from pool", "order_id": order_id}
 
 async def try_push_to_pool(order_id: UUID):
+    order_row = await fetch_one(
+        "SELECT restaurant_id FROM orders WHERE id = $1;",
+        order_id,
+    )
+    if not order_row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found"
+        )
+
+    restaurant_id = str(order_row["restaurant_id"])
+
+    has_package, remaining = await _has_package_left(restaurant_id)
+    if not has_package:
+        return False
 
     exists = await fetch_one(
         f"SELECT order_id FROM {TABLE_NAME} WHERE order_id = $1;",
@@ -320,10 +378,7 @@ async def try_push_to_pool(order_id: UUID):
     )
 
     if exists:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Order already exists in pool"
-        )
+        return True
 
     # Kayıt ekle
     row = await fetch_one(
@@ -372,3 +427,4 @@ async def try_push_to_pool(order_id: UUID):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to push order to pool"
         )
+    return True

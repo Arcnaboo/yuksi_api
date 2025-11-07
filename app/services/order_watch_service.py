@@ -157,6 +157,8 @@ async def tick_watch(order_id: UUID):
     candidates = await compute_final_candidates(order_id)
 
     if len(candidates) == 0:
-        await try_push_to_pool(order_id)
+        pushed = await try_push_to_pool(order_id)
+        if not pushed:
+            return
         await close(order_id)
         await delete(order_id)
