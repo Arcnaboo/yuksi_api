@@ -233,3 +233,13 @@ async def mark_order_as_delivered_by_courier(
     if not success:
         return {"success": False, "message": error, "data": {}}
     return {"success": True, "message": "Order marked as delivered successfully", "data": {}}
+
+
+async def mark_order_as_courier_at_location(
+    courier_id: str,
+    order_id: str
+) -> Dict[str, Any]:
+    success, error = await svc.mark_order_as_courier_at_location(courier_id, order_id)
+    if not success:
+        return {"success": False, "message": error, "data": {}}
+    return {"success": True, "message": "Courier marked as at location successfully", "data": {}}

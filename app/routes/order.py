@@ -237,3 +237,17 @@ async def mark_order_as_delivered_by_courier(
 ):
     return await ctrl.mark_order_as_delivered_by_courier(courier_id, order_id)
 
+#kurye konuma geldim ekle
+@router.post(
+    "/courier/{courier_id}/orders/{order_id}/courier-at-location",
+    summary="Mark Order as Courier At Location",
+    description="Kuryenin bir sipariş için konuma geldiğini işaretlemesi",
+    response_model=dict
+)
+async def mark_order_as_courier_at_location(
+    courier_id: str = Path(..., description="Courier ID"),
+    order_id: str = Path(..., description="Order ID")
+):
+    return await ctrl.mark_order_as_courier_at_location(courier_id, order_id)
+
+

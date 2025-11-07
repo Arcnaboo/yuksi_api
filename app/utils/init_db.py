@@ -42,7 +42,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'siparis_havuza_atildi', 'kuryeye_istek_atildi', 'kurye_reddetti', 'kurye_cagrildi', 'kuryeye_verildi', 'yolda', 'teslim_edildi');
+    CREATE TYPE order_status AS ENUM ('iptal', 'hazirlaniyor', 'siparis_havuza_atildi', 'kuryeye_istek_atildi', 'kurye_reddetti', 'kurye_cagrildi', 'kuryeye_verildi', 'yolda','konuma_geldim', 'teslim_edildi');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Mevcut enum'a yeni değerleri ekle (eğer yoksa)
