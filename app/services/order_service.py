@@ -668,3 +668,35 @@ async def mark_order_as_courier_at_location(courier_id: str, order_id: str) -> T
 
     except Exception as e:
         return False, str(e)
+    
+
+async def mark_order_as_courier_delivered_order(
+    courier_id: str,
+    order_id: str
+) -> Tuple[bool, Optional[str]]:
+    try:
+        uuid.UUID(courier_id)
+        uuid.UUID(order_id)
+    except:
+        return False, "Invalid UUID"  
+    try:
+        order = await fetch_one(
+            "SELECT id FROM orders WHERE id=$1 AND courier_id=$2;",
+            order_id, courier_id
+        )
+        if not order:
+            return False, "Order not found or unauthorized"
+
+        await execute(
+            """
+            UPDATE orders
+            SET status = 'teslim_edildi', updated_at = NOW()
+            WHERE id = $1;
+            """,
+            order_id
+        )
+
+        return True, None
+
+    except Exception as e:
+        return False, str(e)
