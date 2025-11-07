@@ -51,13 +51,23 @@ async def get_restaurant_package_status(restaurant_id: str) -> Tuple[bool, Optio
             # Kalan paket sayısı
             remaining_packages = max_package - delivered_count if max_package > 0 else None
             
+            # Uyarı mesajı (10 ve 3 paket kaldığında)
+            warning_message = None
+            if remaining_packages is not None and remaining_packages == 10:
+                warning_message = "Paketiniz bitmek üzere! Lütfen paket yükleyin."
+            elif remaining_packages is not None and remaining_packages == 3:
+                warning_message = "Paketiniz bitmek üzere! Lütfen paket yükleyin."
+            elif remaining_packages is not None and remaining_packages == 0:
+                warning_message = "Paket hakkınız tükenmiştir!"
+            
             return True, {
                 "package_info": package_info,
                 "max_package": max_package,
                 "delivered_count": delivered_count,
                 "total_count": total_count,
                 "remaining_packages": remaining_packages,
-                "has_package_left": remaining_packages is None or remaining_packages > 0
+                "has_package_left": remaining_packages is None or remaining_packages > 0,
+                "warning_message": warning_message
             }, None
             
     except Exception as e:
