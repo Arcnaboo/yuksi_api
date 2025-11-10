@@ -706,6 +706,34 @@ CREATE INDEX IF NOT EXISTS idx_order_watchers_closed
 CREATE INDEX IF NOT EXISTS idx_order_watchers_restaurant_closed
     ON order_watchers (restaurant_id, closed);
 
+-- ============================
+-- Roles & Users tabloları
+-- ============================
+
+CREATE TABLE IF NOT EXISTS roles (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Driver', 'Bayi', 'Restoran')),
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
+
+
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
 CREATE INDEX IF NOT EXISTS idx_cities_state_id   ON cities(state_id);
