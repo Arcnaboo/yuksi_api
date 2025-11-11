@@ -712,7 +712,7 @@ CREATE INDEX IF NOT EXISTS idx_order_watchers_restaurant_closed
 
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Driver', 'Bayi', 'Restoran')),
+    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Driver', 'Dealer', 'Restoran')),
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
