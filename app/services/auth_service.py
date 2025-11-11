@@ -109,8 +109,6 @@ async def login(email: str, password: str):
             u.id,
             u.email,
             u.password_hash,
-            u.deleted,
-            u.is_active,
             r.name AS role_name
         FROM users u
         JOIN roles r ON r.id = u.role_id
@@ -121,12 +119,6 @@ async def login(email: str, password: str):
 
     if not row:
         return None
-
-    if row.get("deleted"):
-        return "banned"
-
-    if not row.get("is_active"):
-        return "not_active"
 
     if not verify_pwd(password, row["password_hash"]):
         return None
