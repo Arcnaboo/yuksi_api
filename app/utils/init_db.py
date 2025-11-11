@@ -2,7 +2,7 @@ import os
 import io
 import re
 from .database import db_cursor
-
+import logging
 # -----------------------------------------------------------
 # 1) Enumlar (idempotent)
 # -----------------------------------------------------------
@@ -881,6 +881,20 @@ def init_db():
     with db_cursor() as cur:
         cur.execute(TYPE_SQL)
         cur.execute(DDL)
+
+        # 4) Roles tablosu seed et
+    with db_cursor() as cur:
+        cur.execute("""
+            INSERT INTO roles (name, description)
+            VALUES
+                ('Admin', 'Sistem yöneticisi'),
+                ('Driver', 'Courier hesabı'),
+                ('Dealer', 'Bayi hesabı'),
+                ('Restoran', 'Restoran hesabı')
+            ON CONFLICT (name) DO NOTHING;
+        """)
+        logging.info("[INIT] Roles table seeded with default values.")
+
 
     # 3) Geo referans tablolarını (yoksa/doluyoksa) seed et
     _maybe_seed_reference_table("countries", "10_countries.sql")
