@@ -562,6 +562,7 @@ CREATE TABLE IF NOT EXISTS company_packages (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
+
 CREATE TABLE IF NOT EXISTS admin_jobs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     delivery_type TEXT NOT NULL,
@@ -721,11 +722,17 @@ CREATE TABLE IF NOT EXISTS users (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    phone TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
+
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);

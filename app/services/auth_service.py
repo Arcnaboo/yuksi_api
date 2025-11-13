@@ -10,9 +10,9 @@ REFRESH_TOKEN_TTL_DAYS = 7
 
 USER_TYPE_MAP = {
     "Admin": "admin",
-    "Courier": "courier",
+    "Driver": "courier",
     "Dealer": "dealer",
-    "Restaurant": "restaurant",
+    "Restoran": "restaurant",
 }
 
 # === Yardımcı Fonksiyonlar ===
