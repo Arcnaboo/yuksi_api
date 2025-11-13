@@ -212,13 +212,6 @@ async def get_all_users(
 
         # Admins
         if not user_type or user_type == "all" or user_type == "admin":
-                
-            # Admin rol ID çek
-            role_row = await fetch_one("SELECT id FROM roles WHERE name = 'Admin'")
-            if not role_row:
-                return {"admins": []}, {"admins": 0}  # rol yoksa boş dön
-            admin_role_id = role_row["id"]
-
             admin_query = """
                 SELECT
                     id AS userId,
@@ -226,33 +219,27 @@ async def get_all_users(
                     last_name AS lastName,
                     email,
                     created_at AS createdAt
-                FROM users
-                WHERE role_id = $1
+                FROM system_admins
             """
-            params = [admin_role_id]
-
-            # Arama varsa
+            params = []
+            
             if search:
                 admin_query += """
-                    AND (
-                        LOWER(email) LIKE $2 OR
-                        LOWER(first_name) LIKE $2 OR
-                        LOWER(last_name) LIKE $2
+                    WHERE (
+                        LOWER(email) LIKE $1 OR
+                        LOWER(first_name) LIKE $1 OR
+                        LOWER(last_name) LIKE $1
                     )
                 """
                 params.append(f"%{search.lower()}%")
-
-                # LIMIT - OFFSET parametreleri
-                admin_query += f" ORDER BY created_at DESC LIMIT ${len(params)+1} OFFSET ${len(params)+2}"
+                admin_query += f" ORDER BY created_at DESC LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}"
                 params.extend([limit, offset])
-
             else:
-                admin_query += " ORDER BY created_at DESC LIMIT $2 OFFSET $3"
-                params.extend([limit, offset])
-
-            # Liste
+                admin_query += " ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+                params = [limit, offset]
+            
             admin_rows = await fetch_all(admin_query, *params)
-
+            
             result["admins"] = [
                 {
                     "userId": str(r["userid"]),
@@ -263,26 +250,23 @@ async def get_all_users(
                 }
                 for r in (admin_rows or [])
             ]
-
-            # COUNT
+            
+            # Count query for admins
             if search:
                 count_query = """
-                    SELECT COUNT(*) AS count 
-                    FROM users
-                    WHERE role_id = $1
-                      AND (
-                            LOWER(email) LIKE $2 OR
-                            LOWER(first_name) LIKE $2 OR
-                            LOWER(last_name) LIKE $2
-                          )
+                    SELECT COUNT(*) AS count FROM system_admins
+                    WHERE (
+                        LOWER(email) LIKE $1 OR
+                        LOWER(first_name) LIKE $1 OR
+                        LOWER(last_name) LIKE $1
+                    )
                 """
-                count_params = [admin_role_id, f"%{search.lower()}%"]
+                count_params = [f"%{search.lower()}%"]
                 count_row = await fetch_one(count_query, *count_params)
             else:
-                count_row = await fetch_one("SELECT COUNT(*) AS count FROM users WHERE role_id = $1", admin_role_id)
-
+                count_row = await fetch_one("SELECT COUNT(*) AS count FROM system_admins")
+            
             totals["admins"] = count_row.get("count", 0) if count_row else 0
-
 
         # Dealers
         if not user_type or user_type == "all" or user_type == "dealer":
