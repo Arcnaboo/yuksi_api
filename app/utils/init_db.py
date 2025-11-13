@@ -701,7 +701,7 @@ CREATE INDEX IF NOT EXISTS idx_order_watchers_restaurant_closed
 
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT UNIQUE NOT NULL CHECK (name IN ('Default', 'Admin', 'Courier', 'Dealer', 'Restaurant')),
+    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Courier', 'Dealer', 'Restaurant')),
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -870,7 +870,6 @@ def init_db():
         cur.execute("""
             INSERT INTO roles (name, description)
             VALUES
-                ('Default', 'Kişisel kullanıcı'),
                 ('Admin', 'Sistem yöneticisi'),
                 ('Courier', 'Courier hesabı'),
                 ('Dealer', 'Bayi hesabı'),
