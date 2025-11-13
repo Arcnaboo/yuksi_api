@@ -380,16 +380,6 @@ CREATE TABLE IF NOT EXISTS order_items (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS system_admins (
-    id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    first_name      TEXT NOT NULL,
-    last_name      TEXT NOT NULL,
-    email          TEXT UNIQUE NOT NULL,
-    password_hash  TEXT NOT NULL,
-    created_at     TIMESTAMPTZ DEFAULT NOW()
-
-);
-
 CREATE TABLE IF NOT EXISTS packages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     carrier TEXT NOT NULL,
@@ -562,7 +552,6 @@ CREATE TABLE IF NOT EXISTS company_packages (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
-
 CREATE TABLE IF NOT EXISTS admin_jobs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     delivery_type TEXT NOT NULL,
@@ -712,7 +701,7 @@ CREATE INDEX IF NOT EXISTS idx_order_watchers_restaurant_closed
 
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Driver', 'Dealer', 'Restoran')),
+    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Courier', 'Dealer', 'Restaurant')),
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -722,17 +711,11 @@ CREATE TABLE IF NOT EXISTS users (
     role_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    phone TEXT,
-    first_name TEXT,
-    last_name TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
-
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
@@ -888,9 +871,9 @@ def init_db():
             INSERT INTO roles (name, description)
             VALUES
                 ('Admin', 'Sistem yöneticisi'),
-                ('Driver', 'Courier hesabı'),
+                ('Courier', 'Courier hesabı'),
                 ('Dealer', 'Bayi hesabı'),
-                ('Restoran', 'Restoran hesabı')
+                ('Restaurant', 'Restoran hesabı')
             ON CONFLICT (name) DO NOTHING;
         """)
         logging.info("[INIT] Roles table seeded with default values.")

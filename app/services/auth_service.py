@@ -8,6 +8,13 @@ from app.utils.security import hash_pwd, verify_pwd, create_jwt
 
 REFRESH_TOKEN_TTL_DAYS = 7
 
+USER_TYPE_MAP = {
+    "Default": "default",
+    "Admin": "admin",
+    "Courier": "courier",
+    "Dealer": "dealer",
+    "Restaurant": "restaurant"
+}
 
 # === Yardımcı Fonksiyonlar ===
 def _generate_refresh_token() -> str:
@@ -69,94 +76,68 @@ async def _generate_tokens_net_style(user_id: int | str, email: str, roles: list
 # === REGISTER ===
 async def register(first_name: str, last_name: str, email: str, phone: str, password: str):
     existing = await fetch_one(
-        "SELECT id FROM drivers WHERE email=$1 OR phone=$2;", email, phone
+        "SELECT id FROM users WHERE email=$1 OR phone=$2;", email, phone
     )
     if existing:
         return None
 
     hashed = hash_pwd(password)
+
     row = await fetch_one(
         """
-        INSERT INTO drivers (first_name, last_name, email, phone, password_hash)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO users (first_name, last_name, email, phone, password_hash, role_id)
+        VALUES ($1, $2, $3, $4, $5, (SELECT id FROM roles WHERE name = 'Default'))
         RETURNING id;
         """,
         first_name, last_name, email, phone, hashed
     )
-    driver_id = row["id"]
-
-    await execute("INSERT INTO driver_status (driver_id) VALUES ($1);", driver_id)
+    user_id = row["id"]
 
     return await _generate_tokens_net_style(
-        user_id=driver_id,
+        user_id=user_id,
         email=email,
-        roles=["Courier"],
-        user_type="courier",
+        roles=["Default"],
+        user_type="default",
     )
-
 
 # === LOGIN ===
 async def login(email: str, password: str):
-    # Courier
     row = await fetch_one(
-        "SELECT id, email, password_hash, deleted FROM drivers WHERE email=$1;", email
+        """
+        SELECT 
+            u.id,
+            u.email,
+            u.password_hash,
+            r.name AS role_name
+        FROM users u
+        JOIN roles r ON r.id = u.role_id
+        WHERE u.email = $1
+        """,
+        email
     )
-    if row and row.get("deleted"):
-        return "banned"
-    if row and verify_pwd(password, row["password_hash"]):
-        return await _generate_tokens_net_style(
-            user_id=row["id"],
-            email=row["email"],
-            roles=["Courier"],
-            user_type="courier",
-        )
 
-    # Restaurant
-    r = await fetch_one(
-        "SELECT id, email, password_hash FROM restaurants WHERE email=$1;", email
+    if not row:
+        return None
+
+    if not verify_pwd(password, row["password_hash"]):
+        return None
+
+    # Role mapping
+    role = row["role_name"]  # 'Admin', 'Driver', 'Bayi', 'Restoran'
+
+    user_type = USER_TYPE_MAP.get(role)
+
+    return await _generate_tokens_net_style(
+        user_id=row["id"],
+        email=row["email"],
+        roles=[role],
+        user_type=user_type,
     )
-    if r and verify_pwd(password, r["password_hash"]):
-        return await _generate_tokens_net_style(
-            user_id=r["id"],
-            email=r["email"],
-            roles=["Restaurant"],
-            user_type="restaurant",
-        )
-
-    # ✅ Dealer login (doğru konum ve indent!)
-    d = await fetch_one(
-        "SELECT id, email, password_hash, status FROM dealers WHERE email=$1;", email
-    )
-    if d and verify_pwd(password, d["password_hash"]):
-        if d.get("status") != "active":
-            return "not_active"
-
-        return await _generate_tokens_net_style(
-            user_id=str(d["id"]),  # UUID ise string
-            email=d["email"],
-            roles=["Dealer"],
-            user_type="dealer",
-        )
-
-    # Admin
-    a = await fetch_one(
-        "SELECT id, email, password_hash FROM system_admins WHERE email=$1;", email
-    )
-    if a and verify_pwd(password, a["password_hash"]):
-        return await _generate_tokens_net_style(
-            user_id=a["id"],
-            email=a["email"],
-            roles=["Admin"],
-            user_type="admin",
-        )
-
-    return None
-
 
 # === GET DRIVER ===
 async def get_driver(driver_id: str):
     return await fetch_one(
-        "SELECT id, first_name, last_name, email, phone FROM drivers WHERE id=$1;",
+        "SELECT id, first_name, last_name, email, phone FROM users WHERE id=$1;",
         driver_id,
     )
 
@@ -169,21 +150,12 @@ async def refresh_with_token(refresh_token: str):
 
     user_id = row["user_id"]
     user_type = row["user_type"].lower()
-
-    if user_type == "courier":
-        drv = await fetch_one("SELECT email FROM drivers WHERE id=$1;", user_id)
-        if not drv:
-            return None
-        email = drv["email"]
-        roles = ["Courier"]
-    elif user_type == "restaurant":
-        rst = await fetch_one("SELECT email FROM restaurants WHERE id=$1;", user_id)
-        if not rst:
-            return None
-        email = rst["email"]
-        roles = ["Restaurant"]
-    else:
+    
+    usr = await fetch_one("SELECT email FROM users WHERE id=$1;", user_id)
+    if not usr:
         return None
+    email = usr["email"]
+    roles =  [USER_TYPE_MAP.get(user_type)]
 
     await _revoke_refresh_token(refresh_token)
     return await _generate_tokens_net_style(user_id, email, roles, user_type)
