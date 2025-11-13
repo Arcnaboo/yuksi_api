@@ -9,10 +9,11 @@ from app.utils.security import hash_pwd, verify_pwd, create_jwt
 REFRESH_TOKEN_TTL_DAYS = 7
 
 USER_TYPE_MAP = {
+    "Default": "default",
     "Admin": "admin",
     "Courier": "courier",
     "Dealer": "dealer",
-    "Restaurant": "restaurant",
+    "Restaurant": "restaurant"
 }
 
 # === Yardımcı Fonksiyonlar ===
@@ -75,31 +76,29 @@ async def _generate_tokens_net_style(user_id: int | str, email: str, roles: list
 # === REGISTER ===
 async def register(first_name: str, last_name: str, email: str, phone: str, password: str):
     existing = await fetch_one(
-        "SELECT id FROM drivers WHERE email=$1 OR phone=$2;", email, phone
+        "SELECT id FROM users WHERE email=$1 OR phone=$2;", email, phone
     )
     if existing:
         return None
 
     hashed = hash_pwd(password)
+
     row = await fetch_one(
         """
-        INSERT INTO drivers (first_name, last_name, email, phone, password_hash)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO users (first_name, last_name, email, phone, password_hash, role_id)
+        VALUES ($1, $2, $3, $4, $5, (SELECT id FROM roles WHERE name = 'Default'))
         RETURNING id;
         """,
         first_name, last_name, email, phone, hashed
     )
-    driver_id = row["id"]
-
-    await execute("INSERT INTO driver_status (driver_id) VALUES ($1);", driver_id)
+    user_id = row["id"]
 
     return await _generate_tokens_net_style(
-        user_id=driver_id,
+        user_id=user_id,
         email=email,
-        roles=["Courier"],
-        user_type="courier",
+        roles=["Default"],
+        user_type="default",
     )
-
 
 # === LOGIN ===
 async def login(email: str, password: str):
@@ -138,7 +137,7 @@ async def login(email: str, password: str):
 # === GET DRIVER ===
 async def get_driver(driver_id: str):
     return await fetch_one(
-        "SELECT id, first_name, last_name, email, phone FROM drivers WHERE id=$1;",
+        "SELECT id, first_name, last_name, email, phone FROM users WHERE id=$1;",
         driver_id,
     )
 
