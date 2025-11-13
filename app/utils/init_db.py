@@ -387,6 +387,7 @@ CREATE TABLE IF NOT EXISTS system_admins (
     email          TEXT UNIQUE NOT NULL,
     password_hash  TEXT NOT NULL,
     created_at     TIMESTAMPTZ DEFAULT NOW()
+
 );
 
 CREATE TABLE IF NOT EXISTS packages (
