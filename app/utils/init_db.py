@@ -870,7 +870,7 @@ def init_db():
         cur.execute("""
             INSERT INTO roles (name, description)
             VALUES
-                ('Default', 'Kişisel kullanıcı')
+                ('Default', 'Kişisel kullanıcı'),
                 ('Admin', 'Sistem yöneticisi'),
                 ('Courier', 'Courier hesabı'),
                 ('Dealer', 'Bayi hesabı'),
