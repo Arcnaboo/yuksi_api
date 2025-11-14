@@ -2,7 +2,7 @@ import os
 import io
 import re
 from .database import db_cursor
-
+import logging
 # -----------------------------------------------------------
 # 1) Enumlar (idempotent)
 # -----------------------------------------------------------
@@ -712,7 +712,7 @@ CREATE INDEX IF NOT EXISTS idx_order_watchers_restaurant_closed
 
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT UNIQUE NOT NULL CHECK (name IN ('Admin', 'Driver', 'Bayi', 'Restoran')),
+    name TEXT UNIQUE NOT NULL CHECK (name IN ('Default','Admin', 'Driver', 'Bayi', 'Restoran')),
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -877,12 +877,30 @@ def _maybe_seed_reference_table(table: str, filename: str):
 # Public API
 # -----------------------------------------------------------
 def init_db():
+    logging.info(f"db init started")
+    try:
     # 1) Enumlar + 2) Minimal DDL (idempotent)
-    with db_cursor() as cur:
-        cur.execute(TYPE_SQL)
-        cur.execute(DDL)
+        with db_cursor() as cur:
+            cur.execute(TYPE_SQL)
+            cur.execute(DDL)
 
-    # 3) Geo referans tablolarını (yoksa/doluyoksa) seed et
-    _maybe_seed_reference_table("countries", "10_countries.sql")
-    _maybe_seed_reference_table("states",    "20_states.sql")
-    _maybe_seed_reference_table("cities",    "30_cities.sql")
+            # 4) Roles tablosu seed et
+        with db_cursor() as cur:
+            cur.execute("""
+                INSERT INTO roles (name, description)
+                VALUES
+                    ('Default', 'Bireysel Kullanici')
+                    ('Admin', 'Sistem yöneticisi'),
+                    ('Driver', 'Courier hesabı'),
+                    ('Dealer', 'Bayi hesabı'),
+                    ('Restoran', 'Restoran hesabı')
+                ON CONFLICT (name) DO NOTHING;
+            """)
+            logging.info("[INIT] Roles table seeded with default values.")
+
+        # 3) Geo referans tablolarını (yoksa/doluyoksa) seed et
+        _maybe_seed_reference_table("countries", "10_countries.sql")
+        _maybe_seed_reference_table("states",    "20_states.sql")
+        _maybe_seed_reference_table("cities",    "30_cities.sql")
+    except Exception as e:
+        logging.info(f"the init db error: {e}")
