@@ -91,6 +91,10 @@ class OrderHistoryItem(BaseModel):
     phone: str
     address: str
     delivery_address: str
+    pickup_lat: Optional[float] = None
+    pickup_lng: Optional[float] = None
+    dropoff_lat: Optional[float] = None
+    dropoff_lng: Optional[float] = None
     type: str
     amount: float
     status: str

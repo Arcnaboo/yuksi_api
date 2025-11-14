@@ -267,7 +267,9 @@ async def list_orders(
         
         # Siparişleri getir
         cur.execute(f"""
-            SELECT o.id, o.code, o.customer, o.phone, o.address, o.delivery_address, o.type, o.amount, o.status, o.created_at
+            SELECT o.id, o.code, o.customer, o.phone, o.address, o.delivery_address, 
+                   o.pickup_lat, o.pickup_lng, o.dropoff_lat, o.dropoff_lng,
+                   o.type, o.amount, o.status, o.created_at
             FROM orders o
             WHERE {where_clause}
             ORDER BY o.created_at DESC
@@ -333,6 +335,7 @@ async def get_order_history(
 
     query_orders = f"""
         SELECT o.id, o.code, o.customer, o.phone, o.address, o.delivery_address,
+               o.pickup_lat, o.pickup_lng, o.dropoff_lat, o.dropoff_lng,
                o.type, o.amount, o.status, o.created_at
         FROM orders o
         WHERE {where_clause}
