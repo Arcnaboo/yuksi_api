@@ -150,6 +150,20 @@ async def login(email: str, password: str):
             user_type="admin",
         )
 
+    # User (users table)
+    u = await fetch_one(
+        "SELECT id, email, password_hash, is_active, deleted FROM users WHERE email=$1;", email
+    )
+    if u and verify_pwd(password, u["password_hash"]):
+        if u.get("deleted") or not u.get("is_active"):
+            return "banned"
+        return await _generate_tokens_net_style(
+            user_id=str(u["id"]),
+            email=u["email"],
+            roles=["Default"],
+            user_type="user",
+        )
+
     return None
 
 
@@ -182,6 +196,12 @@ async def refresh_with_token(refresh_token: str):
             return None
         email = rst["email"]
         roles = ["Restaurant"]
+    elif user_type == "user":
+        usr = await fetch_one("SELECT email FROM users WHERE id=$1;", user_id)
+        if not usr:
+            return None
+        email = usr["email"]
+        roles = ["Default"]
     else:
         return None
 
