@@ -613,3 +613,54 @@ async def get_dealers_by_state(
     state_id: int = Path(..., description="The ID of the state to fetch dealers for")
 ):
     return await ctrl.get_dealers_by_state(state_id)
+
+
+@router.get(
+    "/{courier_id}/dashboard",
+    summary="Get Courier Dashboard",
+    description="Kurye dashboard verilerini getirir (kazanç, mesafe, faaliyet süresi, paket bilgileri)",
+    responses={
+        200: {
+            "description": "Dashboard data retrieved successfully.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Başarılı yanıt",
+                            "value": {
+                                "success": True,
+                                "message": "Kurye dashboard verileri",
+                                "data": {
+                                    "total_earnings": 19502.50,
+                                    "daily_earnings": 920.00,
+                                    "total_activity_duration_days": 22,
+                                    "total_activity_duration_hours": 16,
+                                    "remaining_days": 17,
+                                    "daily_km": 28.5,
+                                    "total_km": 348.2,
+                                    "total_activities": 16,
+                                    "work_hours": 5,
+                                    "work_minutes": 30
+                                }
+                            }
+                        },
+                        "not_found": {
+                            "summary": "Kurye bulunamadı",
+                            "value": {
+                                "success": False,
+                                "message": "Kurye bulunamadı veya geçersiz ID",
+                                "data": {}
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_dashboard(
+    courier_id: str = Path(..., description="The UUID of the courier"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    from ..controllers import courier_dashboard_controller as dashboard_ctrl
+    return await dashboard_ctrl.get_courier_dashboard(courier_id)
