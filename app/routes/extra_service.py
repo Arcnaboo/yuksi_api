@@ -6,13 +6,13 @@ from app.controllers.auth_controller import require_roles
 router = APIRouter(prefix="/api/admin/extra-services", tags=["Extra Services"])
 
 
-# ✅ Admin + Dealer GET allowed
-@router.get("", dependencies=[Depends(require_roles(["Admin", "Dealer"]))])
+# ✅ Admin + Dealer + Restaurant GET allowed
+@router.get("", dependencies=[Depends(require_roles(["Admin", "Dealer", "Restaurant"]))])
 async def list_route():
     return await list_services()
 
 
-@router.get("/{service_id}", dependencies=[Depends(require_roles(["Admin", "Dealer"]))])
+@router.get("/{service_id}", dependencies=[Depends(require_roles(["Admin", "Dealer", "Restaurant"]))])
 async def get_route(service_id: str = Path(...)):
     return await get_service(service_id)
 
