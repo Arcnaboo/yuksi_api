@@ -3,37 +3,57 @@ from datetime import datetime, timezone
 from app.utils.database_async import fetch_one
 
 
-async def get_courier_dashboard(courier_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Kurye dashboard verilerini getirir.
-    """
+def _validate_courier_id(courier_id: str) -> bool:
+    """UUID kontrolü"""
     try:
-        # UUID kontrolü
         import uuid
         uuid.UUID(courier_id)
+        return True
     except:
-        return None
+        return False
 
-    # Bugünün başlangıcı (Türkiye saati - UTC+3)
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+def _get_today_start() -> datetime:
+    """Bugünün başlangıcı (UTC)"""
+    return datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+async def get_courier_earnings(courier_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Kurye kazanç verilerini getirir (toplam ve günlük)
+    """
+    if not _validate_courier_id(courier_id):
+        return None
     
-    # 1. Toplam kazanç ve günlük kazanç
+    today_start = _get_today_start()
+    
     earnings_query = """
         SELECT 
             COALESCE(SUM(CASE WHEN status = 'teslim_edildi' THEN amount ELSE 0 END), 0) AS total_earnings,
-            COALESCE(SUM(CASE WHEN status = 'teslim_edildi' AND updated_at >= $2 THEN amount ELSE 0 END), 0) AS daily_earnings,
-            COUNT(CASE WHEN status = 'teslim_edildi' THEN 1 END) AS total_activities
+            COALESCE(SUM(CASE WHEN status = 'teslim_edildi' AND updated_at >= $2 THEN amount ELSE 0 END), 0) AS daily_earnings
         FROM orders
         WHERE courier_id = $1
     """
     earnings_row = await fetch_one(earnings_query, courier_id, today_start)
     
-    total_earnings = float(earnings_row["total_earnings"]) if earnings_row else 0.0
-    daily_earnings = float(earnings_row["daily_earnings"]) if earnings_row else 0.0
-    total_activities = int(earnings_row["total_activities"]) if earnings_row else 0
+    if not earnings_row:
+        return None
+    
+    return {
+        "total_earnings": round(float(earnings_row["total_earnings"]), 2),
+        "daily_earnings": round(float(earnings_row["daily_earnings"]), 2)
+    }
 
-    # 2. Mesafe hesaplamaları (Haversine formülü ile)
-    # Pickup-dropoff arası mesafe (km)
+
+async def get_courier_distance(courier_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Kurye mesafe verilerini getirir (toplam ve günlük km)
+    """
+    if not _validate_courier_id(courier_id):
+        return None
+    
+    today_start = _get_today_start()
+    
     distance_query = """
         SELECT 
             COALESCE(SUM(
@@ -84,10 +104,22 @@ async def get_courier_dashboard(courier_id: str) -> Optional[Dict[str, Any]]:
     """
     distance_row = await fetch_one(distance_query, courier_id, today_start)
     
-    total_km = round(float(distance_row["total_km"]) if distance_row else 0.0, 2)
-    daily_km = round(float(distance_row["daily_km"]) if distance_row else 0.0, 2)
+    if not distance_row:
+        return None
+    
+    return {
+        "total_km": round(float(distance_row["total_km"]), 2),
+        "daily_km": round(float(distance_row["daily_km"]), 2)
+    }
 
-    # 3. Paket bilgileri (kalan gün ve faaliyet süresi)
+
+async def get_courier_package(courier_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Kurye paket bilgilerini getirir (kalan gün ve faaliyet süresi)
+    """
+    if not _validate_courier_id(courier_id):
+        return None
+    
     package_query = """
         SELECT 
             s.start_date,
@@ -115,14 +147,35 @@ async def get_courier_dashboard(courier_id: str) -> Optional[Dict[str, Any]]:
     """
     package_row = await fetch_one(package_query, courier_id)
     
-    remaining_days = int(package_row["remaining_days"]) if package_row and package_row["remaining_days"] else 0
-    activity_days = float(package_row["activity_days"]) if package_row and package_row["activity_days"] else 0.0
+    if not package_row:
+        return {
+            "remaining_days": 0,
+            "total_activity_duration_days": 0,
+            "total_activity_duration_hours": 0
+        }
     
-    # Faaliyet süresi: gün + saat formatı
+    remaining_days = int(package_row["remaining_days"]) if package_row["remaining_days"] else 0
+    activity_days = float(package_row["activity_days"]) if package_row["activity_days"] else 0.0
+    
     activity_days_int = int(activity_days)
     activity_hours = int((activity_days - activity_days_int) * 24)
+    
+    return {
+        "remaining_days": remaining_days,
+        "total_activity_duration_days": activity_days_int,
+        "total_activity_duration_hours": activity_hours
+    }
 
-    # 4. Bugünkü çalışma saati (driver_presence_events'tan)
+
+async def get_courier_work_hours(courier_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Kurye bugünkü çalışma saatlerini getirir
+    """
+    if not _validate_courier_id(courier_id):
+        return None
+    
+    today_start = _get_today_start()
+    
     today_work_hours_query = """
         WITH bounds AS (
             SELECT $1::uuid AS driver_id,
@@ -178,20 +231,64 @@ async def get_courier_dashboard(courier_id: str) -> Optional[Dict[str, Any]]:
     """
     work_hours_row = await fetch_one(today_work_hours_query, courier_id, today_start)
     
-    online_seconds = int(work_hours_row["online_seconds"]) if work_hours_row else 0
+    if not work_hours_row:
+        return {
+            "work_hours": 0,
+            "work_minutes": 0
+        }
+    
+    online_seconds = int(work_hours_row["online_seconds"]) if work_hours_row["online_seconds"] else 0
     work_hours = online_seconds // 3600
     work_minutes = (online_seconds % 3600) // 60
-
+    
     return {
-        "total_earnings": round(total_earnings, 2),
-        "daily_earnings": round(daily_earnings, 2),
-        "total_activity_duration_days": activity_days_int,
-        "total_activity_duration_hours": activity_hours,
-        "remaining_days": remaining_days,
-        "daily_km": daily_km,
-        "total_km": total_km,
-        "total_activities": total_activities,
         "work_hours": work_hours,
         "work_minutes": work_minutes
+    }
+
+
+async def get_courier_activities(courier_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Kurye toplam aktivite sayısını getirir
+    """
+    if not _validate_courier_id(courier_id):
+        return None
+    
+    activities_query = """
+        SELECT 
+            COUNT(CASE WHEN status = 'teslim_edildi' THEN 1 END) AS total_activities
+        FROM orders
+        WHERE courier_id = $1
+    """
+    activities_row = await fetch_one(activities_query, courier_id)
+    
+    if not activities_row:
+        return None
+    
+    return {
+        "total_activities": int(activities_row["total_activities"]) if activities_row["total_activities"] else 0
+    }
+
+
+async def get_courier_dashboard(courier_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Kurye dashboard verilerini getirir (DEPRECATED - ayrı endpoint'ler kullanılmalı).
+    Geriye dönük uyumluluk için tutuluyor.
+    """
+    earnings = await get_courier_earnings(courier_id)
+    distance = await get_courier_distance(courier_id)
+    package = await get_courier_package(courier_id)
+    work_hours = await get_courier_work_hours(courier_id)
+    activities = await get_courier_activities(courier_id)
+    
+    if not all([earnings, distance, package, work_hours, activities]):
+        return None
+    
+    return {
+        **earnings,
+        **distance,
+        **package,
+        **work_hours,
+        **activities
     }
 

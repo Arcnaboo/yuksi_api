@@ -615,13 +615,192 @@ async def get_dealers_by_state(
     return await ctrl.get_dealers_by_state(state_id)
 
 
+# ===== DASHBOARD ENDPOINTS (Ayrı endpoint'ler) =====
+
 @router.get(
-    "/{courier_id}/dashboard",
-    summary="Get Courier Dashboard",
-    description="Kurye dashboard verilerini getirir (kazanç, mesafe, faaliyet süresi, paket bilgileri)",
+    "/{courier_id}/dashboard/earnings",
+    summary="Kurye Kazanç Verileri",
+    description="Kurye kazanç verilerini getirir (toplam ve günlük kazanç)",
     responses={
         200: {
-            "description": "Dashboard data retrieved successfully.",
+            "description": "Kazanç verileri başarıyla getirildi.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Başarılı yanıt",
+                            "value": {
+                                "success": True,
+                                "message": "Kurye kazanç verileri",
+                                "data": {
+                                    "total_earnings": 19502.50,
+                                    "daily_earnings": 920.00
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_earnings(
+    courier_id: str = Path(..., description="Kurye UUID'si"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    from ..controllers import courier_dashboard_controller as dashboard_ctrl
+    return await dashboard_ctrl.get_courier_earnings(courier_id)
+
+
+@router.get(
+    "/{courier_id}/dashboard/distance",
+    summary="Kurye Mesafe Verileri",
+    description="Kurye mesafe verilerini getirir (toplam ve günlük km)",
+    responses={
+        200: {
+            "description": "Mesafe verileri başarıyla getirildi.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Başarılı yanıt",
+                            "value": {
+                                "success": True,
+                                "message": "Kurye mesafe verileri",
+                                "data": {
+                                    "total_km": 348.2,
+                                    "daily_km": 28.5
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_distance(
+    courier_id: str = Path(..., description="Kurye UUID'si"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    from ..controllers import courier_dashboard_controller as dashboard_ctrl
+    return await dashboard_ctrl.get_courier_distance(courier_id)
+
+
+@router.get(
+    "/{courier_id}/dashboard/package",
+    summary="Kurye Paket Bilgileri",
+    description="Kurye paket bilgilerini getirir (kalan gün ve faaliyet süresi)",
+    responses={
+        200: {
+            "description": "Paket bilgileri başarıyla getirildi.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Başarılı yanıt",
+                            "value": {
+                                "success": True,
+                                "message": "Kurye paket bilgileri",
+                                "data": {
+                                    "remaining_days": 17,
+                                    "total_activity_duration_days": 22,
+                                    "total_activity_duration_hours": 16
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_package(
+    courier_id: str = Path(..., description="Kurye UUID'si"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    from ..controllers import courier_dashboard_controller as dashboard_ctrl
+    return await dashboard_ctrl.get_courier_package(courier_id)
+
+
+@router.get(
+    "/{courier_id}/dashboard/work-hours",
+    summary="Kurye Çalışma Saatleri",
+    description="Kurye bugünkü çalışma saatlerini getirir",
+    responses={
+        200: {
+            "description": "Çalışma saatleri başarıyla getirildi.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Başarılı yanıt",
+                            "value": {
+                                "success": True,
+                                "message": "Kurye çalışma saatleri",
+                                "data": {
+                                    "work_hours": 5,
+                                    "work_minutes": 30
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_work_hours(
+    courier_id: str = Path(..., description="Kurye UUID'si"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    from ..controllers import courier_dashboard_controller as dashboard_ctrl
+    return await dashboard_ctrl.get_courier_work_hours(courier_id)
+
+
+@router.get(
+    "/{courier_id}/dashboard/activities",
+    summary="Kurye Aktivite Sayısı",
+    description="Kurye toplam aktivite sayısını getirir",
+    responses={
+        200: {
+            "description": "Aktivite sayısı başarıyla getirildi.",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "success": {
+                            "summary": "Başarılı yanıt",
+                            "value": {
+                                "success": True,
+                                "message": "Kurye aktivite sayısı",
+                                "data": {
+                                    "total_activities": 16
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    },
+)
+async def get_courier_activities(
+    courier_id: str = Path(..., description="Kurye UUID'si"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    from ..controllers import courier_dashboard_controller as dashboard_ctrl
+    return await dashboard_ctrl.get_courier_activities(courier_id)
+
+
+# ===== DEPRECATED: Combined Dashboard Endpoint =====
+@router.get(
+    "/{courier_id}/dashboard",
+    summary="Kurye Dashboard (KULLANIMDIŞI)",
+    description="Kurye dashboard verilerini getirir (KULLANIMDIŞI - ayrı endpoint'ler kullanılmalı: /earnings, /distance, /package, /work-hours, /activities)",
+    deprecated=True,
+    responses={
+        200: {
+            "description": "Dashboard verileri başarıyla getirildi.",
             "content": {
                 "application/json": {
                     "examples": {
@@ -643,14 +822,6 @@ async def get_dealers_by_state(
                                     "work_minutes": 30
                                 }
                             }
-                        },
-                        "not_found": {
-                            "summary": "Kurye bulunamadı",
-                            "value": {
-                                "success": False,
-                                "message": "Kurye bulunamadı veya geçersiz ID",
-                                "data": {}
-                            }
                         }
                     }
                 }
@@ -659,7 +830,7 @@ async def get_dealers_by_state(
     },
 )
 async def get_courier_dashboard(
-    courier_id: str = Path(..., description="The UUID of the courier"),
+    courier_id: str = Path(..., description="Kurye UUID'si"),
     _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
 ):
     from ..controllers import courier_dashboard_controller as dashboard_ctrl
