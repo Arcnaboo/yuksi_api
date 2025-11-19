@@ -733,6 +733,20 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
 
+-- Corporate Users tablosu (Restoran gibi ayrı tablo)
+CREATE TABLE IF NOT EXISTS corporate_users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    phone TEXT,
+    first_name TEXT,
+    last_name TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
@@ -889,7 +903,7 @@ def init_db():
             cur.execute("""
                 INSERT INTO roles (name, description)
                 VALUES
-                    ('Default', 'Bireysel Kullanici')
+                    ('Default', 'Bireysel Kullanici'),
                     ('Admin', 'Sistem yöneticisi'),
                     ('Driver', 'Courier hesabı'),
                     ('Dealer', 'Bayi hesabı'),
