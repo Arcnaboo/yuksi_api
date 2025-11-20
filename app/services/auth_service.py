@@ -164,6 +164,20 @@ async def login(email: str, password: str):
             user_type="user",
         )
 
+    # Corporate (corporate_users table)
+    c = await fetch_one(
+        "SELECT id, email, password_hash, is_active, deleted FROM corporate_users WHERE email=$1;", email
+    )
+    if c and verify_pwd(password, c["password_hash"]):
+        if c.get("deleted") or not c.get("is_active"):
+            return "banned"
+        return await _generate_tokens_net_style(
+            user_id=str(c["id"]),
+            email=c["email"],
+            roles=["Corporate"],
+            user_type="corporate",
+        )
+
     return None
 
 
@@ -202,6 +216,24 @@ async def refresh_with_token(refresh_token: str):
             return None
         email = usr["email"]
         roles = ["Default"]
+    elif user_type == "corporate":
+        corp = await fetch_one("SELECT email FROM corporate_users WHERE id=$1;", user_id)
+        if not corp:
+            return None
+        email = corp["email"]
+        roles = ["Corporate"]
+    elif user_type == "dealer":
+        dlr = await fetch_one("SELECT email FROM dealers WHERE id=$1;", user_id)
+        if not dlr:
+            return None
+        email = dlr["email"]
+        roles = ["Dealer"]
+    elif user_type == "admin":
+        adm = await fetch_one("SELECT email FROM system_admins WHERE id=$1;", user_id)
+        if not adm:
+            return None
+        email = adm["email"]
+        roles = ["Admin"]
     else:
         return None
 
