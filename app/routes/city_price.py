@@ -6,7 +6,7 @@ from app.controllers.auth_controller import require_roles
 router = APIRouter(prefix="/api/admin/city-prices", tags=["City Prices"])
 
 
-@router.get("", dependencies=[Depends(require_roles(["Admin"]))])
+@router.get("", dependencies=[Depends(require_roles(["Admin", "Restaurant", "Dealer", "Corporate"]))])
 async def list_route():
     return await list_prices()
 
