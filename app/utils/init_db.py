@@ -636,6 +636,10 @@ ALTER TABLE admin_jobs
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS dealer_id UUID REFERENCES dealers(id) ON DELETE CASCADE;
 
+-- Kurumsal kullanıcı yükleri desteği için corporate_id kolonu (mevcut tablolar için)
+ALTER TABLE admin_jobs
+    ADD COLUMN IF NOT EXISTS corporate_id UUID REFERENCES corporate_users(id) ON DELETE CASCADE;
+
 -- Bayi-Restoran ilişki tablosu
 CREATE TABLE IF NOT EXISTS dealer_restaurants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
