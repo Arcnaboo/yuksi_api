@@ -13,8 +13,8 @@ router = APIRouter(prefix="/api/admin/corporate", tags=["Corporate Users"])
 @router.post(
     "",
     summary="Kurumsal Kullanıcı Oluştur",
-    description="Admin tarafından kurumsal kullanıcı (Corporate rolü) oluşturulur",
-    dependencies=[Depends(require_roles(["Admin"]))]
+    description="Admin veya Bayi tarafından kurumsal kullanıcı (Corporate rolü) oluşturulur",
+    dependencies=[Depends(require_roles(["Admin", "Dealer"]))]
 )
 async def create_corporate_user(req: CorporateUserCreate = Body(...)):
     return await ctrl.create_corporate_user(req.model_dump())
