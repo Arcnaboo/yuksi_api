@@ -25,12 +25,12 @@ router = APIRouter(
 @router.post(
     "/register",
     summary="Restaurant Register",
-    description="Yeni restoran kaydı oluşturur.",
-    response_model=Union[RestaurantRegisterResponse, Any]
+    description="Yeni restoran kaydı oluşturur. Sadece Admin ve Bayi erişebilir.",
+    response_model=Union[RestaurantRegisterResponse, Any],
+    dependencies=[Depends(require_roles(["Admin", "Dealer"]))]
 )
 async def restaurant_register(req: RestaurantRegisterReq):
     """Restaurant kayıt endpoint"""
-    # Sadece Admin erişebilir (dependency bunu garanti eder)
     result = await ctrl.restaurant_register(req)
     if not result.get('success'):
         return result
