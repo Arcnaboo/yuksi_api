@@ -751,6 +751,14 @@ CREATE TABLE IF NOT EXISTS corporate_users (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Corporate Users commission_rate kolonu (opsiyonel, yüzde formatında 0-100)
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS commission_rate DECIMAL(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
+
+-- Corporate Users adres kolonları (ülke, il, ilçe)
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS country_id BIGINT;
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS state_id BIGINT;
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS city_id BIGINT;
+
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);

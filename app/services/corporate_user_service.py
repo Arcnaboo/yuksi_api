@@ -18,16 +18,22 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
         password_hash = hash_pwd(data["password"])
         
         # Corporate user oluştur (Restoran gibi direkt tabloya insert)
+        commission_rate = data.get("commissionRate")
+        country_id = data.get("countryId")
+        state_id = data.get("stateId")
+        city_id = data.get("cityId")
         row = await fetch_one("""
             INSERT INTO corporate_users (
                 email, password_hash, 
-                phone, first_name, last_name
+                phone, first_name, last_name, commission_rate,
+                country_id, state_id, city_id
             )
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, email, phone, first_name, last_name, is_active, created_at;
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, email, phone, first_name, last_name, is_active, commission_rate, country_id, state_id, city_id, created_at;
         """,
         data["email"], password_hash,
-        data["phone"], data["first_name"], data["last_name"]
+        data["phone"], data["first_name"], data["last_name"], commission_rate,
+        country_id, state_id, city_id
         )
         
         return True, {
@@ -37,6 +43,10 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
             "first_name": row["first_name"],
             "last_name": row["last_name"],
             "is_active": row["is_active"],
+            "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
+            "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
+            "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
+            "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
             "created_at": row["created_at"].isoformat() if row["created_at"] else None
         }
     except Exception as e:
@@ -56,6 +66,10 @@ async def list_corporate_users(limit: int = 50, offset: int = 0) -> Tuple[bool, 
                 first_name,
                 last_name,
                 is_active,
+                commission_rate,
+                country_id,
+                state_id,
+                city_id,
                 created_at
             FROM corporate_users
             WHERE (deleted IS NULL OR deleted = FALSE)
@@ -72,6 +86,10 @@ async def list_corporate_users(limit: int = 50, offset: int = 0) -> Tuple[bool, 
                 "first_name": row["first_name"],
                 "last_name": row["last_name"],
                 "is_active": row["is_active"],
+                "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
+                "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
+                "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
+                "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None
             })
         
@@ -93,6 +111,10 @@ async def get_corporate_user(user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
                 first_name,
                 last_name,
                 is_active,
+                commission_rate,
+                country_id,
+                state_id,
+                city_id,
                 created_at
             FROM corporate_users
             WHERE id = $1
@@ -109,6 +131,10 @@ async def get_corporate_user(user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
             "first_name": row["first_name"],
             "last_name": row["last_name"],
             "is_active": row["is_active"],
+            "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
+            "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
+            "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
+            "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
             "created_at": row["created_at"].isoformat() if row["created_at"] else None
         }
     except Exception as e:
@@ -139,7 +165,11 @@ async def update_corporate_user(user_id: str, fields: Dict[str, Any]) -> Tuple[b
             "phone": "phone",
             "first_name": "first_name",
             "last_name": "last_name",
-            "is_active": "is_active"
+            "is_active": "is_active",
+            "commissionRate": "commission_rate",
+            "countryId": "country_id",
+            "stateId": "state_id",
+            "cityId": "city_id"
         }
         
         sets: List[str] = []
