@@ -17,6 +17,22 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
         # Password hashle
         password_hash = hash_pwd(data["password"])
         
+        # fullAddress desteği: adres_line1/2 yerine tek alanla giriş ve bölme
+        import re
+        address_line1 = data.get("addressLine1")
+        address_line2 = data.get("addressLine2")
+        full_address = data.get("fullAddress")
+        
+        if full_address and not address_line1:
+            # fullAddress varsa ve addressLine1 yoksa, fullAddress'i böl
+            parts = [p.strip() for p in re.split(r",|;|\n", str(full_address)) if p.strip()]
+            if parts:
+                address_line1 = parts[0]
+                address_line2 = ", ".join(parts[1:]) if len(parts) > 1 else (address_line2 or "")
+            else:
+                address_line1 = str(full_address).strip()
+                address_line2 = address_line2 or ""
+        
         # Corporate user oluştur (Restoran gibi direkt tabloya insert)
         commission_rate = data.get("commissionRate")
         country_id = data.get("countryId")
@@ -26,14 +42,16 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
             INSERT INTO corporate_users (
                 email, password_hash, 
                 phone, first_name, last_name, commission_rate,
-                country_id, state_id, city_id
+                country_id, state_id, city_id,
+                address_line1, address_line2
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING id, email, phone, first_name, last_name, is_active, commission_rate, country_id, state_id, city_id, created_at;
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            RETURNING id, email, phone, first_name, last_name, is_active, commission_rate, country_id, state_id, city_id, address_line1, address_line2, created_at;
         """,
         data["email"], password_hash,
         data["phone"], data["first_name"], data["last_name"], commission_rate,
-        country_id, state_id, city_id
+        country_id, state_id, city_id,
+        address_line1, address_line2
         )
         
         return True, {
@@ -70,6 +88,8 @@ async def list_corporate_users(limit: int = 50, offset: int = 0) -> Tuple[bool, 
                 country_id,
                 state_id,
                 city_id,
+                address_line1,
+                address_line2,
                 created_at
             FROM corporate_users
             WHERE (deleted IS NULL OR deleted = FALSE)
@@ -90,6 +110,8 @@ async def list_corporate_users(limit: int = 50, offset: int = 0) -> Tuple[bool, 
                 "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
                 "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
                 "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
+                "addressLine1": row.get("address_line1"),
+                "addressLine2": row.get("address_line2"),
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None
             })
         
@@ -115,6 +137,8 @@ async def get_corporate_user(user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
                 country_id,
                 state_id,
                 city_id,
+                address_line1,
+                address_line2,
                 created_at
             FROM corporate_users
             WHERE id = $1
@@ -135,6 +159,8 @@ async def get_corporate_user(user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
             "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
             "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
             "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
+            "addressLine1": row.get("address_line1"),
+            "addressLine2": row.get("address_line2"),
             "created_at": row["created_at"].isoformat() if row["created_at"] else None
         }
     except Exception as e:
@@ -160,6 +186,23 @@ async def update_corporate_user(user_id: str, fields: Dict[str, Any]) -> Tuple[b
         if not user:
             return False, "Kurumsal kullanıcı bulunamadı"
         
+        # fullAddress desteği: adres_line1/2 yerine tek alanla güncelleme ve bölme
+        import re
+        full_address = fields.pop("fullAddress", None)
+        address_line1 = fields.get("addressLine1")
+        address_line2 = fields.get("addressLine2")
+        
+        if full_address and not address_line1:
+            # fullAddress varsa ve addressLine1 yoksa, fullAddress'i böl
+            parts = [p.strip() for p in re.split(r",|;|\n", str(full_address)) if p.strip()]
+            if parts:
+                fields["addressLine1"] = parts[0]
+                if "addressLine2" not in fields:
+                    fields["addressLine2"] = ", ".join(parts[1:]) if len(parts) > 1 else ""
+            else:
+                fields["addressLine1"] = str(full_address).strip()
+                fields.setdefault("addressLine2", "")
+        
         mapping = {
             "email": "email",
             "phone": "phone",
@@ -169,7 +212,9 @@ async def update_corporate_user(user_id: str, fields: Dict[str, Any]) -> Tuple[b
             "commissionRate": "commission_rate",
             "countryId": "country_id",
             "stateId": "state_id",
-            "cityId": "city_id"
+            "cityId": "city_id",
+            "addressLine1": "address_line1",
+            "addressLine2": "address_line2"
         }
         
         sets: List[str] = []

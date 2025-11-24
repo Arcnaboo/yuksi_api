@@ -13,6 +13,9 @@ class CorporateUserCreate(BaseModel):
     countryId: Optional[int] = Field(None, ge=1, description="Ülke ID")
     stateId: Optional[int] = Field(None, ge=1, description="İl ID")
     cityId: Optional[int] = Field(None, ge=1, description="İlçe ID")
+    addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
+    addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
+    fullAddress: Optional[str] = Field(None, description="Tam adres (addressLine1/2 yerine)")
     
     @field_validator('commissionRate')
     @classmethod
@@ -21,7 +24,7 @@ class CorporateUserCreate(BaseModel):
             raise ValueError('Komisyon oranı 0-100 arasında olmalıdır')
         return v
     
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
 class CorporateUserUpdate(BaseModel):
@@ -34,6 +37,9 @@ class CorporateUserUpdate(BaseModel):
     countryId: Optional[int] = Field(None, ge=1, description="Ülke ID")
     stateId: Optional[int] = Field(None, ge=1, description="İl ID")
     cityId: Optional[int] = Field(None, ge=1, description="İlçe ID")
+    addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
+    addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
+    fullAddress: Optional[str] = Field(None, alias="fullAddress", description="Tam adres (addressLine1/2 yerine)")
     
     @field_validator('commissionRate')
     @classmethod
@@ -42,7 +48,7 @@ class CorporateUserUpdate(BaseModel):
             raise ValueError('Komisyon oranı 0-100 arasında olmalıdır')
         return v
     
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
 class CorporateUserResponse(BaseModel):
@@ -56,5 +62,7 @@ class CorporateUserResponse(BaseModel):
     countryId: Optional[int] = Field(None, description="Ülke ID")
     stateId: Optional[int] = Field(None, description="İl ID")
     cityId: Optional[int] = Field(None, description="İlçe ID")
+    addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
+    addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
     created_at: str
 

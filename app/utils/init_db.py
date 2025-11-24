@@ -759,6 +759,10 @@ ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS country_id BIGINT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS state_id BIGINT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS city_id BIGINT;
 
+-- Corporate Users adres satırları
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line1 TEXT;
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line2 TEXT;
+
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);
