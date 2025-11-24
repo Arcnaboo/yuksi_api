@@ -740,7 +740,7 @@ CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id);
 -- Corporate Users tablosu (Restoran gibi ayrı tablo)
 CREATE TABLE IF NOT EXISTS corporate_users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT UNIQUE NOT NULL,
+    email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     phone TEXT,
     first_name TEXT,
@@ -763,6 +763,24 @@ ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS city_id BIGINT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line1 TEXT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line2 TEXT;
 
+-- Corporate Users email unique constraint'i kaldır (eğer varsa)
+DO $$
+BEGIN
+    -- Mevcut UNIQUE constraint'i kaldır
+    IF EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'corporate_users_email_key'
+    ) THEN
+        ALTER TABLE corporate_users DROP CONSTRAINT corporate_users_email_key;
+    END IF;
+END $$;
+
+-- Corporate Users için partial unique index (sadece silinmemiş kayıtlar için email unique)
+-- Bu sayede silinen kayıtların email'leri ile tekrar kayıt olunabilir
+DROP INDEX IF EXISTS corporate_users_email_unique_idx;
+CREATE UNIQUE INDEX corporate_users_email_unique_idx 
+ON corporate_users (email) 
+WHERE deleted IS NULL OR deleted = FALSE;
 
 -- Basit indexler (idempotent)
 CREATE INDEX IF NOT EXISTS idx_states_country_id ON states(country_id);

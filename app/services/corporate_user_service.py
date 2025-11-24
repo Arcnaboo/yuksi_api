@@ -9,8 +9,8 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
     Admin tarafından Corporate kullanıcı oluşturur (Restoran gibi ayrı tablo)
     """
     try:
-        # Email kontrolü
-        existing = await fetch_one("SELECT id FROM corporate_users WHERE email = $1;", data["email"])
+        # Email kontrolü (sadece silinmemiş kayıtlar)
+        existing = await fetch_one("SELECT id FROM corporate_users WHERE email = $1 AND (deleted IS NULL OR deleted = FALSE);", data["email"])
         if existing:
             return False, "Bu email adresi zaten kayıtlı"
         
