@@ -562,6 +562,31 @@ async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
             if not order:
                 return False, "Sipariş bulunamadı veya zaten bir kurye tarafından kabul edildi"
 
+        assigned_courier = await fetch_one(
+            """SELECT courier_id FROM orders WHERE id = $1;
+            """,
+            order_id
+        )
+
+        if not assigned_courier or str(assigned_courier["courier_id"]) != courier_id:
+            is_pool_order = await fetch_one(
+                """
+                SELECT order_id FROM pool_orders WHERE order_id = $1;
+                """,
+                order_id
+            )
+            if is_pool_order:
+                await execute(
+                    """
+                    UPDATE orders
+                    SET courier_id = $2, updated_at = NOW()
+                    WHERE id = $1;
+                    """,
+                    order_id, courier_id
+                )
+            else:
+                return False, "Sipariş zaten başka bir kurye tarafından kabul edildi"
+
         await execute(
             """
             INSERT INTO courier_orders_log (courier_id, order_id, action)
