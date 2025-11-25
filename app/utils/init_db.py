@@ -71,6 +71,14 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
     CREATE TYPE courier_order_action AS ENUM ('kabul_etti','reddetti');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE vehicle_template AS ENUM ('motorcycle', 'minivan', 'panelvan', 'kamyonet', 'kamyon');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    CREATE TYPE vehicle_feature AS ENUM ('cooling', 'withSeats', 'withoutSeats');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 """
 
 # -----------------------------------------------------------
@@ -640,6 +648,10 @@ ALTER TABLE admin_jobs
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS corporate_id UUID REFERENCES corporate_users(id) ON DELETE CASCADE;
 
+-- Araç ürün ID kolonu (yeni sistem için)
+ALTER TABLE admin_jobs
+    ADD COLUMN IF NOT EXISTS vehicle_product_id UUID REFERENCES vehicle_products(id) ON DELETE SET NULL;
+
 -- Bayi-Restoran ilişki tablosu
 CREATE TABLE IF NOT EXISTS dealer_restaurants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -656,6 +668,36 @@ CREATE TABLE IF NOT EXISTS extra_services (
     price NUMERIC(10,2) NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Araç ürünleri tablosu
+CREATE TABLE IF NOT EXISTS vehicle_products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_name TEXT NOT NULL,
+    product_code TEXT UNIQUE NOT NULL,
+    product_template vehicle_template NOT NULL,
+    vehicle_features JSONB DEFAULT '[]',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Araç kapasite seçenekleri tablosu
+CREATE TABLE IF NOT EXISTS vehicle_capacity_options (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    vehicle_product_id UUID NOT NULL REFERENCES vehicle_products(id) ON DELETE CASCADE,
+    min_weight NUMERIC(10,2) NOT NULL,
+    max_weight NUMERIC(10,2) NOT NULL,
+    label TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT check_min_max_weight CHECK (min_weight < max_weight),
+    UNIQUE(vehicle_product_id, min_weight, max_weight)
+);
+
+-- Index'ler
+CREATE INDEX IF NOT EXISTS idx_vehicle_products_template ON vehicle_products(product_template);
+CREATE INDEX IF NOT EXISTS idx_vehicle_products_active ON vehicle_products(is_active);
+CREATE INDEX IF NOT EXISTS idx_vehicle_products_code ON vehicle_products(product_code);
+CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_product ON vehicle_capacity_options(vehicle_product_id);
 
 CREATE TABLE IF NOT EXISTS campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
