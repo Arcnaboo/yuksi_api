@@ -496,7 +496,18 @@ async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
             order_id, courier_id
         )
         if not order:
-            return False, "Sipariş bulunamadı veya kurye yetkili değil"
+            order = await fetch_one(
+                """
+                SELECT 
+                    p.order_id 
+                FROM pool_orders p
+                LEFT JOIN order_watchers ow ON ow.order_id = p.order_id 
+                WHERE p.order_id=$1 AND ow.closed = FALSE;
+                """,
+                order_id
+            )
+            if not order:
+                return False, "Sipariş bulunamadı veya kurye yetkili değil"
 
         await execute(
             """
@@ -538,7 +549,18 @@ async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
             order_id, courier_id
         )
         if not order:
-            return False, "Sipariş bulunamadı veya zaten bir kurye tarafından kabul edildi"
+            order = await fetch_one(
+                """
+                SELECT 
+                    p.order_id 
+                FROM pool_orders p
+                LEFT JOIN order_watchers ow ON ow.order_id = p.order_id 
+                WHERE p.order_id=$1 AND ow.closed = FALSE;
+                """,
+                order_id
+            )
+            if not order:
+                return False, "Sipariş bulunamadı veya zaten bir kurye tarafından kabul edildi"
 
         await execute(
             """

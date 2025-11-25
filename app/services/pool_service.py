@@ -136,10 +136,11 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
             LEFT JOIN restaurants r ON r.id = o.restaurant_id
             JOIN order_watchers ow ON ow.order_id = p.order_id
             WHERE ow.closed = FALSE
+            AND NOT ($3 = ANY(COALESCE(ow.rejected_drivers, ARRAY[]::uuid[])))
             LIMIT $1 OFFSET $2
         """
         
-        rows = await fetch_all(query, size, offset)
+        rows = await fetch_all(query, size, offset, driver_id)
         return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
     else:
         # Driver konumu varsa mesafeye göre sırala
@@ -175,11 +176,12 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
             LEFT JOIN restaurants r ON r.id = o.restaurant_id
             JOIN order_watchers ow ON ow.order_id = p.order_id
             WHERE ow.closed = FALSE
+            AND NOT ($3 = ANY(COALESCE(ow.rejected_drivers, ARRAY[]::uuid[])))
             ORDER BY distance ASC
             LIMIT $1 OFFSET $2
         """
 
-        rows = await fetch_all(query, size, offset)
+        rows = await fetch_all(query, size, offset, driver_id)
         return [PoolOrderRes(**{**dict(row), "order_id": str(row["order_id"])}) for row in rows]
     
 async def get_my_pool_orders(restaurant_id: str, page: int = 1, size: int = 50):
