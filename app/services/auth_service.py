@@ -165,8 +165,9 @@ async def login(email: str, password: str):
         )
 
     # Corporate (corporate_users table)
+    # Önce silinmemiş (deleted=false) kaydı kontrol et
     c = await fetch_one(
-        "SELECT id, email, password_hash, is_active, deleted FROM corporate_users WHERE email=$1;", email
+        "SELECT id, email, password_hash, is_active, deleted FROM corporate_users WHERE email=$1 AND (deleted IS NULL OR deleted = FALSE) ORDER BY created_at DESC LIMIT 1;", email
     )
     if c and verify_pwd(password, c["password_hash"]):
         if c.get("deleted") or not c.get("is_active"):

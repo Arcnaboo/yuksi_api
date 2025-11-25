@@ -10,9 +10,80 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
     """
     try:
         # Email kontrolü (sadece silinmemiş kayıtlar)
-        existing = await fetch_one("SELECT id FROM corporate_users WHERE email = $1 AND (deleted IS NULL OR deleted = FALSE);", data["email"])
+        existing = await fetch_one("SELECT id, deleted FROM corporate_users WHERE email = $1 AND (deleted IS NULL OR deleted = FALSE);", data["email"])
         if existing:
             return False, "Bu email adresi zaten kayıtlı"
+        
+        # Eğer deleted=true olan bir kayıt varsa, onu geri yükle (restore) ve güncelle
+        deleted_user = await fetch_one("SELECT id FROM corporate_users WHERE email = $1 AND deleted = TRUE ORDER BY created_at DESC LIMIT 1;", data["email"])
+        if deleted_user:
+            # Silinmiş kaydı geri yükle ve güncelle
+            user_id = deleted_user["id"]
+            password_hash = hash_pwd(data["password"])
+            
+            # fullAddress desteği
+            import re
+            address_line1 = data.get("addressLine1")
+            address_line2 = data.get("addressLine2")
+            full_address = data.get("fullAddress")
+            
+            if full_address and not address_line1:
+                parts = [p.strip() for p in re.split(r",|;|\n", str(full_address)) if p.strip()]
+                if parts:
+                    address_line1 = parts[0]
+                    address_line2 = ", ".join(parts[1:]) if len(parts) > 1 else (address_line2 or "")
+                else:
+                    address_line1 = str(full_address).strip()
+                    address_line2 = address_line2 or ""
+            
+            commission_rate = data.get("commissionRate")
+            country_id = data.get("countryId")
+            state_id = data.get("stateId")
+            city_id = data.get("cityId")
+            
+            # Silinmiş kaydı geri yükle ve güncelle
+            row = await fetch_one("""
+                UPDATE corporate_users
+                SET 
+                    password_hash = $1,
+                    phone = $2,
+                    first_name = $3,
+                    last_name = $4,
+                    commission_rate = $5,
+                    country_id = $6,
+                    state_id = $7,
+                    city_id = $8,
+                    address_line1 = $9,
+                    address_line2 = $10,
+                    deleted = FALSE,
+                    is_active = TRUE,
+                    updated_at = NOW()
+                WHERE id = $11
+                RETURNING id, email, phone, first_name, last_name, is_active, commission_rate, country_id, state_id, city_id, address_line1, address_line2, created_at;
+            """,
+            password_hash,
+            data["phone"], data["first_name"], data["last_name"], commission_rate,
+            country_id, state_id, city_id,
+            address_line1, address_line2,
+            user_id
+            )
+            
+            if not row:
+                return False, "Kurumsal kullanıcı geri yüklenemedi"
+            
+            return True, {
+                "id": str(row["id"]),
+                "email": row["email"],
+                "phone": row["phone"],
+                "first_name": row["first_name"],
+                "last_name": row["last_name"],
+                "is_active": row["is_active"],
+                "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
+                "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
+                "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
+                "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None
+            }
         
         # Password hashle
         password_hash = hash_pwd(data["password"])
