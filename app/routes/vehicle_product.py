@@ -31,7 +31,7 @@ async def create_vehicle_product(
     "",
     summary="Araç Ürünleri Listesi",
     description="Tüm araç ürünlerini listeler (filtreleme seçenekleri ile)",
-    dependencies=[Depends(require_roles(["Admin"]))],
+    dependencies=[Depends(require_roles(["Admin", "Dealer", "Restaurant", "Default", "Corporate"]))],
     response_model=dict
 )
 async def list_vehicle_products(
@@ -52,7 +52,7 @@ async def list_vehicle_products(
     "/{product_id}",
     summary="Araç Ürünü Detayı",
     description="Belirli bir araç ürününün detaylarını getirir (kapasite seçenekleri dahil)",
-    dependencies=[Depends(require_roles(["Admin"]))],
+    dependencies=[Depends(require_roles(["Admin", "Dealer", "Restaurant", "Default", "Corporate"]))],
     response_model=dict
 )
 async def get_vehicle_product(
