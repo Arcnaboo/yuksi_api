@@ -34,7 +34,7 @@ class CapacityOption(BaseModel):
 class VehicleProductCreate(BaseModel):
     """Yeni araç ürünü oluşturma modeli"""
     productName: str = Field(..., min_length=1, description="Ürün adı (örn: 'Koltuksuz Minivan')")
-    productCode: str = Field(..., min_length=1, description="Ürün kodu (unique, örn: 'MN-2025-A')")
+    # productCode otomatik oluşturulur, manuel girilmez
     productTemplate: Literal["motorcycle", "minivan", "panelvan", "kamyonet", "kamyon"] = Field(
         ..., 
         description="Araç kalıbı"
@@ -48,15 +48,6 @@ class VehicleProductCreate(BaseModel):
         default_factory=list,
         description="Araç özellikleri"
     )
-
-    @field_validator('productCode')
-    @classmethod
-    def validate_product_code(cls, v: str):
-        # Harf + sayı kombinasyonu kontrolü (basit regex)
-        import re
-        if not re.match(r'^[A-Za-z0-9\-_]+$', v):
-            raise ValueError("productCode sadece harf, sayı, tire ve alt çizgi içerebilir")
-        return v
 
     @model_validator(mode='after')
     def validate_capacity_overlaps(self):
@@ -78,20 +69,11 @@ class VehicleProductCreate(BaseModel):
 class VehicleProductUpdate(BaseModel):
     """Araç ürünü güncelleme modeli"""
     productName: Optional[str] = Field(None, min_length=1)
-    productCode: Optional[str] = Field(None, min_length=1)
+    # productCode otomatik oluşturulduğu için güncelleme yapılamaz
     productTemplate: Optional[Literal["motorcycle", "minivan", "panelvan", "kamyonet", "kamyon"]] = None
     capacityOptions: Optional[List[CapacityOption]] = None
     vehicleFeatures: Optional[List[Literal["cooling", "withSeats", "withoutSeats"]]] = None
     isActive: Optional[bool] = None
-
-    @field_validator('productCode')
-    @classmethod
-    def validate_product_code(cls, v: Optional[str]):
-        if v is not None:
-            import re
-            if not re.match(r'^[A-Za-z0-9\-_]+$', v):
-                raise ValueError("productCode sadece harf, sayı, tire ve alt çizgi içerebilir")
-        return v
 
 
 class CapacityOptionResponse(BaseModel):

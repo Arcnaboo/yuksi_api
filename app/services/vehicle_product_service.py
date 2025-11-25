@@ -2,19 +2,109 @@ from typing import Dict, Any, List, Tuple, Optional
 from uuid import UUID
 from app.utils.database_async import fetch_one, fetch_all, execute
 import json
+from datetime import datetime
+
+
+# === HELPER: Otomatik productCode oluşturma ===
+async def _generate_product_code(template: str, features: List[str]) -> str:
+    """
+    Otomatik productCode oluşturur.
+    Format: {TEMPLATE_SHORT}-{FEATURES_SHORT}-{YEAR}-{SEQUENCE}
+    Örnek: MN-COOL-2025-001, MC-2025-002, PV-COOL-SEAT-2025-001
+    """
+    # Template kısaltmaları
+    template_map = {
+        "motorcycle": "MC",
+        "minivan": "MN",
+        "panelvan": "PV",
+        "kamyonet": "KY",
+        "kamyon": "KM"
+    }
+    
+    # Feature kısaltmaları
+    feature_map = {
+        "cooling": "COOL",
+        "withSeats": "SEAT",
+        "withoutSeats": "NOSEAT"
+    }
+    
+    template_short = template_map.get(template, "UNK")
+    year = datetime.now().year
+    
+    # Feature'ları kısalt
+    feature_shorts = []
+    for feat in sorted(features):  # Sıralı tutmak için
+        if feat in feature_map:
+            feature_shorts.append(feature_map[feat])
+    
+    # Prefix oluştur
+    if feature_shorts:
+        prefix = f"{template_short}-{'-'.join(feature_shorts)}-{year}"
+    else:
+        prefix = f"{template_short}-{year}"
+    
+    # Aynı prefix ile başlayan son kodu bul
+    query = """
+        SELECT product_code 
+        FROM vehicle_products 
+        WHERE product_code LIKE $1
+        ORDER BY product_code DESC
+        LIMIT 1
+    """
+    pattern = f"{prefix}-%"
+    last_code = await fetch_one(query, pattern)
+    
+    if last_code and last_code.get("product_code"):
+        # Son numarayı al ve artır
+        last_code_str = last_code["product_code"]
+        try:
+            # Format: PREFIX-XXX (örn: MN-COOL-2025-001)
+            parts = last_code_str.split("-")
+            if len(parts) > 0:
+                last_num_str = parts[-1]
+                last_num = int(last_num_str)
+                sequence = last_num + 1
+            else:
+                sequence = 1
+        except (ValueError, IndexError):
+            sequence = 1
+    else:
+        sequence = 1
+    
+    # 3 haneli sequence (001, 002, ...)
+    return f"{prefix}-{sequence:03d}"
 
 
 # === CREATE ===
 async def create_vehicle_product(data: Dict[str, Any]) -> Tuple[Optional[UUID], Optional[str]]:
     """Yeni araç ürünü oluştur"""
     try:
-        # 1. productCode benzersizlik kontrolü
+        # 1. productCode otomatik oluştur
+        product_code = await _generate_product_code(
+            data.get("productTemplate", "motorcycle"),
+            data.get("vehicleFeatures", [])
+        )
+        
+        # 2. productCode benzersizlik kontrolü (güvenlik için)
         existing = await fetch_one(
             "SELECT id FROM vehicle_products WHERE product_code = $1",
-            data["productCode"]
+            product_code
         )
         if existing:
-            return None, "Bu productCode zaten kullanılıyor"
+            # Eğer çakışma olursa (çok nadir), sequence'i artırarak tekrar dene
+            for attempt in range(10):  # Max 10 deneme
+                product_code = await _generate_product_code(
+                    data.get("productTemplate", "motorcycle"),
+                    data.get("vehicleFeatures", [])
+                )
+                existing = await fetch_one(
+                    "SELECT id FROM vehicle_products WHERE product_code = $1",
+                    product_code
+                )
+                if not existing:
+                    break
+            else:
+                return None, "productCode oluşturulamadı, lütfen tekrar deneyin"
         
         # 2. Ana ürünü oluştur
         product_query = """
@@ -30,7 +120,7 @@ async def create_vehicle_product(data: Dict[str, Any]) -> Tuple[Optional[UUID], 
         product_row = await fetch_one(
             product_query,
             data["productName"],
-            data["productCode"],
+            product_code,  # Otomatik oluşturulan veya kullanıcının gönderdiği kod
             data["productTemplate"],
             vehicle_features_json
         )
@@ -209,15 +299,7 @@ async def update_vehicle_product(
         if not existing:
             return False, "Araç ürünü bulunamadı"
         
-        # productCode benzersizlik kontrolü (eğer değiştiriliyorsa)
-        if data.get("productCode"):
-            existing_code = await fetch_one(
-                "SELECT id FROM vehicle_products WHERE product_code = $1 AND id != $2",
-                data["productCode"],
-                str(product_id)
-            )
-            if existing_code:
-                return False, "Bu productCode zaten kullanılıyor"
+        # productCode otomatik oluşturulduğu için güncelleme yapılamaz
         
         # Ana ürün güncellemeleri
         update_fields = []
@@ -229,10 +311,7 @@ async def update_vehicle_product(
             params.append(data["productName"])
             i += 1
         
-        if data.get("productCode") is not None:
-            update_fields.append(f"product_code = ${i}")
-            params.append(data["productCode"])
-            i += 1
+        # productCode otomatik oluşturulduğu için güncelleme yapılamaz
         
         if data.get("productTemplate") is not None:
             update_fields.append(f"product_template = ${i}")
