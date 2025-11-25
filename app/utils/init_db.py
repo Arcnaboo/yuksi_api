@@ -652,6 +652,34 @@ ALTER TABLE admin_jobs
 ALTER TABLE admin_jobs
     ADD COLUMN IF NOT EXISTS vehicle_product_id UUID REFERENCES vehicle_products(id) ON DELETE SET NULL;
 
+-- Bireysel kullanıcı yükleri tablosu
+CREATE TABLE IF NOT EXISTS user_jobs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    delivery_type TEXT NOT NULL,
+    carrier_type TEXT NOT NULL,
+    vehicle_type TEXT NOT NULL,
+    vehicle_product_id UUID REFERENCES vehicle_products(id) ON DELETE SET NULL,
+    pickup_address TEXT NOT NULL,
+    pickup_coordinates JSONB NOT NULL,
+    dropoff_address TEXT NOT NULL,
+    dropoff_coordinates JSONB NOT NULL,
+    special_notes TEXT,
+    campaign_code TEXT,
+    extra_services JSONB,
+    extra_services_total NUMERIC DEFAULT 0,
+    total_price NUMERIC NOT NULL,
+    payment_method TEXT NOT NULL,
+    image_file_ids JSONB DEFAULT '[]',
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    delivery_date DATE,
+    delivery_time TIME,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_jobs_user_id ON user_jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_jobs_created_at ON user_jobs(created_at);
+CREATE INDEX IF NOT EXISTS idx_user_jobs_delivery_type ON user_jobs(delivery_type);
+
 -- Bayi-Restoran ilişki tablosu
 CREATE TABLE IF NOT EXISTS dealer_restaurants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

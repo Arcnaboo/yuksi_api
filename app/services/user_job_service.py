@@ -1,0 +1,374 @@
+from typing import Dict, Any, List, Tuple, Optional
+from app.utils.database_async import fetch_all, fetch_one, execute
+import json
+from datetime import date, time
+
+
+# --- CREATE ---
+async def user_create_job(data: Dict[str, Any], user_id: str) -> Tuple[bool, str | None]:
+    """Bireysel kullanıcı tarafından yük oluşturma servisi"""
+    try:
+        # Araç seçimini işle
+        vehicle_product_id = None
+        vehicle_type_string = None
+        
+        if data.get("vehicleProductId"):
+            # Yöntem 1: Direkt vehicle_product_id
+            from app.services.vehicle_product_service import get_vehicle_product
+            vehicle_product, error = await get_vehicle_product(data["vehicleProductId"])
+            if error or not vehicle_product:
+                return False, f"Araç ürünü bulunamadı: {error}"
+            vehicle_product_id = data["vehicleProductId"]
+            vehicle_type_string = vehicle_product.get("productTemplate", "motorcycle")
+            
+        elif data.get("vehicleTemplate"):
+            # Yöntem 2: Template + Features + Capacity
+            from app.services.vehicle_product_service import find_vehicle_product_by_selection
+            template = data["vehicleTemplate"]
+            features = data.get("vehicleFeatures", [])
+            capacity_option_id = data.get("capacityOptionId")
+            
+            vehicle_product, error = await find_vehicle_product_by_selection(
+                template,
+                features,
+                capacity_option_id
+            )
+            
+            if error or not vehicle_product:
+                return False, f"Seçilen özelliklere uygun araç bulunamadı: {error}"
+            
+            vehicle_product_id = vehicle_product["id"]
+            vehicle_type_string = template
+            
+        else:
+            # Yöntem 3: Eski sistem (backward compatibility)
+            vehicle_type_string = data.get("vehicleType", "motorcycle")
+        
+        # Fiyat hesaplama (eğer totalPrice gönderilmemişse)
+        total_price = data.get("totalPrice")
+        
+        if not total_price:
+            from app.services.job_price_service import calculate_job_price
+            calculated_price, error = await calculate_job_price(
+                vehicle_product_id=vehicle_product_id,
+                vehicle_template=vehicle_type_string,
+                pickup_coords=data.get("pickupCoordinates"),
+                dropoff_coords=data.get("dropoffCoordinates"),
+                extra_services_total=data.get("extraServicesTotal", 0)
+            )
+            
+            if error:
+                return False, f"Fiyat hesaplanamadı: {error}"
+            
+            total_price = calculated_price
+        
+        query = """
+        INSERT INTO user_jobs (
+            delivery_type, carrier_type, vehicle_type, vehicle_product_id,
+            pickup_address, pickup_coordinates,
+            dropoff_address, dropoff_coordinates,
+            special_notes, campaign_code,
+            extra_services, extra_services_total,
+            total_price, payment_method, image_file_ids, user_id,
+            delivery_date, delivery_time
+        )
+        VALUES (
+            $1,$2,$3,$4,$5,$6,$7,
+            $8,$9,$10,$11,$12,$13,$14,$15,$16,
+            $17,$18
+        )
+        RETURNING id;
+        """
+
+        # deliveryDate ve deliveryTime'i Python datetime objelerine dönüştür
+        delivery_date_obj = None
+        delivery_time_obj = None
+        
+        if data.get("deliveryDate"):
+            try:
+                # DD.MM.YYYY formatını parse et
+                date_str = data["deliveryDate"].strip()
+                if "." in date_str:
+                    parts = date_str.split(".")
+                    if len(parts) == 3:
+                        day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+                        delivery_date_obj = date(year, month, day)
+                    else:
+                        delivery_date_obj = None
+                else:
+                    # YYYY-MM-DD formatını da destekle
+                    delivery_date_obj = date.fromisoformat(date_str)
+            except (ValueError, TypeError, IndexError):
+                delivery_date_obj = None
+        
+        if data.get("deliveryTime"):
+            try:
+                # HH:MM formatını time objesine çevir
+                time_parts = data["deliveryTime"].split(":")
+                if len(time_parts) >= 2:
+                    delivery_time_obj = time(int(time_parts[0]), int(time_parts[1]))
+                else:
+                    delivery_time_obj = None
+            except (ValueError, TypeError, IndexError):
+                delivery_time_obj = None
+        
+        params = [
+            data["deliveryType"],
+            data["carrierType"],
+            vehicle_type_string,  # "minivan" gibi
+            str(vehicle_product_id) if vehicle_product_id else None,  # UUID string
+            data["pickupAddress"],
+            json.dumps(data["pickupCoordinates"]),
+            data["dropoffAddress"],
+            json.dumps(data["dropoffCoordinates"]),
+            data.get("specialNotes"),
+            data.get("campaignCode"),
+            json.dumps(data.get("extraServices", [])),
+            data.get("extraServicesTotal", 0),
+            total_price,  # Hesaplanan veya gönderilen fiyat
+            data["paymentMethod"],
+            json.dumps(data.get("imageFileIds", [])),
+            user_id,  # Bireysel kullanıcı ID'si
+            delivery_date_obj,  # Python date objesi
+            delivery_time_obj,  # Python time objesi
+        ]
+
+        row = await fetch_one(query, *params)
+        if not row:
+            return False, "Kayıt başarısız oldu."
+
+        return True, row["id"] if isinstance(row, dict) else row[0]
+
+    except Exception as e:
+        return False, str(e)
+
+
+# --- READ (liste) ---
+async def user_get_jobs(
+    user_id: str,
+    limit: int = 50, 
+    offset: int = 0, 
+    delivery_type: str | None = None
+) -> Tuple[bool, List[Dict[str, Any]] | str]:
+    """Bireysel kullanıcının yük listesini getirir"""
+    try:
+        filters = []
+        params = []
+        i = 1
+
+        # Sadece kullanıcının kendi yüklerini getir
+        filters.append(f"user_id = ${i}")
+        params.append(user_id)
+        i += 1
+
+        if delivery_type:
+            filters.append(f"delivery_type = ${i}")
+            params.append(delivery_type)
+            i += 1
+
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        params.extend([limit, offset])
+
+        query = f"""
+        SELECT
+            j.id,
+            j.delivery_type AS "deliveryType",
+            j.carrier_type AS "carrierType",
+            j.vehicle_type AS "vehicleType",
+            j.pickup_address AS "pickupAddress",
+            j.pickup_coordinates AS "pickupCoordinates",
+            j.dropoff_address AS "dropoffAddress",
+            j.dropoff_coordinates AS "dropoffCoordinates",
+            j.special_notes AS "specialNotes",
+            j.total_price AS "totalPrice",
+            j.payment_method AS "paymentMethod",
+            j.created_at AS "createdAt",
+            j.image_file_ids AS "imageFileIds",
+            j.delivery_date AS "deliveryDate",
+            j.delivery_time AS "deliveryTime",
+            j.vehicle_product_id AS "vehicleProductId"
+        FROM user_jobs j
+        {where_clause}
+        ORDER BY j.created_at DESC
+        LIMIT ${i} OFFSET ${i + 1};
+        """
+
+        rows = await fetch_all(query, *params)
+        
+        # Tarih ve saat formatlarını düzenle (DD.MM.YYYY ve HH:MM)
+        formatted_rows = []
+        for row in rows:
+            row_dict = dict(row) if not isinstance(row, dict) else row
+            if row_dict.get("deliveryDate"):
+                row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
+            if row_dict.get("deliveryTime"):
+                row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
+            formatted_rows.append(row_dict)
+        
+        return True, formatted_rows
+
+    except Exception as e:
+        return False, str(e)
+
+
+# --- READ (tek kayıt) ---
+async def user_get_job(job_id: str, user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
+    """Bireysel kullanıcının belirli bir yükünü getirir"""
+    try:
+        query = """
+        SELECT
+            j.id,
+            j.delivery_type AS "deliveryType",
+            j.carrier_type AS "carrierType",
+            j.vehicle_type AS "vehicleType",
+            j.pickup_address AS "pickupAddress",
+            j.pickup_coordinates AS "pickupCoordinates",
+            j.dropoff_address AS "dropoffAddress",
+            j.dropoff_coordinates AS "dropoffCoordinates",
+            j.special_notes AS "specialNotes",
+            j.campaign_code AS "campaignCode",
+            j.extra_services AS "extraServices",
+            j.extra_services_total AS "extraServicesTotal",
+            j.total_price AS "totalPrice",
+            j.payment_method AS "paymentMethod",
+            j.created_at AS "createdAt",
+            j.image_file_ids AS "imageFileIds",
+            j.delivery_date AS "deliveryDate",
+            j.delivery_time AS "deliveryTime",
+            j.vehicle_product_id AS "vehicleProductId"
+        FROM user_jobs j
+        WHERE j.id = $1 AND j.user_id = $2;
+        """
+
+        row = await fetch_one(query, job_id, user_id)
+        if not row:
+            return False, "Yük bulunamadı veya bu yük size ait değil."
+
+        row_dict = dict(row) if not isinstance(row, dict) else row
+        
+        # Tarih ve saat formatlarını düzenle
+        if row_dict.get("deliveryDate"):
+            row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
+        if row_dict.get("deliveryTime"):
+            row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
+        
+        return True, row_dict
+
+    except Exception as e:
+        return False, str(e)
+
+
+# --- UPDATE ---
+async def user_update_job(
+    job_id: str, 
+    user_id: str,
+    fields: Dict[str, Any]
+) -> Tuple[bool, Optional[str]]:
+    """Bireysel kullanıcı tarafından yük güncelleme servisi"""
+    try:
+        if not fields:
+            return False, "Güncellenecek alan yok."
+
+        # Önce yükün kullanıcıya ait olduğunu kontrol et
+        check_query = "SELECT id FROM user_jobs WHERE id = $1 AND user_id = $2;"
+        check_row = await fetch_one(check_query, job_id, user_id)
+        if not check_row:
+            return False, "Yük bulunamadı veya bu yük size ait değil."
+
+        update_fields = []
+        params = []
+        i = 1
+
+        mapping = {
+            "deliveryType": "delivery_type",
+            "carrierType": "carrier_type",
+            "vehicleType": "vehicle_type",
+            "pickupAddress": "pickup_address",
+            "pickupCoordinates": "pickup_coordinates",
+            "dropoffAddress": "dropoff_address",
+            "dropoffCoordinates": "dropoff_coordinates",
+            "specialNotes": "special_notes",
+            "campaignCode": "campaign_code",
+            "extraServices": "extra_services",
+            "extraServicesTotal": "extra_services_total",
+            "totalPrice": "total_price",
+            "paymentMethod": "payment_method",
+            "imageFileIds": "image_file_ids",
+            "deliveryDate": "delivery_date",
+            "deliveryTime": "delivery_time"
+        }
+
+        for key, value in fields.items():
+            column = mapping.get(key, key.lower())
+            if column in ["pickup_coordinates", "dropoff_coordinates", "extra_services", "image_file_ids"]:
+                update_fields.append(f"{column} = ${i}")
+                params.append(json.dumps(value))
+            elif column == "delivery_date":
+                # deliveryDate string'ini Python date objesine çevir (DD.MM.YYYY veya YYYY-MM-DD)
+                if value:
+                    try:
+                        date_str = str(value).strip()
+                        if "." in date_str:
+                            parts = date_str.split(".")
+                            if len(parts) == 3:
+                                day, month, year = int(parts[0]), int(parts[1]), int(parts[2])
+                                params.append(date(year, month, day))
+                            else:
+                                params.append(None)
+                        else:
+                            params.append(date.fromisoformat(date_str))
+                    except (ValueError, TypeError, IndexError):
+                        params.append(None)
+                else:
+                    params.append(None)
+                update_fields.append(f"{column} = ${i}")
+            elif column == "delivery_time":
+                # deliveryTime string'ini Python time objesine çevir
+                if value:
+                    try:
+                        time_parts = value.split(":")
+                        if len(time_parts) >= 2:
+                            params.append(time(int(time_parts[0]), int(time_parts[1])))
+                        else:
+                            params.append(None)
+                    except (ValueError, TypeError, IndexError):
+                        params.append(None)
+                else:
+                    params.append(None)
+                update_fields.append(f"{column} = ${i}")
+            else:
+                update_fields.append(f"{column} = ${i}")
+                params.append(value)
+            i += 1
+
+        params.extend([job_id, user_id])
+
+        query = f"""
+            UPDATE user_jobs
+            SET {', '.join(update_fields)}
+            WHERE id = ${i} AND user_id = ${i + 1};
+        """
+        result = await execute(query, *params)
+        if result.endswith(" 0"):
+            return False, "Kayıt bulunamadı."
+        return True, None
+
+    except Exception as e:
+        return False, str(e)
+
+
+# --- DELETE ---
+async def user_delete_job(job_id: str, user_id: str) -> Tuple[bool, Optional[str]]:
+    """Bireysel kullanıcı tarafından yük silme servisi"""
+    try:
+        result = await execute(
+            "DELETE FROM user_jobs WHERE id = $1 AND user_id = $2;", 
+            job_id, 
+            user_id
+        )
+        if result.endswith(" 0"):
+            return False, "Silinecek kayıt bulunamadı veya bu yük size ait değil."
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
