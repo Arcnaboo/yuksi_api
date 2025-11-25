@@ -25,9 +25,51 @@ async def _has_package_left(restaurant_id: str) -> tuple[bool, int | None]:
     if max_package is None:
         return True, None
 
+    max_package = float(max_package) if max_package is not None else 0.0
+
+    # Mesafeye göre paket sayısını hesapla
+    # 0-5 km: 1 paket, 5-7 km: 1.5 paket, 7-10 km: 2 paket
     delivered_row = await fetch_one(
         """
-        SELECT COUNT(*) AS delivered_count
+        SELECT COALESCE(SUM(
+            CASE
+                WHEN pickup_lat IS NOT NULL 
+                 AND pickup_lng IS NOT NULL 
+                 AND dropoff_lat IS NOT NULL 
+                 AND dropoff_lng IS NOT NULL THEN
+                    CASE
+                        WHEN (6371 * acos(
+                            LEAST(1.0,
+                                cos(radians(pickup_lat)) * 
+                                cos(radians(dropoff_lat)) * 
+                                cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                sin(radians(pickup_lat)) * 
+                                sin(radians(dropoff_lat))
+                            )
+                        )) <= 5 THEN 1.0
+                        WHEN (6371 * acos(
+                            LEAST(1.0,
+                                cos(radians(pickup_lat)) * 
+                                cos(radians(dropoff_lat)) * 
+                                cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                sin(radians(pickup_lat)) * 
+                                sin(radians(dropoff_lat))
+                            )
+                        )) <= 7 THEN 1.5
+                        WHEN (6371 * acos(
+                            LEAST(1.0,
+                                cos(radians(pickup_lat)) * 
+                                cos(radians(dropoff_lat)) * 
+                                cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                sin(radians(pickup_lat)) * 
+                                sin(radians(dropoff_lat))
+                            )
+                        )) <= 10 THEN 2.0
+                        ELSE 2.0
+                    END
+                ELSE 1.0  -- Koordinat yoksa varsayılan 1 paket
+            END
+        ), 0) AS delivered_count
         FROM orders
         WHERE restaurant_id = $1
           AND type = 'paket_servis'
@@ -36,7 +78,7 @@ async def _has_package_left(restaurant_id: str) -> tuple[bool, int | None]:
         restaurant_id,
     )
 
-    delivered_count = int(delivered_row.get("delivered_count", 0)) if delivered_row else 0
+    delivered_count = float(delivered_row.get("delivered_count", 0)) if delivered_row else 0.0
     remaining = max_package - delivered_count
     return remaining > 0, remaining
 
