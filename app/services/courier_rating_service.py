@@ -36,22 +36,61 @@ async def assign_courier_to_order(
             package_info = cur.fetchone()
             
             if package_info and package_info[0]:  # max_package tanımlıysa
-                max_package = package_info[0]
-                # Teslim edilmiş paket sayısını say
+                max_package = float(package_info[0])
+                # Teslim edilmiş paket sayısını mesafeye göre hesapla
+                # 0-5 km: 1 paket, 5-7 km: 1.5 paket, 7-10 km: 2 paket
                 cur.execute("""
-                    SELECT COUNT(*) as delivered_count
+                    SELECT COALESCE(SUM(
+                        CASE
+                            WHEN pickup_lat IS NOT NULL 
+                             AND pickup_lng IS NOT NULL 
+                             AND dropoff_lat IS NOT NULL 
+                             AND dropoff_lng IS NOT NULL THEN
+                                CASE
+                                    WHEN (6371 * acos(
+                                        LEAST(1.0,
+                                            cos(radians(pickup_lat)) * 
+                                            cos(radians(dropoff_lat)) * 
+                                            cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                            sin(radians(pickup_lat)) * 
+                                            sin(radians(dropoff_lat))
+                                        )
+                                    )) <= 5 THEN 1.0
+                                    WHEN (6371 * acos(
+                                        LEAST(1.0,
+                                            cos(radians(pickup_lat)) * 
+                                            cos(radians(dropoff_lat)) * 
+                                            cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                            sin(radians(pickup_lat)) * 
+                                            sin(radians(dropoff_lat))
+                                        )
+                                    )) <= 7 THEN 1.5
+                                    WHEN (6371 * acos(
+                                        LEAST(1.0,
+                                            cos(radians(pickup_lat)) * 
+                                            cos(radians(dropoff_lat)) * 
+                                            cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                            sin(radians(pickup_lat)) * 
+                                            sin(radians(dropoff_lat))
+                                        )
+                                    )) <= 10 THEN 2.0
+                                    ELSE 2.0
+                                END
+                            ELSE 1.0  -- Koordinat yoksa varsayılan 1 paket
+                        END
+                    ), 0) as delivered_count
                     FROM orders
                     WHERE restaurant_id = %s
                       AND type = 'paket_servis'
                       AND status = 'teslim_edildi';
                 """, (restaurant_id,))
                 delivered_result = cur.fetchone()
-                delivered_count = delivered_result[0] if delivered_result else 0
+                delivered_count = float(delivered_result[0]) if delivered_result and delivered_result[0] is not None else 0.0
                 
                 # Kalan paket kontrolü
                 remaining_packages = max_package - delivered_count
                 if remaining_packages <= 0:
-                    return False, f"Paket hakkınız tükenmiş. Kalan paket: 0, Maksimum paket: {max_package}, Teslim edilen: {delivered_count}"
+                    return False, f"Paket hakkınız tükenmiş. Kalan paket: {remaining_packages:.2f}, Maksimum paket: {max_package}, Teslim edilen: {delivered_count:.2f}"
             
             # Kurye kontrolü
             cur.execute("SELECT id FROM drivers WHERE id=%s", (courier_id,))

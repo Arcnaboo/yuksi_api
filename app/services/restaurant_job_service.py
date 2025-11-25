@@ -20,21 +20,60 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
         """, restaurant_id)
         
         if package_info and package_info.get("max_package") is not None:
-            max_package = package_info.get("max_package")
-            # Teslim edilmiş paket sayısını say
+            max_package = float(package_info.get("max_package"))
+            # Teslim edilmiş paket sayısını mesafeye göre hesapla
+            # 0-5 km: 1 paket, 5-7 km: 1.5 paket, 7-10 km: 2 paket
             delivered_result = await fetch_one("""
-                SELECT COUNT(*) as delivered_count
+                SELECT COALESCE(SUM(
+                    CASE
+                        WHEN pickup_lat IS NOT NULL 
+                         AND pickup_lng IS NOT NULL 
+                         AND dropoff_lat IS NOT NULL 
+                         AND dropoff_lng IS NOT NULL THEN
+                            CASE
+                                WHEN (6371 * acos(
+                                    LEAST(1.0,
+                                        cos(radians(pickup_lat)) * 
+                                        cos(radians(dropoff_lat)) * 
+                                        cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                        sin(radians(pickup_lat)) * 
+                                        sin(radians(dropoff_lat))
+                                    )
+                                )) <= 5 THEN 1.0
+                                WHEN (6371 * acos(
+                                    LEAST(1.0,
+                                        cos(radians(pickup_lat)) * 
+                                        cos(radians(dropoff_lat)) * 
+                                        cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                        sin(radians(pickup_lat)) * 
+                                        sin(radians(dropoff_lat))
+                                    )
+                                )) <= 7 THEN 1.5
+                                WHEN (6371 * acos(
+                                    LEAST(1.0,
+                                        cos(radians(pickup_lat)) * 
+                                        cos(radians(dropoff_lat)) * 
+                                        cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                        sin(radians(pickup_lat)) * 
+                                        sin(radians(dropoff_lat))
+                                    )
+                                )) <= 10 THEN 2.0
+                                ELSE 2.0
+                            END
+                        ELSE 1.0  -- Koordinat yoksa varsayılan 1 paket
+                    END
+                ), 0) as delivered_count
                 FROM orders
                 WHERE restaurant_id = $1
                   AND type = 'paket_servis'
                   AND status = 'teslim_edildi'
             """, restaurant_id)
-            delivered_count = delivered_result.get("delivered_count", 0) if delivered_result else 0
+            delivered_count = float(delivered_result.get("delivered_count", 0)) if delivered_result else 0.0
             
             # Kalan paket kontrolü
             remaining_packages = max_package - delivered_count
             if remaining_packages <= 0:
-                return False, f"Paket hakkınız tükenmiş. Kalan paket: 0, Maksimum paket: {max_package}, Teslim edilen: {delivered_count}"
+                return False, f"Paket hakkınız tükenmiş. Kalan paket: {remaining_packages:.2f}, Maksimum paket: {max_package}, Teslim edilen: {delivered_count:.2f}"
         
         query = """
         INSERT INTO admin_jobs (
@@ -122,8 +161,17 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
             # Order kodu oluştur
             order_code = await generate_order_code()
             
+            # Koordinatları parse et (mesafeye göre paket sayısı hesaplamak için)
+            # Format: [lat, lng] - Model'de belirtildiği gibi
+            pickup_coords = data.get("pickupCoordinates", [])
+            dropoff_coords = data.get("dropoffCoordinates", [])
+            pickup_lat = pickup_coords[0] if isinstance(pickup_coords, list) and len(pickup_coords) >= 2 else (pickup_coords.get("lat") if isinstance(pickup_coords, dict) else 0)
+            pickup_lng = pickup_coords[1] if isinstance(pickup_coords, list) and len(pickup_coords) >= 2 else (pickup_coords.get("lng") if isinstance(pickup_coords, dict) else 0)
+            dropoff_lat = dropoff_coords[0] if isinstance(dropoff_coords, list) and len(dropoff_coords) >= 2 else (dropoff_coords.get("lat") if isinstance(dropoff_coords, dict) else 0)
+            dropoff_lng = dropoff_coords[1] if isinstance(dropoff_coords, list) and len(dropoff_coords) >= 2 else (dropoff_coords.get("lng") if isinstance(dropoff_coords, dict) else 0)
+            
             # Yük için bir order oluştur (paket_servis tipinde, teslim_edildi durumunda)
-            # Bu order sadece paket sayısını azaltmak için
+            # Bu order sadece paket sayısını azaltmak için - mesafeye göre paket sayısı hesaplanacak
             await execute("""
                 INSERT INTO orders (
                     restaurant_id, code, type, status, amount, 
@@ -135,11 +183,11 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
                 VALUES (
                     $1, $2, 'paket_servis', 'teslim_edildi', 0,
                     'Restaurant Yük', '0000000000', 'Yük Teslimatı', 'Yük Teslimatı',
-                    0, 0, 0, 0,
+                    $3, $4, $5, $6,
                     'kurye', '2_teker_motosiklet',
                     NOW(), NOW()
                 )
-            """, restaurant_id, order_code)
+            """, restaurant_id, order_code, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng)
 
         return True, job_id
 

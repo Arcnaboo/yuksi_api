@@ -27,16 +27,55 @@ async def get_restaurant_package_status(restaurant_id: str) -> Tuple[bool, Optio
             
             max_package = package_info.get("max_package") or 0
             
-            # Teslim edilmiş paket sayısını hesapla
+            # Teslim edilmiş paket sayısını mesafeye göre hesapla
+            # 0-5 km: 1 paket, 5-7 km: 1.5 paket, 7-10 km: 2 paket
             cur.execute("""
-                SELECT COUNT(*) as delivered_count
+                SELECT COALESCE(SUM(
+                    CASE
+                        WHEN pickup_lat IS NOT NULL 
+                         AND pickup_lng IS NOT NULL 
+                         AND dropoff_lat IS NOT NULL 
+                         AND dropoff_lng IS NOT NULL THEN
+                            CASE
+                                WHEN (6371 * acos(
+                                    LEAST(1.0,
+                                        cos(radians(pickup_lat)) * 
+                                        cos(radians(dropoff_lat)) * 
+                                        cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                        sin(radians(pickup_lat)) * 
+                                        sin(radians(dropoff_lat))
+                                    )
+                                )) <= 5 THEN 1.0
+                                WHEN (6371 * acos(
+                                    LEAST(1.0,
+                                        cos(radians(pickup_lat)) * 
+                                        cos(radians(dropoff_lat)) * 
+                                        cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                        sin(radians(pickup_lat)) * 
+                                        sin(radians(dropoff_lat))
+                                    )
+                                )) <= 7 THEN 1.5
+                                WHEN (6371 * acos(
+                                    LEAST(1.0,
+                                        cos(radians(pickup_lat)) * 
+                                        cos(radians(dropoff_lat)) * 
+                                        cos(radians(dropoff_lng) - radians(pickup_lng)) + 
+                                        sin(radians(pickup_lat)) * 
+                                        sin(radians(dropoff_lat))
+                                    )
+                                )) <= 10 THEN 2.0
+                                ELSE 2.0
+                            END
+                        ELSE 1.0  -- Koordinat yoksa varsayılan 1 paket
+                    END
+                ), 0) as delivered_count
                 FROM orders
                 WHERE restaurant_id = %s
                   AND type = 'paket_servis'
                   AND status = 'teslim_edildi';
             """, (restaurant_id,))
             delivered_result = cur.fetchone()
-            delivered_count = delivered_result.get("delivered_count", 0) if delivered_result else 0
+            delivered_count = float(delivered_result.get("delivered_count", 0)) if delivered_result else 0.0
             
             # Toplam paket sipariş sayısı (tüm durumlar)
             cur.execute("""
@@ -48,7 +87,7 @@ async def get_restaurant_package_status(restaurant_id: str) -> Tuple[bool, Optio
             total_result = cur.fetchone()
             total_count = total_result.get("total_count", 0) if total_result else 0
             
-            # Kalan paket sayısı
+            # Kalan paket sayısı (float olarak hesaplanıyor)
             remaining_packages = max_package - delivered_count if max_package > 0 else None
             
             # Uyarı mesajı (10 ve 3 paket kaldığında)
