@@ -246,7 +246,7 @@ async def get_courier_documents(driver_id: str, dealer_id: UUID = None) -> Optio
     if dealer_id:
         onboarding_sql = """
             SELECT 1
-            FROM courier_onboarding
+            FROM driver_onboarding
             WHERE driver_id = $1
               AND dealer_id = $2
         """
@@ -292,7 +292,7 @@ async def update_courier_document_status(
     if dealer_id:
         onboarding_sql = """
             SELECT 1
-            FROM courier_onboarding
+            FROM driver_onboarding
             WHERE driver_id = $1
               AND dealer_id = $2
         """
