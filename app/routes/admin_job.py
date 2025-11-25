@@ -14,36 +14,22 @@ router = APIRouter(prefix="/api/admin/jobs", tags=["Admin Jobs"])
     dependencies=[Depends(require_roles(["Admin", "Restaurant"]))],
 )
 async def create_admin_job(
-    req: AdminJobCreate = Body(
-        ...,
-        example={
-            "deliveryType": "immediate",
-            "carrierType": "courier",
-            "vehicleType": "motorcycle",
-            "pickupAddress": "Bursa OSB, Nilüfer",
-            "pickupCoordinates": [40.192, 29.067],
-            "dropoffAddress": "Gözede, 16450 Kestel/Bursa",
-            "dropoffCoordinates": [40.198, 29.071],
-            "specialNotes": "Paketin sıcak gitmesi gerekiyor.",
-            "campaignCode": "YUKSI2025",
-            "extraServices": [
-                {"serviceId": 1, "name": "Durak Ekleme", "price": 100}
-            ],
-            "extraServicesTotal": 100,
-            "totalPrice": 580,
-            "paymentMethod": "cash",
-            "imageFileIds": [
-                "9fa1e430-9b2e-4a57-b321-9c0b7264b213",
-                "acff2e7f-df31-44ce-a8c5-7e31b9810a72"
-            ]
-        },
-    ),
+    req: AdminJobCreate = Body(...),
 ):
     """
     Admin tarafından manuel yük oluşturma endpoint'i.
+    
+    **Araç Seçimi (3 Yöntem):**
+    1. **vehicleProductId** (Önerilen): Direkt araç ürün ID'si kullanın
+    2. **vehicleTemplate + vehicleFeatures + capacityOptionId**: Araç tipi, özellikler ve kapasite seçimi
+    3. **vehicleType** (Eski sistem): String olarak araç tipi (backward compatibility)
+    
+    **Notlar:**
     - Dosyalar `/api/file/upload` endpoint'inden alınıp `imageFileIds` alanına gönderilmelidir.
     - `deliveryType`: `immediate` veya `scheduled`
-    - `pickupCoordinates` ve `dropoffCoordinates`: `[lat, long]`
+    - `pickupCoordinates` ve `dropoffCoordinates`: `[lat, long]` formatında
+    - `totalPrice` opsiyonel: Gönderilmezse backend otomatik hesaplar
+    - Araç ürünlerini görmek için: `GET /api/admin/vehicles`
     """
     return await ctrl.admin_create_job(req.model_dump())
 

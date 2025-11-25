@@ -8,9 +8,63 @@ from datetime import date, time
 async def admin_create_job(data: Dict[str, Any]) -> Tuple[bool, str | None]:
     """Admin tarafından manuel yük oluşturma servisi"""
     try:
+        # Araç seçimini işle
+        vehicle_product_id = None
+        vehicle_type_string = None
+        
+        if data.get("vehicleProductId"):
+            # Yöntem 1: Direkt vehicle_product_id
+            from app.services.vehicle_product_service import get_vehicle_product
+            vehicle_product, error = await get_vehicle_product(data["vehicleProductId"])
+            if error or not vehicle_product:
+                return False, f"Araç ürünü bulunamadı: {error}"
+            vehicle_product_id = data["vehicleProductId"]
+            vehicle_type_string = vehicle_product.get("productTemplate", "motorcycle")
+            
+        elif data.get("vehicleTemplate"):
+            # Yöntem 2: Template + Features + Capacity
+            from app.services.vehicle_product_service import find_vehicle_product_by_selection
+            template = data["vehicleTemplate"]
+            features = data.get("vehicleFeatures", [])
+            capacity_option_id = data.get("capacityOptionId")
+            
+            vehicle_product, error = await find_vehicle_product_by_selection(
+                template,
+                features,
+                capacity_option_id
+            )
+            
+            if error or not vehicle_product:
+                return False, f"Seçilen özelliklere uygun araç bulunamadı: {error}"
+            
+            vehicle_product_id = vehicle_product["id"]
+            vehicle_type_string = template
+            
+        else:
+            # Yöntem 3: Eski sistem (backward compatibility)
+            vehicle_type_string = data.get("vehicleType", "motorcycle")
+        
+        # Fiyat hesaplama (eğer totalPrice gönderilmemişse)
+        total_price = data.get("totalPrice")
+        
+        if not total_price:
+            from app.services.job_price_service import calculate_job_price
+            calculated_price, error = await calculate_job_price(
+                vehicle_product_id=vehicle_product_id,
+                vehicle_template=vehicle_type_string,
+                pickup_coords=data.get("pickupCoordinates"),
+                dropoff_coords=data.get("dropoffCoordinates"),
+                extra_services_total=data.get("extraServicesTotal", 0)
+            )
+            
+            if error:
+                return False, f"Fiyat hesaplanamadı: {error}"
+            
+            total_price = calculated_price
+        
         query = """
         INSERT INTO admin_jobs (
-            delivery_type, carrier_type, vehicle_type,
+            delivery_type, carrier_type, vehicle_type, vehicle_product_id,
             pickup_address, pickup_coordinates,
             dropoff_address, dropoff_coordinates,
             special_notes, campaign_code,
@@ -20,8 +74,8 @@ async def admin_create_job(data: Dict[str, Any]) -> Tuple[bool, str | None]:
         )
         VALUES (
             $1,$2,$3,$4,$5,$6,$7,
-            $8,$9,$10,$11,$12,$13,$14,TRUE,
-            $15,$16
+            $8,$9,$10,$11,$12,$13,$14,$15,TRUE,
+            $16,$17
         )
         RETURNING id;
         """
@@ -61,7 +115,8 @@ async def admin_create_job(data: Dict[str, Any]) -> Tuple[bool, str | None]:
         params = [
             data["deliveryType"],
             data["carrierType"],
-            data["vehicleType"],
+            vehicle_type_string,  # "minivan" gibi
+            str(vehicle_product_id) if vehicle_product_id else None,  # UUID string
             data["pickupAddress"],
             json.dumps(data["pickupCoordinates"]),
             data["dropoffAddress"],
@@ -70,7 +125,7 @@ async def admin_create_job(data: Dict[str, Any]) -> Tuple[bool, str | None]:
             data.get("campaignCode"),
             json.dumps(data.get("extraServices", [])),
             data.get("extraServicesTotal", 0),
-            data["totalPrice"],
+            total_price,  # Hesaplanan veya gönderilen fiyat
             data["paymentMethod"],
             json.dumps(data.get("imageFileIds", [])),
             delivery_date_obj,  # Python date objesi
