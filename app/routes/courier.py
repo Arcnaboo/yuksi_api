@@ -320,6 +320,7 @@ async def get_courier_profile(
                                         "email": "test@test.com",
                                         "createdAt": "2023-10-01T12:34:56Z",
                                         "countryId": 90,
+                                        "dealer_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                                         "is_online": True,
                                         "countryName": "Turkey",
                                         "stateId": 34,
@@ -350,8 +351,8 @@ async def get_courier_profile(
     },
 )
 
-async def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin","Restaurant"]))):
-    return await ctrl.list_couriers()
+async def list_couriers( _claims = Depends(auth_controller.require_roles(["Courier","Admin","Restaurant", "Dealer"]))):
+    return await ctrl.list_couriers(_claims)
 
 @router.get(
     "/{user_id}/get_documents",
@@ -443,9 +444,9 @@ async def list_couriers( _claims = Depends(auth_controller.require_roles(["Couri
 )
 async def get_courier_documents(
     user_id: UUID = Path(..., description="The UUID of the courier user"),
-    _claims = Depends(auth_controller.require_roles(["Courier","Admin","Restaurant"]))
+    _claims = Depends(auth_controller.require_roles(["Courier","Admin","Restaurant", "Dealer"]))
 ):
-    return await ctrl.get_courier_documents(user_id)
+    return await ctrl.get_courier_documents(user_id, _claims)
 
 
 @router.put(
@@ -484,9 +485,9 @@ async def update_courier_document_status(
     user_id: UUID = Path(..., description="The UUID of the courier user"),
     document_id: UUID = Path(..., description="The UUID of the document to update"),
     new_status: str = Body(..., embed=True, description="The new status for the document"),
-    _claims = Depends(auth_controller.require_roles(["Admin"]))
+    _claims = Depends(auth_controller.require_roles(["Admin", "Dealer"]))
 ):
-    return await ctrl.update_courier_document_status(user_id, document_id, new_status)
+    return await ctrl.update_courier_document_status(user_id, document_id, new_status, _claims)
     
 
 @router.delete(

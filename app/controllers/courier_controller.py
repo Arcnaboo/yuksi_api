@@ -41,22 +41,43 @@ async def get_courier_profile(user_id: str):
         return {"success": False, "message": "Courier not found", "data": {}}
     return {"success": True, "message": "Courier profile", "data": profile}
 
-async def list_couriers():
-    couriers = await svc.list_couriers()
+# async def list_couriers():
+#     couriers = await svc.list_couriers()
+#     return {"success": True, "message": "Courier list", "data": couriers}
+
+async def list_couriers(_claims: dict):
+    roles = _claims.get("role") or _claims.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+    if "Dealer" in roles:
+        dealer_id = _claims.get("userId")
+        couriers = await svc.list_couriers(dealer_id=dealer_id)
+    else:
+        couriers = await svc.list_couriers()
     return {"success": True, "message": "Courier list", "data": couriers}
 
-async def list_couriers():
-    couriers = await svc.list_couriers()
-    return {"success": True, "message": "Courier list", "data": couriers}
-
-async def get_courier_documents(user_id: str):
-    documents = await svc.get_courier_documents(user_id)
+async def get_courier_documents(user_id: str, _claims: dict):
+    roles = _claims.get("role") or _claims.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+    if "Dealer" in roles:
+        dealer_id = _claims.get("userId")
+        documents = await svc.get_courier_documents(user_id, dealer_id=dealer_id)
+    else:
+        documents = await svc.get_courier_documents(user_id)
     if documents is None:
         return {"success": False, "message": "Courier not found", "data": {}}
     return {"success": True, "message": "Courier documents", "data": documents}
 
-async def update_courier_document_status(user_id: str, document_id: str, status: str):
-    err = await svc.update_courier_document_status(user_id, document_id, status)
+async def update_courier_document_status(user_id: str, document_id: str, status: str, _claims: dict):
+    roles = _claims.get("role") or _claims.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+    if "Dealer" in roles:
+        dealer_id = _claims.get("userId")
+        err = await svc.update_courier_document_status(user_id, document_id, status, dealer_id=dealer_id)
+    else:
+        err = await svc.update_courier_document_status(user_id, document_id, status)
     if err:
         return {"success": False, "message": err, "data": {}}
     return {"success": True, "message": "Document status updated", "data": {}}

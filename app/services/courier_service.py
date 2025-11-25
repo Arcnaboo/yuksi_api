@@ -154,7 +154,7 @@ async def get_onboarding(driver_id: str) -> Optional[Dict[str, Any]]:
 
 
 # === LIST COURIERS ===
-async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
+async def list_couriers(dealer_id: UUID = None, limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
     sql = """
     SELECT
       d.id,
@@ -167,6 +167,7 @@ async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]
       d.deleted,
       d.deleted_at,
       ob.country_id,
+      ob.dealer_id,
       COALESCE(ds.online, FALSE) AS is_online,
       c.name   AS country_name,
       ob.state_id,
@@ -185,7 +186,23 @@ async def list_couriers(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]
     LIMIT $1 OFFSET $2;
     """
     rows = await fetch_all(sql, limit, offset)
-    return [dict(r) for r in rows] if rows else []
+    if dealer_id is not None:
+        result = []
+        for r in rows:
+            row = dict(r)
+            row_dealer = row.get("dealer_id")
+
+            if row_dealer is None:
+                continue
+            
+            if str(row_dealer) == str(dealer_id):
+                result.append(row)
+        print(result)
+        return result
+    else:
+        return [dict(r) for r in rows] if rows else []
+
+    
 
 
 # === GET COURIER ===
@@ -219,53 +236,85 @@ async def get_courier(driver_id: str) -> Optional[Dict[str, Any]]:
     row = await fetch_one(sql, driver_id)
     return dict(row) if row else None
 
-async def get_courier_documents(driver_id: str) -> Optional[List[Dict[str, Any]]]:
-    #check if driver exists
+async def get_courier_documents(driver_id: str, dealer_id: UUID = None) -> Optional[List[Dict[str, Any]]]:
+
     driver_check_sql = "SELECT 1 FROM drivers WHERE id = $1"
     driver = await fetch_one(driver_check_sql, driver_id)
     if driver is None:
-        return None #driver not found
+        return None
     
+    if dealer_id:
+        onboarding_sql = """
+            SELECT 1
+            FROM courier_onboarding
+            WHERE driver_id = $1
+              AND dealer_id = $2
+        """
+        onboarding_match = await fetch_one(onboarding_sql, driver_id, dealer_id)
+        if onboarding_match is None:
+            return None
 
     sql = """
-    SELECT
-        cd.id AS document_id,
-      cd.doc_type,
-      cd.file_id,
-      cd.courier_document_status AS document_status,
-      f.image_url AS image_url,
-      f.uploaded_at
-    FROM courier_documents cd
-    JOIN files f ON f.id = cd.file_id
-    WHERE cd.user_id = $1
+        SELECT
+            cd.id AS document_id,
+            cd.doc_type,
+            cd.file_id,
+            cd.courier_document_status AS document_status,
+            f.image_url AS image_url,
+            f.uploaded_at
+        FROM courier_documents cd
+        JOIN files f ON f.id = cd.file_id
+        WHERE cd.user_id = $1
+        ORDER BY f.uploaded_at DESC
     """
+
     documents = await fetch_all(sql, driver_id)
-    
-    return [dict(doc) for doc in documents]
+    return [dict(doc) for doc in documents] if documents else []
 
 
-async def update_courier_document_status(driver_id: str, document_id: str, status: str) -> Optional[str]:
+async def update_courier_document_status(
+    driver_id: str,
+    document_id: str,
+    status: str,
+    dealer_id: UUID = None
+) -> Optional[str]:
+
     if status not in VALID_STATUSES:
         return "Invalid status value"
-    #check if driver exists
+
+    # Check if driver exists
     driver_check_sql = "SELECT 1 FROM drivers WHERE id = $1"
     driver = await fetch_one(driver_check_sql, driver_id)
     if driver is None:
         return "Driver not found"
-    
-    #check if document exists for this driver
+
+    # If dealer_id is provided, check if driver belongs to that dealer
+    if dealer_id:
+        onboarding_sql = """
+            SELECT 1
+            FROM courier_onboarding
+            WHERE driver_id = $1
+              AND dealer_id = $2
+        """
+        onboarding_match = await fetch_one(onboarding_sql, driver_id, dealer_id)
+        if onboarding_match is None:
+            return "Driver is not assigned to this dealer"
+
+    # Check if document exists for this driver
     document_check_sql = "SELECT 1 FROM courier_documents WHERE user_id = $1 AND id = $2"
     document = await fetch_one(document_check_sql, driver_id, document_id)
     if document is None:
         return "Document not found for this driver"
-    
+
+    # Update document status
     update_sql = """
     UPDATE courier_documents
     SET courier_document_status = $1
     WHERE user_id = $2 AND id = $3
     """
     await execute(update_sql, status, driver_id, document_id)
-    
+
+    # Check if all documents approved
     all_ok_sql = """
     SELECT (COUNT(*) > 0) AND bool_and(courier_document_status = 'onaylandi') AS all_approved
     FROM courier_documents
@@ -273,12 +322,12 @@ async def update_courier_document_status(driver_id: str, document_id: str, statu
     """
     row = await fetch_one(all_ok_sql, driver_id)
     all_approved = bool(row["all_approved"]) if row is not None else False
+
+    # Update driver's active state
     if all_approved:
         await execute("UPDATE drivers SET is_active = TRUE WHERE id = $1", driver_id)
     else:
         await execute("UPDATE drivers SET is_active = FALSE WHERE id = $1", driver_id)
-
-    
 
     return None
 
