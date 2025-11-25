@@ -5,7 +5,7 @@ from datetime import datetime
 import uuid
 from app.utils.database import db_cursor
 from app.utils.database_async import fetch_one, fetch_all, execute
-from app.services.order_watch_service import tick_watch, add_rejection, delete, create_watch, update_available_drivers
+from app.services.order_watch_service import tick_watch, add_rejection, delete, create_watch, update_available_drivers, close
 
 
 # === Kod Üretimi ===
@@ -559,7 +559,7 @@ async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
         )
 
         # Sipariş izleyicisini güncelle
-        await delete(uuid.UUID(order_id))
+        await close(uuid.UUID(order_id))
 
         return True, None
 

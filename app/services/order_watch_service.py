@@ -135,13 +135,17 @@ async def compute_final_candidates(order_id: UUID) -> list[UUID]:
 
     return list(avail - rejected)
 
+async def open(order_id: UUID):
+    await execute(
+        f"UPDATE {TABLE} SET closed = false WHERE order_id = $1",
+        order_id
+    )
 
 async def close(order_id: UUID):
     await execute(
         f"UPDATE {TABLE} SET closed = true WHERE order_id = $1",
         order_id
     )
-
 
 async def delete(order_id: UUID):
     await execute(
@@ -161,4 +165,3 @@ async def tick_watch(order_id: UUID):
         if not pushed:
             return
         await close(order_id)
-        await delete(order_id)

@@ -134,6 +134,8 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
             FROM pool_orders p
             JOIN orders o ON o.id = p.order_id
             LEFT JOIN restaurants r ON r.id = o.restaurant_id
+            JOIN order_watchers ow ON ow.order_id = p.order_id
+            WHERE ow.closed = FALSE
             LIMIT $1 OFFSET $2
         """
         
@@ -171,6 +173,8 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
             FROM pool_orders p
             JOIN orders o ON p.order_id = o.id
             LEFT JOIN restaurants r ON r.id = o.restaurant_id
+            JOIN order_watchers ow ON ow.order_id = p.order_id
+            WHERE ow.closed = FALSE
             ORDER BY distance ASC
             LIMIT $1 OFFSET $2
         """
