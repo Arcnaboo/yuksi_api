@@ -169,13 +169,41 @@ async def get_courier_package(courier_id: str) -> Optional[Dict[str, Any]]:
 
 async def get_courier_work_hours(courier_id: str) -> Optional[Dict[str, Any]]:
     """
-    Kurye bugünkü çalışma saatlerini getirir
+    Kurye çalışma saatlerini getirir (günlük ve toplam)
+    - Günlük: Bugün çevrimiçi olduğu toplam saat
+    - Toplam: Paket başlangıcından bugüne kadar çevrimiçi olduğu toplam saat
+    - Paket bitmişse her ikisi de 0 döner
     """
     if not _validate_courier_id(courier_id):
         return None
     
+    # Önce aktif paket kontrolü
+    package_query = """
+        SELECT 
+            s.start_date,
+            s.end_date
+        FROM courier_package_subscriptions s
+        WHERE s.courier_id = $1::uuid
+          AND s.is_active = TRUE
+          AND s.deleted_at IS NULL
+          AND s.start_date <= NOW()
+          AND s.end_date > NOW()
+        ORDER BY s.end_date DESC
+        LIMIT 1
+    """
+    package_row = await fetch_one(package_query, courier_id)
+    
+    # Paket yoksa veya bitmişse sıfır döndür
+    if not package_row:
+        return {
+            "daily_work_time": "0:00",
+            "total_work_time": "0:00"
+        }
+    
+    package_start = package_row["start_date"]
     today_start = _get_today_start()
     
+    # Günlük çalışma saati (bugün çevrimiçi olduğu süre - bugünün başlangıcından itibaren)
     today_work_hours_query = """
         WITH bounds AS (
             SELECT $1::uuid AS driver_id,
@@ -229,21 +257,110 @@ async def get_courier_work_hours(courier_id: str) -> Optional[Dict[str, Any]]:
             )::bigint AS online_seconds
         FROM ordered;
     """
-    work_hours_row = await fetch_one(today_work_hours_query, courier_id, today_start)
+    today_work_hours_row = await fetch_one(today_work_hours_query, courier_id, today_start)
     
-    if not work_hours_row:
-        return {
-            "work_hours": 0,
-            "work_minutes": 0
-        }
+    # Toplam çalışma saati = Önceki günlerin toplamı + Bugünkü anlık çalışma
+    # Önceki günlerin toplamını hesapla (paket başlangıcından bugünün başlangıcına kadar)
+    previous_days_query = """
+        WITH date_range AS (
+            SELECT generate_series(
+                DATE($2::timestamptz),
+                DATE($3::timestamptz) - INTERVAL '1 day',
+                INTERVAL '1 day'
+            )::date AS work_date
+        ),
+        daily_bounds AS (
+            SELECT 
+                $1::uuid AS driver_id,
+                dr.work_date,
+                dr.work_date::timestamptz AS day_start,
+                (dr.work_date + INTERVAL '1 day')::timestamptz AS day_end
+            FROM date_range dr
+            WHERE dr.work_date < DATE($3::timestamptz)
+        ),
+        daily_events AS (
+            SELECT 
+                db.work_date,
+                dpe.at_utc,
+                dpe.is_online
+            FROM daily_bounds db
+            LEFT JOIN driver_presence_events dpe ON dpe.driver_id = db.driver_id
+                AND dpe.at_utc >= db.day_start
+                AND dpe.at_utc < db.day_end
+        ),
+        daily_start_states AS (
+            SELECT 
+                db.work_date,
+                db.day_start AS at_utc,
+                COALESCE((
+                    SELECT dpe.is_online
+                    FROM driver_presence_events dpe
+                    WHERE dpe.driver_id = db.driver_id
+                      AND dpe.at_utc < db.day_start
+                    ORDER BY dpe.at_utc DESC
+                    LIMIT 1
+                ), FALSE) AS is_online
+            FROM daily_bounds db
+        ),
+        daily_end_caps AS (
+            SELECT 
+                db.work_date,
+                db.day_end AS at_utc,
+                FALSE AS is_online
+            FROM daily_bounds db
+        ),
+        daily_timeline AS (
+            SELECT work_date, at_utc, is_online FROM daily_events
+            UNION ALL
+            SELECT work_date, at_utc, is_online FROM daily_start_states
+            UNION ALL
+            SELECT work_date, at_utc, is_online FROM daily_end_caps
+        ),
+        daily_ordered AS (
+            SELECT
+                work_date,
+                at_utc,
+                is_online,
+                LEAD(at_utc) OVER (PARTITION BY work_date ORDER BY at_utc) AS next_at
+            FROM daily_timeline
+        ),
+        daily_totals AS (
+            SELECT
+                work_date,
+                COALESCE(
+                    SUM(
+                        CASE WHEN is_online AND next_at IS NOT NULL
+                             THEN EXTRACT(EPOCH FROM (next_at - at_utc))
+                             ELSE 0 END
+                    ), 0
+                )::bigint AS daily_seconds
+            FROM daily_ordered
+            GROUP BY work_date
+        )
+        SELECT
+            COALESCE(SUM(daily_seconds), 0)::bigint AS online_seconds
+        FROM daily_totals;
+    """
+    previous_days_row = await fetch_one(previous_days_query, courier_id, package_start, today_start)
     
-    online_seconds = int(work_hours_row["online_seconds"]) if work_hours_row["online_seconds"] else 0
-    work_hours = online_seconds // 3600
-    work_minutes = (online_seconds % 3600) // 60
+    # Önceki günlerin toplamı + Bugünkü anlık çalışma = Toplam
+    previous_seconds = int(previous_days_row["online_seconds"]) if previous_days_row and previous_days_row["online_seconds"] else 0
+    today_seconds = int(today_work_hours_row["online_seconds"]) if today_work_hours_row and today_work_hours_row["online_seconds"] else 0
+    total_online_seconds = previous_seconds + today_seconds
+    
+    # Günlük çalışma saati hesaplama (bugünkü anlık çalışma)
+    daily_work_hours = today_seconds // 3600
+    daily_work_minutes = (today_seconds % 3600) // 60
+    daily_work_time = f"{daily_work_hours}:{daily_work_minutes:02d}"
+    
+    # Toplam çalışma saati hesaplama (önceki günler + bugünkü anlık çalışma)
+    total_work_hours = total_online_seconds // 3600
+    total_work_minutes = (total_online_seconds % 3600) // 60
+    total_work_time = f"{total_work_hours}:{total_work_minutes:02d}"
     
     return {
-        "work_hours": work_hours,
-        "work_minutes": work_minutes
+        "daily_work_time": daily_work_time,
+        "total_work_time": total_work_time
     }
 
 

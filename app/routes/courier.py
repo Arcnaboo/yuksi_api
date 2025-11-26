@@ -727,7 +727,7 @@ async def get_courier_package(
 @router.get(
     "/{courier_id}/dashboard/work-hours",
     summary="Kurye Çalışma Saatleri",
-    description="Kurye bugünkü çalışma saatlerini getirir",
+    description="Kurye çalışma saatlerini getirir (günlük ve toplam). Paket bitmişse her ikisi de 0 döner.",
     responses={
         200: {
             "description": "Çalışma saatleri başarıyla getirildi.",
@@ -740,8 +740,8 @@ async def get_courier_package(
                                 "success": True,
                                 "message": "Kurye çalışma saatleri",
                                 "data": {
-                                    "work_hours": 5,
-                                    "work_minutes": 30
+                                    "daily_work_time": "5:30",
+                                    "total_work_time": "45:15"
                                 }
                             }
                         }
@@ -819,8 +819,8 @@ async def get_courier_activities(
                                     "daily_km": 28.5,
                                     "total_km": 348.2,
                                     "total_activities": 16,
-                                    "work_hours": 5,
-                                    "work_minutes": 30
+                                    "daily_work_time": "5:30",
+                                    "total_work_time": "45:15"
                                 }
                             }
                         }
