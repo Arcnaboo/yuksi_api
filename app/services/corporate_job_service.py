@@ -72,8 +72,8 @@ async def corporate_create_job(data: Dict[str, Any], corporate_id: str) -> Tuple
         )
         VALUES (
             $1,$2,$3,$4,$5,$6,$7,
-            $8,$9,$10,$11,$12,$13,$14,FALSE,NULL,NULL,$15,
-            $16,$17
+            $8,$9,$10,$11,$12,$13,$14,$15,FALSE,NULL,NULL,$16,
+            $17,$18
         )
         RETURNING id;
         """
@@ -111,24 +111,24 @@ async def corporate_create_job(data: Dict[str, Any], corporate_id: str) -> Tuple
                 delivery_time_obj = None
         
         params = [
-            data["deliveryType"],
-            data["carrierType"],
-            vehicle_type_string,
-            str(vehicle_product_id) if vehicle_product_id else None,
-            data["pickupAddress"],
-            json.dumps(data["pickupCoordinates"]),
-            data["dropoffAddress"],
-            json.dumps(data["dropoffCoordinates"]),
-            data.get("specialNotes"),
-            data.get("campaignCode"),
-            json.dumps(data.get("extraServices", [])),
-            data.get("extraServicesTotal", 0),
-            total_price,
-            data["paymentMethod"],
-            json.dumps(data.get("imageFileIds", [])),
-            corporate_id,  # corporate_id
-            delivery_date_obj,  # Python date objesi
-            delivery_time_obj,  # Python time objesi
+            data["deliveryType"],  # $1
+            data["carrierType"],  # $2
+            vehicle_type_string,  # $3
+            str(vehicle_product_id) if vehicle_product_id else None,  # $4
+            data["pickupAddress"],  # $5
+            json.dumps(data["pickupCoordinates"]),  # $6
+            data["dropoffAddress"],  # $7
+            json.dumps(data["dropoffCoordinates"]),  # $8
+            data.get("specialNotes"),  # $9
+            data.get("campaignCode"),  # $10
+            json.dumps(data.get("extraServices", [])),  # $11
+            data.get("extraServicesTotal", 0),  # $12
+            total_price,  # $13
+            data["paymentMethod"],  # $14
+            json.dumps(data.get("imageFileIds", [])),  # $15
+            corporate_id,  # $16 - corporate_id
+            delivery_date_obj,  # $17 - Python date objesi
+            delivery_time_obj,  # $18 - Python time objesi
         ]
 
         row = await fetch_one(query, *params)
