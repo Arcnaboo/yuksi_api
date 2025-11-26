@@ -1,10 +1,53 @@
 from uuid import UUID
+from typing import Optional
 from fastapi import HTTPException, status
 from ..models.pool_model import PoolPushReq, PoolOrderRes
 from ..utils.database_async import fetch_all, fetch_one, execute
 
 TABLE_NAME = "pool_orders"
 
+
+async def _check_courier_active_and_approved(driver_id: str) -> tuple[bool, Optional[str]]:
+    """
+    Kuryenin aktif ve belgelerinin onaylı olup olmadığını kontrol eder.
+    Returns: (is_valid, error_message)
+    """
+    # Kurye aktif mi ve silinmiş mi kontrolü
+    driver_check = await fetch_one("""
+        SELECT is_active, deleted
+        FROM drivers
+        WHERE id = $1::uuid
+    """, driver_id)
+    
+    if not driver_check:
+        return False, "Kurye bulunamadı"
+    
+    if driver_check.get("deleted") is True:
+        return False, "Kurye hesabı silinmiş"
+    
+    if driver_check.get("is_active") is not True:
+        return False, "Kurye hesabı aktif değil"
+    
+    # Tüm belgeler onaylı mı kontrolü
+    doc_check = await fetch_one("""
+        SELECT 
+            COUNT(*) as total_docs,
+            COUNT(CASE WHEN courier_document_status = 'onaylandi' THEN 1 END) as approved_docs
+        FROM courier_documents
+        WHERE user_id = $1::uuid
+    """, driver_id)
+    
+    if doc_check:
+        total = doc_check.get("total_docs", 0) or 0
+        approved = doc_check.get("approved_docs", 0) or 0
+        
+        if total == 0:
+            return False, "Kurye belgeleri yüklenmemiş"
+        
+        if approved != total:
+            return False, "Kurye belgeleri henüz onaylanmamış"
+    
+    return True, None
 
 async def _has_package_left(restaurant_id: str) -> tuple[bool, int | None]:
     """Restoranın paket hakkı var mı? (kalan paket sayısını döndürür)."""
@@ -95,7 +138,15 @@ async def get_pool_orders(driver_id: str, page: int = 1, size: int = 50):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Bilinmeyen sürücü ID"
-        )    
+        )
+    
+    # Kurye aktif ve belgeleri onaylı mı kontrolü
+    is_valid, error_message = await _check_courier_active_and_approved(driver_id)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_message or "Kurye hesabı aktif değil veya belgeleri onaylanmamış. Havuz siparişlerini görüntüleyemezsiniz."
+        )
 
     # Driver konumu
     driver_location = await fetch_one(
