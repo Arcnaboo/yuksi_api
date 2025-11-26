@@ -91,6 +91,63 @@ async def get_file_by_id(file_id: str) -> Dict:
     }
 
 
+# === GET FILES BY USER ID ===
+async def get_files_by_user_id(user_id: str) -> Dict:
+    """
+    User ID'ye göre kullanıcının yüklediği tüm dosyaları getirir
+    """
+    try:
+        uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user_id")
+    
+    query = """
+        SELECT 
+            id,
+            user_id,
+            image_url,
+            size,
+            mime_type,
+            filename,
+            key,
+            uploaded_at,
+            is_deleted
+        FROM files
+        WHERE user_id = $1::uuid
+          AND is_deleted = FALSE
+        ORDER BY uploaded_at DESC
+    """
+    
+    from app.utils.database_async import fetch_all
+    rows = await fetch_all(query, user_id)
+    
+    if not rows:
+        return {
+            "success": True,
+            "message": "No files found for this user",
+            "data": []
+        }
+    
+    files = []
+    for row in rows:
+        files.append({
+            "id": str(row["id"]),
+            "user_id": str(row["user_id"]),
+            "image_url": row["image_url"],
+            "size": row.get("size"),
+            "mime_type": row.get("mime_type"),
+            "filename": row.get("filename"),
+            "key": row.get("key"),
+            "uploaded_at": row.get("uploaded_at").isoformat() if row.get("uploaded_at") else None
+        })
+    
+    return {
+        "success": True,
+        "message": f"Found {len(files)} file(s)",
+        "data": files
+    }
+
+
 # === GET PUBLIC URL ===
 def get_public_url(file_id: str) -> str:
     """

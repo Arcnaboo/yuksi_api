@@ -7,3 +7,6 @@ async def handle_upload(user_id: str, file: UploadFile) -> Dict[str, str]:
 
 async def get_file(file_id: str) -> Dict:
     return await svc.get_file_by_id(file_id)
+
+async def get_files_by_user(user_id: str) -> Dict:
+    return await svc.get_files_by_user_id(user_id)

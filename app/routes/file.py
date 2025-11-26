@@ -1,5 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, Form, Path
-from app.controllers.file_controller import handle_upload, get_file
+from fastapi import APIRouter, UploadFile, File, Form, Path, Query
+from app.controllers.file_controller import handle_upload, get_file, get_files_by_user
 from uuid import UUID
 
 router = APIRouter(prefix="/file", tags=["File"]) 
@@ -20,3 +20,12 @@ async def get_file_by_id(
     File ID ile dosya bilgilerini getirir
     """
     return await get_file(str(file_id))
+
+@router.get("/user/{user_id}")
+async def get_files_by_user_id(
+    user_id: UUID = Path(..., description="User ID (UUID)")
+):
+    """
+    User ID'ye göre kullanıcının yüklediği tüm dosyaları getirir
+    """
+    return await get_files_by_user(str(user_id))
