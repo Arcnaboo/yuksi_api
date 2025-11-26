@@ -489,7 +489,27 @@ async def reject_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
         uuid.UUID(courier_id)
         uuid.UUID(order_id)
     except:
-        return False, "Hatalı UUID"  
+        return False, "Hatalı UUID"
+    
+    # Belgelerin onaylanmış olması gerekiyor (sipariş işlemleri için)
+    doc_check = await fetch_one("""
+        SELECT 
+            COUNT(*) as total_docs,
+            COUNT(CASE WHEN courier_document_status = 'onaylandi' THEN 1 END) as approved_docs
+        FROM courier_documents
+        WHERE user_id = $1::uuid
+    """, courier_id)
+    
+    if doc_check:
+        total = doc_check.get("total_docs", 0) or 0
+        approved = doc_check.get("approved_docs", 0) or 0
+        
+        if total == 0:
+            return False, "Belgeleriniz yüklenmemiş. Lütfen belgelerinizi yükleyin."
+        
+        if approved != total:
+            return False, "Tüm belgeleriniz onaylanmadan sipariş işlemi yapamazsınız."
+    
     try:
         order = await fetch_one(
             "SELECT id FROM orders WHERE id=$1 AND courier_id=$2;",
@@ -542,7 +562,27 @@ async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
         uuid.UUID(courier_id)
         uuid.UUID(order_id)
     except:
-        return False, "Hatalı UUID"  
+        return False, "Hatalı UUID"
+    
+    # Belgelerin onaylanmış olması gerekiyor
+    doc_check = await fetch_one("""
+        SELECT 
+            COUNT(*) as total_docs,
+            COUNT(CASE WHEN courier_document_status = 'onaylandi' THEN 1 END) as approved_docs
+        FROM courier_documents
+        WHERE user_id = $1::uuid
+    """, courier_id)
+    
+    if doc_check:
+        total = doc_check.get("total_docs", 0) or 0
+        approved = doc_check.get("approved_docs", 0) or 0
+        
+        if total == 0:
+            return False, "Belgeleriniz yüklenmemiş. Lütfen belgelerinizi yükleyin."
+        
+        if approved != total:
+            return False, "Tüm belgeleriniz onaylanmadan sipariş alamazsınız. Lütfen belgelerinizin onaylanmasını bekleyin."
+    
     try:
         order = await fetch_one(
             "SELECT id FROM orders WHERE id=$1 AND courier_id = $2;",

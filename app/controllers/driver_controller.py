@@ -26,6 +26,8 @@ async def finalize_profile(driver):
 
 async def go_online(driver):
     ok = await driver_service.set_online(driver["id"], True)
+    if ok.get("documents_not_approved", False):
+        return {"success": False, "message": ok.get("message", "Tüm belgeleriniz onaylanmadan çevrimiçi olamazsınız"), "data": {}}
     if ok.get("subscription_inactive_or_expired", False):
         print("subscription inactive")
         return {"success": False, "message": "Subscription inactive or expired", "data": {}}

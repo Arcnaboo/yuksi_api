@@ -52,9 +52,37 @@ async def finalize_profile(driver_id: str):
     return None
 
 
+# === HELPER: CHECK DOCUMENTS APPROVED ===
+async def _check_documents_approved(driver_id: str) -> bool:
+    """
+    Kuryenin tüm belgelerinin onaylanıp onaylanmadığını kontrol eder
+    """
+    doc_check = await fetch_one("""
+        SELECT 
+            COUNT(*) as total_docs,
+            COUNT(CASE WHEN courier_document_status = 'onaylandi' THEN 1 END) as approved_docs
+        FROM courier_documents
+        WHERE user_id = $1::uuid
+    """, driver_id)
+    
+    if not doc_check:
+        return False
+    
+    total = doc_check.get("total_docs", 0) or 0
+    approved = doc_check.get("approved_docs", 0) or 0
+    
+    # En az bir belge olmalı ve tüm belgeler onaylı olmalı
+    return total > 0 and approved == total
+
 # === SET ONLINE STATUS ===
 
 async def set_online(driver_id: str, online: bool, at: Optional[str] = None):
+    # Online olmak için belgelerin onaylanmış olması gerekiyor
+    if online:
+        documents_approved = await _check_documents_approved(driver_id)
+        if not documents_approved:
+            return {"documents_not_approved": True, "message": "Tüm belgeleriniz onaylanmadan çevrimiçi olamazsınız"}
+    
     exists = await fetch_one("""
         SELECT EXISTS (
             SELECT 1
