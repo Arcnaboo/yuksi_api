@@ -564,6 +564,16 @@ async def accept_order_by_courier(courier_id: str, order_id: str) -> Tuple[bool,
     except:
         return False, "Hatalı UUID"
     
+    # Kuryenin çevrimiçi olup olmadığını kontrol et
+    online_check = await fetch_one("""
+        SELECT online
+        FROM driver_status
+        WHERE driver_id = $1::uuid
+    """, courier_id)
+    
+    if not online_check or not online_check.get("online", False):
+        return False, "Çevrimdışı olduğunuz için sipariş kabul edemezsiniz. Lütfen çevrimiçi olun."
+    
     # Belgelerin onaylanmış olması gerekiyor
     doc_check = await fetch_one("""
         SELECT 
