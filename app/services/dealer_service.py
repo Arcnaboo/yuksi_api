@@ -225,7 +225,8 @@ async def get_dealer_profile(dealer_id: UUID) -> Optional[Dict[str, Any]]:
                     email, phone, name, surname, address,
                     account_type, country_id, state_id, city_id,
                     tax_office, tax_number, iban, resume,
-                    commission_rate, commission_description
+                    commission_rate, commission_description,
+                    latitude, longitude
                 FROM dealers 
                 WHERE id = %s;
             """, (str(dealer_id),))
@@ -250,6 +251,8 @@ async def get_dealer_profile(dealer_id: UUID) -> Optional[Dict[str, Any]]:
             "resume": row.get("resume"),
             "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
             "commissionDescription": row.get("commission_description"),
+            "latitude": float(row["latitude"]) if row.get("latitude") is not None else None,
+            "longitude": float(row["longitude"]) if row.get("longitude") is not None else None,
         }
     except Exception as e:
         print(f"Error getting dealer profile: {e}")
@@ -272,6 +275,8 @@ async def update_dealer_profile(
     tax_number: Optional[str] = None,
     iban: Optional[str] = None,
     resume: Optional[str] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Bayi profil bilgilerini günceller"""
     try:
@@ -338,6 +343,14 @@ async def update_dealer_profile(
         if resume is not None:
             update_fields.append("resume = %(resume)s")
             params["resume"] = resume
+        
+        if latitude is not None:
+            update_fields.append("latitude = %(latitude)s")
+            params["latitude"] = latitude
+        
+        if longitude is not None:
+            update_fields.append("longitude = %(longitude)s")
+            params["longitude"] = longitude
 
         if not update_fields:
             return {"success": False, "message": "Güncellenecek alan bulunamadı", "data": {}}

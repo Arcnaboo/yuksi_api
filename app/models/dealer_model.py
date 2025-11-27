@@ -98,6 +98,8 @@ class DealerProfileResponse(BaseModel):
     resume: Optional[str] = Field(None, description="Özgeçmiş")
     commissionRate: Optional[float] = Field(None, description="Komisyon oranı (yüzde)")
     commissionDescription: Optional[str] = Field(None, description="Komisyon oranı açıklaması")
+    latitude: Optional[float] = Field(None, description="Enlem")
+    longitude: Optional[float] = Field(None, description="Boylam")
 
 
 class DealerProfileUpdateReq(BaseModel):
@@ -115,6 +117,8 @@ class DealerProfileUpdateReq(BaseModel):
     taxNumber: Optional[str] = Field(None, description="Vergi numarası")
     iban: Optional[str] = Field(None, description="IBAN")
     resume: Optional[str] = Field(None, description="Özgeçmiş")
+    latitude: Optional[float] = Field(None, ge=-90, le=90, description="Enlem (-90 ile 90 arası)")
+    longitude: Optional[float] = Field(None, ge=-180, le=180, description="Boylam (-180 ile 180 arası)")
     
     model_config = ConfigDict(
         extra="forbid",

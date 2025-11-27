@@ -94,6 +94,8 @@ class CorporateProfileResponse(BaseModel):
     cityId: Optional[int] = Field(None, description="İlçe ID")
     commissionRate: Optional[float] = Field(None, description="Komisyon oranı (yüzde)")
     commissionDescription: Optional[str] = Field(None, description="Komisyon oranı açıklaması")
+    latitude: Optional[float] = Field(None, description="Enlem")
+    longitude: Optional[float] = Field(None, description="Boylam")
 
 
 class CorporateProfileUpdateReq(BaseModel):
@@ -106,6 +108,8 @@ class CorporateProfileUpdateReq(BaseModel):
     countryId: Optional[int] = Field(None, ge=1, description="Ülke ID")
     stateId: Optional[int] = Field(None, ge=1, description="İl ID")
     cityId: Optional[int] = Field(None, ge=1, description="İlçe ID")
+    latitude: Optional[float] = Field(None, ge=-90, le=90, description="Enlem (-90 ile 90 arası)")
+    longitude: Optional[float] = Field(None, ge=-180, le=180, description="Boylam (-180 ile 180 arası)")
     
     model_config = ConfigDict(
         extra="forbid",

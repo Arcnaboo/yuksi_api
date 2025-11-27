@@ -47,4 +47,6 @@ async def update_dealer_profile(dealer_id: UUID, req) -> Dict[str, Any]:
         tax_number=getattr(req, "taxNumber", None) or getattr(req, "tax_number", None),
         iban=getattr(req, "iban", None),
         resume=getattr(req, "resume", None),
+        latitude=getattr(req, "latitude", None),
+        longitude=getattr(req, "longitude", None),
     )

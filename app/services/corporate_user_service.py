@@ -286,7 +286,8 @@ async def get_corporate_profile(user_id: str) -> Optional[Dict[str, Any]]:
                 email, phone, first_name, last_name, 
                 address_line1, address_line2,
                 country_id, state_id, city_id,
-                commission_rate, commission_description
+                commission_rate, commission_description,
+                latitude, longitude
             FROM corporate_users 
             WHERE id = $1
               AND (deleted IS NULL OR deleted = FALSE);
@@ -312,6 +313,8 @@ async def get_corporate_profile(user_id: str) -> Optional[Dict[str, Any]]:
             "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
             "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
             "commissionDescription": row.get("commission_description"),
+            "latitude": float(row["latitude"]) if row.get("latitude") is not None else None,
+            "longitude": float(row["longitude"]) if row.get("longitude") is not None else None,
         }
     except Exception as e:
         print(f"Error getting corporate profile: {e}")
@@ -329,6 +332,8 @@ async def update_corporate_profile(
     country_id: Optional[int] = None,
     state_id: Optional[int] = None,
     city_id: Optional[int] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
 ) -> Tuple[bool, Optional[str]]:
     """Kurumsal kullanıcı profil bilgilerini günceller"""
     try:
@@ -387,6 +392,14 @@ async def update_corporate_profile(
         if city_id is not None:
             update_fields.append(f"city_id = ${i}")
             params.append(city_id)
+            i += 1
+        if latitude is not None:
+            update_fields.append(f"latitude = ${i}")
+            params.append(latitude)
+            i += 1
+        if longitude is not None:
+            update_fields.append(f"longitude = ${i}")
+            params.append(longitude)
             i += 1
 
         if not update_fields:

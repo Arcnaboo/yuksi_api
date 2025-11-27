@@ -132,6 +132,8 @@ async def update_corporate_profile(user_id: str, req) -> Dict[str, Any]:
         country_id=getattr(req, "countryId", None),
         state_id=getattr(req, "stateId", None),
         city_id=getattr(req, "cityId", None),
+        latitude=getattr(req, "latitude", None),
+        longitude=getattr(req, "longitude", None),
     )
     
     if not ok:

@@ -839,6 +839,18 @@ ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS city_id BIGINT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line1 TEXT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line2 TEXT;
 
+-- Corporate Users koordinat sütunları
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS latitude DECIMAL(9,6);
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS longitude DECIMAL(9,6);
+
+-- Dealers commission_rate ve commission_description kolonları
+ALTER TABLE dealers ADD COLUMN IF NOT EXISTS commission_rate DECIMAL(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
+ALTER TABLE dealers ADD COLUMN IF NOT EXISTS commission_description TEXT;
+
+-- Dealers koordinat sütunları
+ALTER TABLE dealers ADD COLUMN IF NOT EXISTS latitude DECIMAL(9,6);
+ALTER TABLE dealers ADD COLUMN IF NOT EXISTS longitude DECIMAL(9,6);
+
 -- Corporate Users email unique constraint'i kaldır (eğer varsa)
 DO $$
 BEGIN
