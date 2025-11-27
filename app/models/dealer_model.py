@@ -79,3 +79,61 @@ class DealerStatusUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid", json_schema_extra={
         "example": {"status": "active"}
     })
+
+
+class DealerProfileResponse(BaseModel):
+    """Bayi profil görüntüleme modeli"""
+    email: str
+    phone: Optional[str]
+    name: str
+    surname: str
+    fullAddress: Optional[str] = Field(None, description="Tam adres")
+    accountType: Optional[str] = Field(None, description="Hesap tipi (bireysel/kurumsal)")
+    countryId: Optional[int] = Field(None, description="Ülke ID")
+    stateId: Optional[int] = Field(None, description="İl ID")
+    cityId: Optional[int] = Field(None, description="İlçe ID")
+    taxOffice: Optional[str] = Field(None, description="Vergi dairesi")
+    taxNumber: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
+    commissionRate: Optional[float] = Field(None, description="Komisyon oranı (yüzde)")
+    commissionDescription: Optional[str] = Field(None, description="Komisyon oranı açıklaması")
+
+
+class DealerProfileUpdateReq(BaseModel):
+    """Bayi profil güncelleme modeli"""
+    email: Optional[EmailStr] = Field(None, description="E-posta adresi")
+    phone: Optional[str] = Field(None, min_length=7, max_length=20, description="Telefon numarası")
+    name: Optional[str] = Field(None, description="Ad")
+    surname: Optional[str] = Field(None, description="Soyad")
+    fullAddress: Optional[str] = Field(None, alias="fullAddress", description="Tam adres")
+    accountType: Optional[AccountType] = Field(None, description="Hesap tipi")
+    countryId: Optional[int] = Field(None, ge=1, description="Ülke ID")
+    stateId: Optional[int] = Field(None, ge=1, description="İl ID")
+    cityId: Optional[int] = Field(None, ge=1, description="İlçe ID")
+    taxOffice: Optional[str] = Field(None, description="Vergi dairesi")
+    taxNumber: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
+    
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        json_schema_extra={
+            "example": {
+                "email": "dealer@example.com",
+                "phone": "+905551234567",
+                "name": "Mehmet",
+                "surname": "Yılmaz",
+                "fullAddress": "Osmangazi / Bursa",
+                "accountType": "kurumsal",
+                "countryId": 225,
+                "stateId": 101,
+                "cityId": 6,
+                "taxOffice": "Osmangazi Vergi Dairesi",
+                "taxNumber": "12345678901",
+                "iban": "TR330006100519786457841326",
+                "resume": "10 yıllık taşımacılık deneyimi"
+            }
+        }
+    )

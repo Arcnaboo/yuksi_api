@@ -113,7 +113,7 @@ async def login(email: str, password: str):
 
     # Restaurant
     r = await fetch_one(
-        "SELECT id, email, password_hash FROM restaurants WHERE email=$1;", email
+        "SELECT id, email, password_hash FROM restaurants WHERE email=$1 AND (deleted IS NULL OR deleted = FALSE);", email
     )
     if r and verify_pwd(password, r["password_hash"]):
         return await _generate_tokens_net_style(

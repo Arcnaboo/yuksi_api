@@ -295,6 +295,12 @@ ALTER TABLE restaurants
 ALTER TABLE restaurants
     ADD COLUMN IF NOT EXISTS longitude DECIMAL(9,6);
 
+-- Restaurant soft delete kolonları
+ALTER TABLE restaurants
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
+ALTER TABLE restaurants
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
 
 -- init_db.py'ye ekle (DDL kısmına)
 CREATE TABLE IF NOT EXISTS restaurant_couriers (
