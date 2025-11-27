@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Query, Depends, HTTPException
+from fastapi import APIRouter, Query, Depends, HTTPException, Path, Body
 from typing import Optional
+from uuid import UUID
 from app.models.admin_model import AdminRegisterReq
+from app.models.corporate_user_model import CommissionRateSet
 from app.controllers import admin_controller, admin_user_controller
 from app.controllers.auth_controller import require_roles
 
@@ -39,4 +41,34 @@ async def get_all_users(
         search=search,
         limit=limit,
         offset=offset
+    )
+
+
+@router.post(
+    "/users/{user_id}/commission",
+    summary="Kullanıcı Komisyon Oranı Belirle (Genel)",
+    description="Admin tarafından kullanıcıya komisyon oranı belirlenir. ID'ye göre otomatik olarak tüm kullanıcı tabloları kontrol edilir ve kullanıcı tipi tespit edilir. Sadece Corporate ve Dealer kullanıcıları için komisyon oranı belirlenebilir. Bu oran, kullanıcının oluşturduğu yüklerde otomatik olarak görünecektir.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+)
+async def set_user_commission_rate(
+    user_id: UUID = Path(..., description="Kullanıcı UUID'si (Tüm kullanıcı tipleri kontrol edilir)"),
+    req: CommissionRateSet = Body(...)
+):
+    """
+    Genel komisyon oranı belirleme endpoint'i.
+    ID'ye göre otomatik olarak tüm kullanıcı tabloları kontrol edilir:
+    - corporate_users
+    - dealers
+    - restaurants
+    - drivers
+    - system_admins
+    - users
+    
+    Sadece Corporate ve Dealer kullanıcıları için komisyon oranı belirlenebilir.
+    İleride başka roller için de genişletilebilir.
+    """
+    return await admin_user_controller.set_user_commission_rate(
+        str(user_id),
+        req.commissionRate,
+        req.description
     )

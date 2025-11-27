@@ -8,6 +8,10 @@ from datetime import date, time
 async def corporate_create_job(data: Dict[str, Any], corporate_id: str) -> Tuple[bool, str | None]:
     """Kurumsal kullanıcı tarafından manuel yük oluşturma servisi"""
     try:
+        # Komisyon oranı alanlarını yok say (sadece admin belirleyebilir)
+        data.pop("commissionRate", None)
+        data.pop("commissionDescription", None)
+        
         # Araç seçimini işle
         vehicle_product_id = None
         vehicle_type_string = None
@@ -174,8 +178,11 @@ async def corporate_get_jobs(corporate_id: str, limit: int = 50, offset: int = 0
             j.created_at AS "createdAt",
             j.image_file_ids AS "imageFileIds",
             j.delivery_date AS "deliveryDate",
-            j.delivery_time AS "deliveryTime"
+            j.delivery_time AS "deliveryTime",
+            cu.commission_rate AS "commissionRate",
+            cu.commission_description AS "commissionDescription"
         FROM admin_jobs j
+        LEFT JOIN corporate_users cu ON cu.id = j.corporate_id
         {where_clause}
         ORDER BY j.created_at DESC
         LIMIT ${i} OFFSET ${i + 1};
@@ -191,6 +198,9 @@ async def corporate_get_jobs(corporate_id: str, limit: int = 50, offset: int = 0
                 row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
             if row_dict.get("deliveryTime"):
                 row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
+            # Komisyon oranını float'a çevir (eğer varsa)
+            if row_dict.get("commissionRate") is not None:
+                row_dict["commissionRate"] = float(row_dict["commissionRate"])
             formatted_rows.append(row_dict)
         
         return True, formatted_rows
@@ -203,6 +213,10 @@ async def corporate_get_jobs(corporate_id: str, limit: int = 50, offset: int = 0
 async def corporate_update_job(job_id: str, corporate_id: str, fields: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """Kurumsal kullanıcı tarafından yük güncelleme servisi (sadece kendi yüklerini güncelleyebilir)"""
     try:
+        # Komisyon oranı alanlarını yok say (sadece admin belirleyebilir)
+        fields.pop("commissionRate", None)
+        fields.pop("commissionDescription", None)
+        
         # Önce yükün bu kurumsal kullanıcının olup olmadığını kontrol et
         check = await fetch_one(
             "SELECT id FROM admin_jobs WHERE id = $1 AND corporate_id = $2;",
