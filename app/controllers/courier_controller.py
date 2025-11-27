@@ -113,7 +113,7 @@ async def get_courier_history(_claims: dict, date: str = None, page: int = 1, pa
     if isinstance(roles, str):
         roles = [roles]
 
-    if "Admin" not in roles and "Courier" not in roles:
+    if "Courier" not in roles:
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Unauthorized to access this courier's resources"

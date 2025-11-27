@@ -433,6 +433,10 @@ async def get_courier_history(
     offset = (page - 1) * page_size
     params = [courier_id]
 
+    # Her durumda default boş filtre
+    date_filter = ""
+
+    # Tarih geldiyse filtre eklenir
     if date:
         try:
             time = datetime.strptime(date, "%Y-%m-%d").date()
@@ -453,19 +457,24 @@ async def get_courier_history(
     FROM orders o
     WHERE o.courier_id = $1
       AND o.status IN ('iptal', 'teslim_edildi')
-    {date_filter}
+      {date_filter}
     ORDER BY o.updated_at DESC
-    LIMIT $3 OFFSET $4;
+    LIMIT ${len(params)+1} OFFSET ${len(params)+2};
     """
 
+    # Page params eklenir
     params.extend([page_size, offset])
+
     rows = await fetch_all(history_sql, *params)
-    return [CourierHistoryRes(
-        order_id=r["id"],
-        price=float(r["price"]),
-        date=r["date"].strftime("%Y-%m-%d %H:%M:%S") if r["date"] else None,
-        status=r["status"],
-        payment_status="N/A",  # Placeholder until payment status is implemented
-        from_address=r["from_address"],
-        to_address=r["to_address"]
-    ) for r in rows] if rows else []
+
+    return [
+        CourierHistoryRes(
+            order_id=r["id"],
+            price=float(r["price"]),
+            date=r["date"].strftime("%Y-%m-%d %H:%M:%S") if r["date"] else None,
+            status=r["status"],
+            payment_status="N/A",
+            from_address=r["from_address"],
+            to_address=r["to_address"]
+        )
+    for r in rows] if rows else []
