@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import Optional, Tuple, Dict, Any, List
+from app.models.courier_model import CourierHistoryRes
 from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.security import hash_pwd
 from ..utils.database import db_cursor
@@ -418,3 +420,52 @@ async def get_dealers_by_state(state_id: int) -> List[Dict[str, Any]]:
     """
     rows = await fetch_all(sql, state_id)
     return [dict(r) for r in rows] if rows else []
+
+# TODO : ödemeler eklendikten sonra ödeme durumu da eklenecek
+
+async def get_courier_history(
+    courier_id: str,
+    date: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 25
+) -> List[CourierHistoryRes]:
+
+    offset = (page - 1) * page_size
+    params = [courier_id]
+
+    if date:
+        try:
+            time = datetime.strptime(date, "%Y-%m-%d").date()
+            date_filter = "AND DATE(o.updated_at) = $2"
+            params.append(time)
+        except ValueError:
+            return []
+
+    # === HISTORY QUERY ===
+    history_sql = f"""
+    SELECT
+      o.id,
+      o.amount AS price,
+      o.updated_at AS date,
+      o.status,
+      o.address AS from_address,
+      o.delivery_address AS to_address
+    FROM orders o
+    WHERE o.courier_id = $1
+      AND o.status IN ('iptal', 'teslim_edildi')
+    {date_filter}
+    ORDER BY o.updated_at DESC
+    LIMIT $3 OFFSET $4;
+    """
+
+    params.extend([page_size, offset])
+    rows = await fetch_all(history_sql, *params)
+    return [CourierHistoryRes(
+        order_id=r["id"],
+        price=float(r["price"]),
+        date=r["date"].strftime("%Y-%m-%d %H:%M:%S") if r["date"] else None,
+        status=r["status"],
+        payment_status="N/A",  # Placeholder until payment status is implemented
+        from_address=r["from_address"],
+        to_address=r["to_address"]
+    ) for r in rows] if rows else []

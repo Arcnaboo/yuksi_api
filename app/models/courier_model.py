@@ -4,6 +4,8 @@ from typing import List, Optional
 from enum import Enum
 from uuid import UUID
 
+from .order_model import OrderStatus
+
 class CourierRegisterStep1Req(BaseModel):
     phone: str = Field(..., min_length=7, max_length=20, description="E164 veya yerel numara")
     firstName: str = Field(..., min_length=1)
@@ -107,3 +109,12 @@ class CourierProfileUpdateReq(BaseModel):
         if not any([self.firstName, self.lastName, self.email, self.phone, self.countryId]):
             raise ValueError("En az bir alan güncellenmelidir")
         return self
+
+class CourierHistoryRes(BaseModel):
+    order_id: UUID
+    price: float
+    date: str
+    status: OrderStatus
+    payment_status: str
+    from_address: str
+    to_address: str

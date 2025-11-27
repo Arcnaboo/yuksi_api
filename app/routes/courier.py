@@ -1,9 +1,12 @@
+from typing import List
 from fastapi import APIRouter, Path, Body, Depends
+from fastapi.params import Query
 from ..models.courier_model import (
     CourierRegisterStep1Req,
     CourierRegisterStep2Req,
     CourierRegisterStep3Req,
-    CourierProfileUpdateReq
+    CourierProfileUpdateReq,
+    CourierHistoryRes
 )
 from ..controllers import courier_controller as ctrl
 from ..controllers import auth_controller
@@ -836,3 +839,18 @@ async def get_courier_dashboard(
 ):
     from ..controllers import courier_dashboard_controller as dashboard_ctrl
     return await dashboard_ctrl.get_courier_dashboard(courier_id)
+
+
+@router.get(
+    "/history",
+    response_model=List[CourierHistoryRes],
+    summary="Kurye Aktivite Geçmişi",
+    description="Kurye aktivite geçmişini tarih filtresi ve sayfalama ile getirir.",
+)
+async def get_courier_history(
+    date : str = Query(None, description="Tarih filtresi (YYYY-MM-DD formatında)"),
+    page : int = Query(1, ge=1, description="Sayfa numarası"),
+    page_size : int = Query(25, ge=1, le=100, description="Sayfa başına kayıt sayısı"),
+    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+):
+    return await ctrl.get_courier_history(_claims, date, page, page_size)

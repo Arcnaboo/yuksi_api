@@ -114,41 +114,6 @@ async def get_order(order_id: str, restaurant_id: str) -> Optional[Dict[str, Any
         
         return order
 
-async def update_order(
-    order_id: str,
-    restaurant_id: str,
-    **kwargs
-) -> Tuple[bool, Optional[str]]:
-    """Sipariş güncelle"""
-    try:
-        uuid.UUID(order_id)
-        uuid.UUID(restaurant_id)
-    except:
-        return "Invalid UUID"    
-    query = """
-        SELECT o.*, r.name AS restaurant_name
-        FROM orders o
-        LEFT JOIN restaurants r ON r.id = o.restaurant_id
-        WHERE o.id=$1 AND o.restaurant_id=$2;
-    """
-    order = await fetch_one(query, order_id, restaurant_id)
-    if not order:
-        return None
-
-    rows = await fetch_all(
-        """
-        SELECT id, product_name, price, quantity, total
-        FROM order_items
-        WHERE order_id=$1
-        ORDER BY created_at;
-        """,
-        order_id
-    )
-    order = dict(order)
-    order["items"] = [dict(r) for r in rows] if rows else []
-    return order
-
-
 # === Sipariş Güncelle ===
 async def update_order(order_id: str, restaurant_id: str, **kwargs) -> Tuple[bool, Optional[str]]:
     try:

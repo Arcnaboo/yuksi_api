@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from ..services import courier_service as svc
 from uuid import UUID
 
@@ -106,3 +107,22 @@ async def update_courier_profile(user_id: str, req):
 async def get_dealers_by_state(state_id: int):
     dealers = await svc.get_dealers_by_state(state_id)
     return {"success": True, "message": "Dealers list", "data": dealers}
+
+async def get_courier_history(_claims: dict, date: str = None, page: int = 1, page_size: int = 25):
+    roles = _claims.get("role") or _claims.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+
+    if "Admin" not in roles and "Courier" not in roles:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized to access this courier's resources"
+        )
+    
+    user_id = _claims.get("userId")
+    return await svc.get_courier_history(
+        courier_id=user_id,
+        date=date,
+        page=page,
+        page_size=page_size
+    )
