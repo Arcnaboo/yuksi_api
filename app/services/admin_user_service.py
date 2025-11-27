@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional, Tuple
-from app.utils.database_async import fetch_all, fetch_one
+from app.utils.database_async import fetch_all, fetch_one, execute
 
 
 async def get_all_users(
@@ -367,6 +367,170 @@ async def get_all_users(
             "totals": totals
         }
 
+    except Exception as e:
+        return False, str(e)
+
+
+async def set_user_commission_rate(user_id: str, commission_rate: float, description: Optional[str] = None) -> Tuple[bool, str | Dict[str, Any]]:
+    """
+    Admin tarafından kullanıcıya komisyon oranı belirleme (ID'ye göre otomatik tespit: Tüm tablolara bakar)
+    
+    Args:
+        user_id: Kullanıcı UUID'si
+        commission_rate: Komisyon oranı (0-100 arası)
+        description: Komisyon açıklaması (opsiyonel)
+    
+    Returns:
+        Tuple[bool, Dict[str, Any] | str]: (success, data veya error message)
+    """
+    try:
+        # Tüm kullanıcı tablolarını sırayla kontrol et
+        
+        # 1. Corporate Users
+        corporate_user = await fetch_one("""
+            SELECT id, email, first_name, last_name
+            FROM corporate_users
+            WHERE id = $1
+              AND (deleted IS NULL OR deleted = FALSE);
+        """, user_id)
+        
+        if corporate_user:
+            # Komisyon oranını güncelle
+            result = await execute("""
+                UPDATE corporate_users
+                SET commission_rate = $1, commission_description = $2, updated_at = NOW()
+                WHERE id = $3;
+            """, commission_rate, description, user_id)
+            
+            if result.endswith(" 0"):
+                return False, "Kurumsal kullanıcı bulunamadı"
+            
+            # Güncellenmiş kullanıcı bilgilerini getir
+            updated_user = await fetch_one("""
+                SELECT 
+                    id, email, phone, first_name, last_name, is_active,
+                    commission_rate, commission_description,
+                    country_id, state_id, city_id,
+                    address_line1, address_line2, created_at
+                FROM corporate_users
+                WHERE id = $1;
+            """, user_id)
+            
+            return True, {
+                "userType": "corporate",
+                "id": str(updated_user["id"]),
+                "email": updated_user["email"],
+                "phone": updated_user["phone"],
+                "firstName": updated_user["first_name"],
+                "lastName": updated_user["last_name"],
+                "isActive": updated_user["is_active"],
+                "commissionRate": float(updated_user["commission_rate"]) if updated_user.get("commission_rate") is not None else None,
+                "commissionDescription": updated_user.get("commission_description"),
+                "countryId": int(updated_user["country_id"]) if updated_user.get("country_id") is not None else None,
+                "stateId": int(updated_user["state_id"]) if updated_user.get("state_id") is not None else None,
+                "cityId": int(updated_user["city_id"]) if updated_user.get("city_id") is not None else None,
+                "addressLine1": updated_user.get("address_line1"),
+                "addressLine2": updated_user.get("address_line2"),
+                "createdAt": updated_user["created_at"].isoformat() if updated_user["created_at"] else None
+            }
+        
+        # 2. Dealers
+        dealer = await fetch_one("""
+            SELECT id, name, surname, email
+            FROM dealers
+            WHERE id = $1;
+        """, user_id)
+        
+        if dealer:
+            # Komisyon oranını güncelle
+            result = await execute("""
+                UPDATE dealers
+                SET commission_rate = $1, commission_description = $2
+                WHERE id = $3;
+            """, commission_rate, description, user_id)
+            
+            if result.endswith(" 0"):
+                return False, "Bayi bulunamadı"
+            
+            # Güncellenmiş bayi bilgilerini getir
+            updated_dealer = await fetch_one("""
+                SELECT 
+                    id, name, surname, email, address, account_type,
+                    country_id, city_id, state_id,
+                    tax_office, phone, tax_number, iban, resume, status,
+                    commission_rate, commission_description,
+                    created_at
+                FROM dealers
+                WHERE id = $1;
+            """, user_id)
+            
+            return True, {
+                "userType": "dealer",
+                "id": str(updated_dealer["id"]),
+                "name": updated_dealer["name"],
+                "surname": updated_dealer["surname"],
+                "email": updated_dealer["email"],
+                "address": updated_dealer.get("address"),
+                "accountType": updated_dealer.get("account_type"),
+                "countryId": int(updated_dealer["country_id"]) if updated_dealer.get("country_id") is not None else None,
+                "cityId": int(updated_dealer["city_id"]) if updated_dealer.get("city_id") is not None else None,
+                "stateId": int(updated_dealer["state_id"]) if updated_dealer.get("state_id") is not None else None,
+                "taxOffice": updated_dealer.get("tax_office"),
+                "phone": updated_dealer.get("phone"),
+                "taxNumber": updated_dealer.get("tax_number"),
+                "iban": updated_dealer.get("iban"),
+                "resume": updated_dealer.get("resume"),
+                "status": updated_dealer.get("status"),
+                "commissionRate": float(updated_dealer["commission_rate"]) if updated_dealer.get("commission_rate") is not None else None,
+                "commissionDescription": updated_dealer.get("commission_description"),
+                "createdAt": updated_dealer["created_at"].isoformat() if updated_dealer.get("created_at") else None
+            }
+        
+        # 3. Restaurants
+        restaurant = await fetch_one("""
+            SELECT id, email, name
+            FROM restaurants
+            WHERE id = $1;
+        """, user_id)
+        
+        if restaurant:
+            return False, "Restoran kullanıcıları için komisyon oranı belirlenemez"
+        
+        # 4. Drivers (Couriers)
+        driver = await fetch_one("""
+            SELECT id, email, first_name, last_name
+            FROM drivers
+            WHERE id = $1
+              AND (deleted IS NULL OR deleted = FALSE);
+        """, user_id)
+        
+        if driver:
+            return False, "Kurye kullanıcıları için komisyon oranı belirlenemez"
+        
+        # 5. System Admins
+        admin = await fetch_one("""
+            SELECT id, email, first_name, last_name
+            FROM system_admins
+            WHERE id = $1;
+        """, user_id)
+        
+        if admin:
+            return False, "Admin kullanıcıları için komisyon oranı belirlenemez"
+        
+        # 6. Users (Default)
+        user = await fetch_one("""
+            SELECT id, email
+            FROM users
+            WHERE id = $1
+              AND (deleted IS NULL OR deleted = FALSE);
+        """, user_id)
+        
+        if user:
+            return False, "Bireysel kullanıcılar için komisyon oranı belirlenemez"
+        
+        # Hiçbirinde bulunamadı
+        return False, "Kullanıcı bulunamadı"
+        
     except Exception as e:
         return False, str(e)
 

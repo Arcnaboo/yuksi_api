@@ -31,3 +31,21 @@ async def get_all_users(
         "data": result
     }
 
+
+async def set_user_commission_rate(user_id: str, commission_rate: float, description: str | None = None) -> Dict[str, Any]:
+    """
+    Admin tarafından kullanıcıya komisyon oranı belirleme (ID'ye göre otomatik tespit - tüm tablolara bakar)
+    """
+    ok, res = await admin_user_service.set_user_commission_rate(user_id, commission_rate, description)
+    if not ok:
+        error_msg = res if isinstance(res, str) else "Komisyon oranı belirlenemedi"
+        return {
+            "success": False,
+            "message": error_msg,
+            "data": {}
+        }
+    return {
+        "success": True,
+        "message": "Komisyon oranı başarıyla belirlendi",
+        "data": res
+    }

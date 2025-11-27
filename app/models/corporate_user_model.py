@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
 from typing import Optional
-from datetime import datetime
 
 
 class CorporateUserCreate(BaseModel):
@@ -65,4 +64,19 @@ class CorporateUserResponse(BaseModel):
     addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
     addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
     created_at: str
+
+
+class CommissionRateSet(BaseModel):
+    """Admin tarafından kullanıcıya (Corporate veya Dealer) komisyon oranı belirleme modeli"""
+    commissionRate: float = Field(..., ge=0, le=100, description="Komisyon oranı (yüzde, 0-100 arası)")
+    description: Optional[str] = Field(None, description="Komisyon oranı açıklaması")
+    
+    @field_validator('commissionRate')
+    @classmethod
+    def validate_commission_rate(cls, v):
+        if v < 0 or v > 100:
+            raise ValueError('Komisyon oranı 0-100 arasında olmalıdır')
+        return v
+    
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
