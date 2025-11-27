@@ -20,3 +20,31 @@ async def update_dealer_status(dealer_id: UUID, status: str) -> Dict[str, Any]:
 
 async def delete_dealer(dealer_id: UUID) -> Dict[str, Any]:
     return await dealer_service.delete_dealer(dealer_id)
+
+
+async def get_dealer_profile(dealer_id: UUID) -> Dict[str, Any]:
+    """Bayi profil görüntüleme controller"""
+    profile = await dealer_service.get_dealer_profile(dealer_id)
+    if not profile:
+        return {"error": "Bayi bulunamadı"}, 404
+    return profile
+
+
+async def update_dealer_profile(dealer_id: UUID, req) -> Dict[str, Any]:
+    """Bayi profil güncelleme controller"""
+    return await dealer_service.update_dealer_profile(
+        dealer_id,
+        email=getattr(req, "email", None),
+        phone=getattr(req, "phone", None),
+        name=getattr(req, "name", None),
+        surname=getattr(req, "surname", None),
+        full_address=getattr(req, "fullAddress", None) or getattr(req, "full_address", None),
+        account_type=getattr(req, "accountType", None) or getattr(req, "account_type", None),
+        country_id=getattr(req, "countryId", None) or getattr(req, "country_id", None),
+        state_id=getattr(req, "stateId", None) or getattr(req, "state_id", None),
+        city_id=getattr(req, "cityId", None) or getattr(req, "city_id", None),
+        tax_office=getattr(req, "taxOffice", None) or getattr(req, "tax_office", None),
+        tax_number=getattr(req, "taxNumber", None) or getattr(req, "tax_number", None),
+        iban=getattr(req, "iban", None),
+        resume=getattr(req, "resume", None),
+    )

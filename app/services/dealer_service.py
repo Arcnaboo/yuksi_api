@@ -213,3 +213,148 @@ async def delete_dealer(dealer_id: UUID) -> Dict[str, Any]:
         return {"success": True, "message": "Dealer deleted", "data": {"id": str(row["id"])}}
     except Exception as e:
         return {"success": False, "message": str(e), "data": {}}
+
+
+# === GET PROFILE ===
+async def get_dealer_profile(dealer_id: UUID) -> Optional[Dict[str, Any]]:
+    """Bayi profil bilgilerini getirir"""
+    try:
+        with db_cursor(dict_cursor=True) as cur:
+            cur.execute("""
+                SELECT 
+                    email, phone, name, surname, address,
+                    account_type, country_id, state_id, city_id,
+                    tax_office, tax_number, iban, resume,
+                    commission_rate, commission_description
+                FROM dealers 
+                WHERE id = %s;
+            """, (str(dealer_id),))
+            row = cur.fetchone()
+        
+        if not row:
+            return None
+
+        return {
+            "email": row.get("email"),
+            "phone": row.get("phone"),
+            "name": row.get("name") or "",
+            "surname": row.get("surname") or "",
+            "fullAddress": row.get("address"),
+            "accountType": row.get("account_type"),
+            "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
+            "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
+            "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
+            "taxOffice": row.get("tax_office"),
+            "taxNumber": row.get("tax_number"),
+            "iban": row.get("iban"),
+            "resume": row.get("resume"),
+            "commissionRate": float(row["commission_rate"]) if row.get("commission_rate") is not None else None,
+            "commissionDescription": row.get("commission_description"),
+        }
+    except Exception as e:
+        print(f"Error getting dealer profile: {e}")
+        return None
+
+
+# === UPDATE PROFILE ===
+async def update_dealer_profile(
+    dealer_id: UUID,
+    email: Optional[str] = None,
+    phone: Optional[str] = None,
+    name: Optional[str] = None,
+    surname: Optional[str] = None,
+    full_address: Optional[str] = None,
+    account_type: Optional[str] = None,
+    country_id: Optional[int] = None,
+    state_id: Optional[int] = None,
+    city_id: Optional[int] = None,
+    tax_office: Optional[str] = None,
+    tax_number: Optional[str] = None,
+    iban: Optional[str] = None,
+    resume: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Bayi profil bilgilerini günceller"""
+    try:
+        update_fields = []
+        params = {}
+
+        if email is not None:
+            # Email unique kontrolü
+            with db_cursor(dict_cursor=True) as cur:
+                cur.execute(
+                    "SELECT id FROM dealers WHERE email = %s AND id != %s LIMIT 1;",
+                    (email.lower(), str(dealer_id))
+                )
+                existing = cur.fetchone()
+                if existing:
+                    return {"success": False, "message": "Bu email adresi zaten kullanılıyor", "data": {}}
+            update_fields.append("email = %(email)s")
+            params["email"] = email.lower()
+        
+        if phone is not None:
+            update_fields.append("phone = %(phone)s")
+            params["phone"] = phone
+        
+        if name is not None:
+            update_fields.append("name = %(name)s")
+            params["name"] = name
+        
+        if surname is not None:
+            update_fields.append("surname = %(surname)s")
+            params["surname"] = surname
+        
+        if full_address is not None:
+            update_fields.append("address = %(address)s")
+            params["address"] = full_address
+        
+        if account_type is not None:
+            update_fields.append("account_type = %(account_type)s")
+            params["account_type"] = account_type
+        
+        if country_id is not None:
+            update_fields.append("country_id = %(country_id)s")
+            params["country_id"] = country_id
+        
+        if state_id is not None:
+            update_fields.append("state_id = %(state_id)s")
+            params["state_id"] = state_id
+        
+        if city_id is not None:
+            update_fields.append("city_id = %(city_id)s")
+            params["city_id"] = city_id
+        
+        if tax_office is not None:
+            update_fields.append("tax_office = %(tax_office)s")
+            params["tax_office"] = tax_office
+        
+        if tax_number is not None:
+            update_fields.append("tax_number = %(tax_number)s")
+            params["tax_number"] = tax_number
+        
+        if iban is not None:
+            update_fields.append("iban = %(iban)s")
+            params["iban"] = iban
+        
+        if resume is not None:
+            update_fields.append("resume = %(resume)s")
+            params["resume"] = resume
+
+        if not update_fields:
+            return {"success": False, "message": "Güncellenecek alan bulunamadı", "data": {}}
+
+        params["dealer_id"] = str(dealer_id)
+        
+        query = f"""
+            UPDATE dealers 
+            SET {', '.join(update_fields)}
+            WHERE id = %(dealer_id)s;
+        """
+        
+        with db_cursor(dict_cursor=True) as cur:
+            cur.execute(query, params)
+            if cur.rowcount == 0:
+                return {"success": False, "message": "Bayi bulunamadı", "data": {}}
+        
+        return {"success": True, "message": "Profil başarıyla güncellendi", "data": {}}
+    except Exception as e:
+        return {"success": False, "message": str(e), "data": {}}
