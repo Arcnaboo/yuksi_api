@@ -45,20 +45,24 @@ async def get_all_users(
 
 
 @router.get(
-    "/users/{user_id}/commission",
+    "/users/commission",
     summary="Kullanıcı Komisyon Oranı Getir",
-    description="Kullanıcının komisyon oranı getirilir. Admin herhangi bir kullanıcının komisyon oranını görebilir. Corporate ve Dealer kullanıcıları sadece kendi komisyon oranlarını görebilir. ID'ye göre otomatik olarak Kurumsal kullanıcı veya Bayi tespit edilir.",
+    description="Kullanıcının komisyon oranı getirilir. Token'dan kullanıcı ID'si alınır. Admin herhangi bir kullanıcının komisyon oranını görebilir. Corporate ve Dealer kullanıcıları sadece kendi komisyon oranlarını görebilir. ID'ye göre otomatik olarak Kurumsal kullanıcı veya Bayi tespit edilir.",
     dependencies=[Depends(require_roles(["Admin", "Corporate", "Dealer"]))],
 )
 async def get_user_commission_rate(
-    user_id: UUID = Path(..., description="Kullanıcı UUID'si (Corporate veya Dealer)"),
     claims: dict = Depends(require_roles(["Admin", "Corporate", "Dealer"]))
 ):
     """
     Kullanıcının komisyon oranını getirir.
+    Token'dan kullanıcı ID'si alınır.
     ID'ye göre otomatik olarak kurumsal kullanıcı mı bayi mi olduğu tespit edilir.
-    Corporate ve Dealer kullanıcıları sadece kendi ID'lerini sorgulayabilir.
+    Corporate ve Dealer kullanıcıları sadece kendi komisyon oranlarını görebilir.
     """
+    user_id = claims.get("userId") or claims.get("sub")
+    if not user_id:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token'da kullanıcı ID bulunamadı")
     return await admin_user_controller.get_user_commission_rate(str(user_id), claims)
 
 

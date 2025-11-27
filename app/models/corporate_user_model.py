@@ -123,7 +123,9 @@ class CorporateProfileUpdateReq(BaseModel):
                 "fullAddress": "FSM Bulv. No:10, Kat:2 Daire:5",
                 "countryId": 225,
                 "stateId": 101,
-                "cityId": 6
+                "cityId": 6,
+                "latitude": 39.9200,
+                "longitude": 32.8550
             }
         }
     )

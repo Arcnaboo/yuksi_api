@@ -137,7 +137,9 @@ class DealerProfileUpdateReq(BaseModel):
                 "taxOffice": "Osmangazi Vergi Dairesi",
                 "taxNumber": "12345678901",
                 "iban": "TR330006100519786457841326",
-                "resume": "10 yıllık taşımacılık deneyimi"
+                "resume": "10 yıllık taşımacılık deneyimi",
+                "latitude": 40.1826,
+                "longitude": 29.0665
             }
         }
     )
