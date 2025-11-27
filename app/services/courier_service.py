@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Dict, Any, List
 
 from fastapi import HTTPException, status   
 from app.models.courier_model import CourierHistoryRes, CourierHistory
+from app.models.order_model import OrderStatus
 from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.security import hash_pwd
 from ..utils.database import db_cursor
@@ -426,7 +427,7 @@ async def get_dealers_by_state(state_id: int) -> List[Dict[str, Any]]:
 # TODO : ödemeler eklendikten sonra ödeme durumu da eklenecek
 
 async def get_courier_history(
-    courier_id: str,
+    courier_id: UUID,
     date: Optional[str] = None,
     page: int = 1,
     page_size: int = 25
@@ -490,3 +491,27 @@ async def get_courier_history(
         message="Courier history fetched",
         data=result
     )
+
+async def change_courier_order_status(
+    courier_id: UUID,
+    order_id: UUID,
+    new_status: OrderStatus
+) -> Optional[str]:
+    order = await fetch_one(
+        "SELECT status FROM orders WHERE id = $1 AND courier_id = $2",
+        order_id, courier_id
+    )
+    if order is None:
+        return "Kuryeye bağlı sipariş bulunamadı."
+    elif order["status"] in [OrderStatus.IPTAL, OrderStatus.TESLIM_EDILDI]:
+        return "Bu siparişin durumu kurye tarafından değiştirilemez."
+    elif order["status"] == new_status:
+        return "Sipariş zaten bu durumda."
+    elif not [OrderStatus.KURYEYE_VERILDI, OrderStatus.YOLDA, OrderStatus.TESLIM_EDILDI].__contains__(new_status):
+        return "Geçersiz veya yetkisiz sipariş durumu."
+
+    await execute(
+        "UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2",
+        new_status, order_id
+    )
+    return None

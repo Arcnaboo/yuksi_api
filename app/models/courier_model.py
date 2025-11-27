@@ -123,3 +123,11 @@ class CourierHistoryRes(BaseModel):
     success: bool
     message: str
     data: List[CourierHistory] = Field(default_factory=list)
+
+class CourierOrderStatusChangeReq(BaseModel):
+    new_status: OrderStatus
+
+class CourierOrderStatusChangeRes(BaseModel):
+    success: bool
+    message: str
+    data: dict = Field(default_factory=dict)

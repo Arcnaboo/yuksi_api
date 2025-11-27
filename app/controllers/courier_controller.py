@@ -1,4 +1,6 @@
 from fastapi import HTTPException, status
+
+from app.models.courier_model import CourierOrderStatusChangeReq
 from ..services import courier_service as svc
 from uuid import UUID
 
@@ -120,9 +122,48 @@ async def get_courier_history(_claims: dict, date: str = None, page: int = 1, pa
         )
     
     user_id = _claims.get("userId")
+
+    try:
+        user_id = UUID(user_id)
+    except ValueError:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
+
     return await svc.get_courier_history(
         courier_id=user_id,
         date=date,
         page=page,
         page_size=page_size
     )
+
+async def change_courier_order_status(_claims: dict, order_id: str, req: CourierOrderStatusChangeReq):
+    roles = _claims.get("role") or _claims.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+
+    if "Courier" not in roles:
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Unauthorized to access this courier's resources"
+        )
+    
+    user_id = _claims.get("userId")
+
+    try:
+        user_id = UUID(user_id)
+    except ValueError:
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID format"
+        )
+
+    err = await svc.change_courier_order_status(
+        courier_id=user_id,
+        order_id=order_id,
+        new_status=req.new_status
+    )
+    if err:
+        return {"success": False, "message": err}
+    return {"success": True, "message": "Sipariş durumu başarıyla güncellendi."}

@@ -2,6 +2,8 @@ from typing import List
 from fastapi import APIRouter, Path, Body, Depends
 from fastapi.params import Query
 from ..models.courier_model import (
+    CourierOrderStatusChangeReq,
+    CourierOrderStatusChangeRes,
     CourierRegisterStep1Req,
     CourierRegisterStep2Req,
     CourierRegisterStep3Req,
@@ -851,6 +853,19 @@ async def get_courier_history(
     date : str = Query(None, description="Tarih filtresi (YYYY-MM-DD formatında)"),
     page : int = Query(1, ge=1, description="Sayfa numarası"),
     page_size : int = Query(25, ge=1, le=100, description="Sayfa başına kayıt sayısı"),
-    _claims = Depends(auth_controller.require_roles(["Courier", "Admin"]))
+    _claims = Depends(auth_controller.require_roles(["Courier"]))
 ):
     return await ctrl.get_courier_history(_claims, date, page, page_size)
+
+@router.put(
+    "/{order_id}/change_order_status",
+    response_model=CourierOrderStatusChangeRes,
+    summary="Kurye Sipariş Durumu Değişikliği",
+    description="Kuryenin sipariş durumu değiştirmesini sağlar.",
+)
+async def change_courier_order_status(
+    order_id: str = Path(..., description="Sipariş UUID'si"),
+    req: CourierOrderStatusChangeReq = Body(...),
+    _claims = Depends(auth_controller.require_roles(["Courier"]))
+):
+    return await ctrl.change_courier_order_status(_claims, order_id, req)
