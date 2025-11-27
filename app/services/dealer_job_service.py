@@ -8,10 +8,6 @@ from datetime import date, time
 async def dealer_create_job(data: Dict[str, Any], dealer_id: str) -> Tuple[bool, str | None]:
     """Bayi tarafından manuel yük oluşturma servisi"""
     try:
-        # Komisyon oranı alanlarını yok say (sadece admin belirleyebilir)
-        data.pop("commissionRate", None)
-        data.pop("commissionDescription", None)
-        
         # Araç seçimini işle
         vehicle_product_id = None
         vehicle_type_string = None
@@ -76,8 +72,8 @@ async def dealer_create_job(data: Dict[str, Any], dealer_id: str) -> Tuple[bool,
         )
         VALUES (
             $1,$2,$3,$4,$5,$6,$7,
-            $8,$9,$10,$11,$12,$13,$14,$15,FALSE,NULL,$16,
-            $17,$18
+            $8,$9,$10,$11,$12,$13,$14,FALSE,NULL,$15,
+            $16,$17
         )
         RETURNING id;
         """
@@ -178,11 +174,8 @@ async def dealer_get_jobs(dealer_id: str, limit: int = 50, offset: int = 0, deli
             j.created_at AS "createdAt",
             j.image_file_ids AS "imageFileIds",
             j.delivery_date AS "deliveryDate",
-            j.delivery_time AS "deliveryTime",
-            d.commission_rate AS "commissionRate",
-            d.commission_description AS "commissionDescription"
+            j.delivery_time AS "deliveryTime"
         FROM admin_jobs j
-        LEFT JOIN dealers d ON d.id = j.dealer_id
         {where_clause}
         ORDER BY j.created_at DESC
         LIMIT ${i} OFFSET ${i + 1};
@@ -198,9 +191,6 @@ async def dealer_get_jobs(dealer_id: str, limit: int = 50, offset: int = 0, deli
                 row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
             if row_dict.get("deliveryTime"):
                 row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
-            # Komisyon oranını float'a çevir (eğer varsa)
-            if row_dict.get("commissionRate") is not None:
-                row_dict["commissionRate"] = float(row_dict["commissionRate"])
             formatted_rows.append(row_dict)
         
         return True, formatted_rows
@@ -213,10 +203,6 @@ async def dealer_get_jobs(dealer_id: str, limit: int = 50, offset: int = 0, deli
 async def dealer_update_job(job_id: str, dealer_id: str, fields: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """Bayi tarafından yük güncelleme servisi (sadece kendi yüklerini güncelleyebilir)"""
     try:
-        # Komisyon oranı alanlarını yok say (sadece admin belirleyebilir)
-        fields.pop("commissionRate", None)
-        fields.pop("commissionDescription", None)
-        
         # Önce yükün bu bayinin olup olmadığını kontrol et
         check = await fetch_one(
             "SELECT id FROM admin_jobs WHERE id = $1 AND dealer_id = $2;",

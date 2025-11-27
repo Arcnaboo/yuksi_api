@@ -529,10 +529,6 @@ CREATE TABLE IF NOT EXISTS dealers (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Dealers commission_rate ve commission_description kolonları
-ALTER TABLE dealers ADD COLUMN IF NOT EXISTS commission_rate DECIMAL(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
-ALTER TABLE dealers ADD COLUMN IF NOT EXISTS commission_description TEXT;
-
 CREATE TABLE IF NOT EXISTS courier_ratings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -827,9 +823,6 @@ CREATE TABLE IF NOT EXISTS corporate_users (
 
 -- Corporate Users commission_rate kolonu (opsiyonel, yüzde formatında 0-100)
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS commission_rate DECIMAL(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
-
--- Corporate Users commission_description kolonu (komisyon oranı açıklaması)
-ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS commission_description TEXT;
 
 -- Corporate Users adres kolonları (ülke, il, ilçe)
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS country_id BIGINT;

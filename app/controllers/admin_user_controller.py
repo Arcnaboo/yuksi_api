@@ -32,20 +32,89 @@ async def get_all_users(
     }
 
 
-async def set_user_commission_rate(user_id: str, commission_rate: float, description: str | None = None) -> Dict[str, Any]:
+async def get_user_commission_rate(user_id: str, claims: dict) -> Dict[str, Any]:
     """
-    Admin tarafından kullanıcıya komisyon oranı belirleme (ID'ye göre otomatik tespit - tüm tablolara bakar)
+    Kullanıcının komisyon oranını getirir.
+    Admin herhangi bir kullanıcının komisyon oranını görebilir.
+    Corporate ve Dealer kullanıcıları sadece kendi komisyon oranlarını görebilir.
     """
-    ok, res = await admin_user_service.set_user_commission_rate(user_id, commission_rate, description)
-    if not ok:
-        error_msg = res if isinstance(res, str) else "Komisyon oranı belirlenemedi"
+    # Rol kontrolü
+    roles = claims.get("role") or claims.get("roles") or []
+    if isinstance(roles, str):
+        roles = [roles]
+    
+    # Kullanıcı ID'sini al
+    current_user_id = claims.get("userId") or claims.get("sub")
+    
+    # Eğer Admin değilse, sadece kendi ID'sini sorgulayabilir
+    if "Admin" not in roles:
+        if current_user_id != user_id:
+            return {
+                "success": False,
+                "message": "Sadece kendi komisyon oranınızı görebilirsiniz.",
+                "data": {}
+            }
+    
+    success, result = await admin_user_service.get_user_commission_rate(user_id)
+    
+    if not success:
         return {
             "success": False,
-            "message": error_msg,
+            "message": result if isinstance(result, str) else "Failed to fetch commission rate",
             "data": {}
         }
+    
     return {
         "success": True,
-        "message": "Komisyon oranı başarıyla belirlendi",
-        "data": res
+        "message": "Komisyon oranı başarıyla getirildi.",
+        "data": result
     }
+
+
+async def set_user_commission_rate(user_id: str, commission_rate: float, description: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Admin tarafından kullanıcıya komisyon oranı belirler (POST ve PUT için)
+    """
+    success, result = await admin_user_service.set_user_commission_rate(user_id, commission_rate, description)
+    
+    if not success:
+        return {
+            "success": False,
+            "message": result if isinstance(result, str) else "Failed to set commission rate",
+            "data": {}
+        }
+    
+    return {
+        "success": True,
+        "message": "Komisyon oranı başarıyla belirlendi.",
+        "data": result
+    }
+
+
+async def get_all_users_commissions(
+    limit: int = 50,
+    offset: int = 0,
+    user_type: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Admin tarafından tüm kullanıcıların (Corporate ve Dealer) komisyon oranlarını getirir
+    """
+    success, result = await admin_user_service.get_all_users_commissions(
+        limit=limit,
+        offset=offset,
+        user_type=user_type
+    )
+    
+    if not success:
+        return {
+            "success": False,
+            "message": result if isinstance(result, str) else "Failed to fetch commission rates",
+            "data": {}
+        }
+    
+    return {
+        "success": True,
+        "message": "Komisyon oranları başarıyla getirildi.",
+        "data": result
+    }
+
