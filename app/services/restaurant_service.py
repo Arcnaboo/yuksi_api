@@ -23,7 +23,7 @@ async def restaurant_register(
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Yeni restoran kaydı oluşturur"""
     try:
-        existing = await fetch_one("SELECT id FROM restaurants WHERE email=$1;", email)
+        existing = await fetch_one("SELECT id FROM restaurants WHERE email=$1 AND (deleted IS NULL OR deleted = FALSE);", email)
         if existing:
             return None, "Email already registered"
 
@@ -81,6 +81,7 @@ async def list_restaurants(limit: int = 100, offset: int = 0) -> List[Dict[str, 
                latitude, longitude,
                opening_hour, closing_hour
         FROM restaurants
+        WHERE (deleted IS NULL OR deleted = FALSE)
         ORDER BY created_at DESC
         LIMIT $1 OFFSET $2;
     """
@@ -221,7 +222,7 @@ async def assign_courier_to_restaurant(
         from ..utils.database_async import fetch_one, execute
         
         # Restoran kontrolü
-        restaurant = await fetch_one("SELECT id, name FROM restaurants WHERE id = $1", restaurant_id)
+        restaurant = await fetch_one("SELECT id, name FROM restaurants WHERE id = $1 AND (deleted IS NULL OR deleted = FALSE)", restaurant_id)
         if not restaurant:
             return False, "Restaurant not found"
         
@@ -326,7 +327,7 @@ async def get_restaurant_courier_stats(restaurant_id: str) -> Optional[Dict[str,
         from ..utils.database_async import fetch_one
         
         # Restoran bilgileri
-        restaurant = await fetch_one("SELECT name FROM restaurants WHERE id = $1", restaurant_id)
+        restaurant = await fetch_one("SELECT name FROM restaurants WHERE id = $1 AND (deleted IS NULL OR deleted = FALSE)", restaurant_id)
         if not restaurant:
             return None
         
@@ -384,11 +385,31 @@ async def admin_update_restaurant(restaurant_id: str, fields: Dict[str, Any]) ->
 
 # === ADMIN DELETE RESTAURANT ===
 async def admin_delete_restaurant(restaurant_id: str) -> Tuple[bool, Optional[str]]:
-    """Admin tarafından restoran silme"""
+    """Admin tarafından restoran silme (soft delete)"""
     try:
-        result = await execute("DELETE FROM restaurants WHERE id = $1;", restaurant_id)
-        if result == "DELETE 0":
+        # Önce restoranın var olup olmadığını ve silinmemiş olduğunu kontrol et
+        restaurant = await fetch_one("""
+            SELECT id, deleted 
+            FROM restaurants 
+            WHERE id = $1;
+        """, restaurant_id)
+        
+        if not restaurant:
             return False, "Restaurant not found"
+        
+        if restaurant.get("deleted"):
+            return False, "Restaurant already deleted"
+        
+        # Soft delete yap
+        result = await execute("""
+            UPDATE restaurants 
+            SET deleted = TRUE, deleted_at = NOW() 
+            WHERE id = $1;
+        """, restaurant_id)
+        
+        if result.endswith(" 0"):
+            return False, "Restaurant not found"
+        
         return True, None
     except Exception as e:
         return False, str(e)
@@ -438,6 +459,7 @@ async def get_nearby_couriers(restaurant_id: str, limit: int = 50) -> List[Dict[
                 SELECT latitude, longitude
                 FROM restaurants
                 WHERE id = $1
+                  AND (deleted IS NULL OR deleted = FALSE)
                   AND latitude IS NOT NULL
                   AND longitude IS NOT NULL
             ),

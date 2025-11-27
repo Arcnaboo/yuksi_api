@@ -151,12 +151,13 @@ async def get_all_users(
                     closing_hour AS closingHour,
                     created_at AS createdAt
                 FROM restaurants
+                WHERE (deleted IS NULL OR deleted = FALSE)
             """
             params = []
             
             if search:
                 restaurant_query += """
-                    WHERE (
+                    AND (
                         LOWER(email) LIKE $1 OR
                         LOWER(name) LIKE $1 OR
                         LOWER(phone) LIKE $1 OR
@@ -196,17 +197,18 @@ async def get_all_users(
             if search:
                 count_query = """
                     SELECT COUNT(*) AS count FROM restaurants
-                    WHERE (
+                    WHERE (deleted IS NULL OR deleted = FALSE)
+                      AND (
                         LOWER(email) LIKE $1 OR
                         LOWER(name) LIKE $1 OR
                         LOWER(phone) LIKE $1 OR
                         LOWER(contact_person) LIKE $1
-                    )
+                      )
                 """
                 count_params = [f"%{search.lower()}%"]
                 count_row = await fetch_one(count_query, *count_params)
             else:
-                count_row = await fetch_one("SELECT COUNT(*) AS count FROM restaurants")
+                count_row = await fetch_one("SELECT COUNT(*) AS count FROM restaurants WHERE (deleted IS NULL OR deleted = FALSE)")
             
             totals["restaurants"] = count_row.get("count", 0) if count_row else 0
 
