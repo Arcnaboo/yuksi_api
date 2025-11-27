@@ -858,7 +858,7 @@ async def get_courier_history(
     return await ctrl.get_courier_history(_claims, date, page, page_size)
 
 @router.put(
-    "/{order_id}/change_order_status",
+    "/{order_id}/update-status",
     response_model=CourierOrderStatusChangeRes,
     summary="Kurye Sipariş Durumu Değişikliği",
     description="Kuryenin sipariş durumu değiştirmesini sağlar.",
