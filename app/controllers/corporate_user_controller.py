@@ -108,3 +108,41 @@ async def delete_corporate_user(user_id: str) -> Dict[str, Any]:
         "data": {}
     }
 
+
+async def get_corporate_profile(user_id: str) -> Dict[str, Any]:
+    """Kurumsal kullanıcı profil görüntüleme controller"""
+    profile = await svc.get_corporate_profile(user_id)
+    if not profile:
+        return {"error": "Kurumsal kullanıcı bulunamadı"}, 404
+    return profile
+
+
+async def update_corporate_profile(user_id: str, req) -> Dict[str, Any]:
+    """Kurumsal kullanıcı profil güncelleme controller"""
+    # fullAddress geldiyse addressLine1/2'ye böl
+    full_addr = getattr(req, "fullAddress", None) or getattr(req, "full_address", None)
+    
+    ok, err = await svc.update_corporate_profile(
+        user_id,
+        email=getattr(req, "email", None),
+        phone=getattr(req, "phone", None),
+        first_name=getattr(req, "firstName", None),
+        last_name=getattr(req, "lastName", None),
+        full_address=full_addr,
+        country_id=getattr(req, "countryId", None),
+        state_id=getattr(req, "stateId", None),
+        city_id=getattr(req, "cityId", None),
+    )
+    
+    if not ok:
+        error_msg = err if err else "Profil güncellenemedi"
+        return {
+            "success": False,
+            "message": error_msg,
+            "data": {}
+        }
+    return {
+        "success": True,
+        "message": "Profil başarıyla güncellendi",
+        "data": {}
+    }
