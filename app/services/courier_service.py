@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Optional, Tuple, Dict, Any, List
-from app.models.courier_model import CourierHistoryRes
+
+from fastapi import HTTPException, status   
+from app.models.courier_model import CourierHistoryRes, CourierHistory
 from app.utils.database_async import fetch_one, fetch_all, execute
 from app.utils.security import hash_pwd
 from ..utils.database import db_cursor
@@ -428,7 +430,7 @@ async def get_courier_history(
     date: Optional[str] = None,
     page: int = 1,
     page_size: int = 25
-) -> List[CourierHistoryRes]:
+) -> List[CourierHistory] | Any:
 
     offset = (page - 1) * page_size
     params = [courier_id]
@@ -443,7 +445,11 @@ async def get_courier_history(
             date_filter = "AND DATE(o.updated_at) = $2"
             params.append(time)
         except ValueError:
-            return []
+            return CourierHistoryRes(
+                success=False,
+                message="Invalid date format. Use YYYY-MM-DD.",
+                data=[]
+            )
 
     # === HISTORY QUERY ===
     history_sql = f"""
@@ -467,8 +473,8 @@ async def get_courier_history(
 
     rows = await fetch_all(history_sql, *params)
 
-    return [
-        CourierHistoryRes(
+    result = [
+        CourierHistory(
             order_id=r["id"],
             price=float(r["price"]),
             date=r["date"].strftime("%Y-%m-%d %H:%M:%S") if r["date"] else None,
@@ -478,3 +484,9 @@ async def get_courier_history(
             to_address=r["to_address"]
         )
     for r in rows] if rows else []
+
+    return CourierHistoryRes(
+        success=True,
+        message="Courier history fetched",
+        data=result
+    )

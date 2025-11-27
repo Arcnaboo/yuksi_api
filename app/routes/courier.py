@@ -843,7 +843,7 @@ async def get_courier_dashboard(
 
 @router.get(
     "/history",
-    response_model=List[CourierHistoryRes],
+    response_model=CourierHistoryRes,
     summary="Kurye Aktivite Geçmişi",
     description="Kurye aktivite geçmişini tarih filtresi ve sayfalama ile getirir.",
 )

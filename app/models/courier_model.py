@@ -110,7 +110,7 @@ class CourierProfileUpdateReq(BaseModel):
             raise ValueError("En az bir alan güncellenmelidir")
         return self
 
-class CourierHistoryRes(BaseModel):
+class CourierHistory(BaseModel):
     order_id: UUID
     price: float
     date: str
@@ -118,3 +118,8 @@ class CourierHistoryRes(BaseModel):
     payment_status: str
     from_address: str
     to_address: str
+
+class CourierHistoryRes(BaseModel):
+    success: bool
+    message: str
+    data: List[CourierHistory] = Field(default_factory=list)
