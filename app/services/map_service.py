@@ -248,24 +248,46 @@ async def create_courier_route_serpapi(driver_id: str, order_id: str):
                                 elif isinstance(dur_val, dict) and "value" in dur_val:
                                     duration += dur_val["value"]
                             
-                            # Steps için trips içine bak
+                            # Steps ve Polyline için trips içine bak (SerpAPI'nin gerçek formatı)
                             if "trips" in direction and isinstance(direction["trips"], list):
                                 for trip in direction["trips"]:
-                                    if "steps" in trip:
+                                    # SerpAPI'de steps "details" key'i içinde geliyor
+                                    if "details" in trip and isinstance(trip["details"], list):
+                                        for detail in trip["details"]:
+                                            step_info = {
+                                                "instruction": detail.get("title", detail.get("instruction", detail.get("text", ""))),
+                                                "action": detail.get("action", ""),  # straight, turn-left, turn-right, etc.
+                                                "distance": detail.get("distance", 0) if isinstance(detail.get("distance"), (int, float)) else detail.get("distance", {}).get("value", 0),
+                                                "duration": detail.get("duration", 0) if isinstance(detail.get("duration"), (int, float)) else detail.get("duration", {}).get("value", 0),
+                                                "formatted_distance": detail.get("formatted_distance", ""),
+                                                "formatted_duration": detail.get("formatted_duration", ""),
+                                                "icon": detail.get("icon", "")
+                                            }
+                                            steps.append(step_info)
+                                    
+                                    # Alternatif: Eğer details yoksa steps key'ine bak
+                                    elif "steps" in trip and isinstance(trip["steps"], list):
                                         for step in trip["steps"]:
                                             step_info = {
-                                                "instruction": step.get("html_instructions", step.get("instruction", step.get("text", ""))),
+                                                "instruction": step.get("html_instructions", step.get("instruction", step.get("text", step.get("title", "")))),
                                                 "distance": step.get("distance", 0) if isinstance(step.get("distance"), (int, float)) else step.get("distance", {}).get("value", 0),
                                                 "duration": step.get("duration", 0) if isinstance(step.get("duration"), (int, float)) else step.get("duration", {}).get("value", 0),
                                             }
                                             steps.append(step_info)
                                     
-                                    # Polyline trips içinde olabilir
-                                    if "polyline" in trip:
-                                        polyline = trip["polyline"] if isinstance(trip["polyline"], str) else trip["polyline"].get("points", "")
-                                    elif "overview_polyline" in trip:
-                                        poly_obj = trip["overview_polyline"]
-                                        polyline = poly_obj if isinstance(poly_obj, str) else poly_obj.get("points", "")
+                                    # Polyline trip içinde olabilir
+                                    if not polyline:
+                                        if "polyline" in trip:
+                                            polyline = trip["polyline"] if isinstance(trip["polyline"], str) else trip["polyline"].get("points", "")
+                                        elif "overview_polyline" in trip:
+                                            poly_obj = trip["overview_polyline"]
+                                            polyline = poly_obj if isinstance(poly_obj, str) else poly_obj.get("points", "")
+                                        elif "route" in trip and isinstance(trip["route"], dict):
+                                            if "polyline" in trip["route"]:
+                                                polyline = trip["route"]["polyline"] if isinstance(trip["route"]["polyline"], str) else trip["route"]["polyline"].get("points", "")
+                                            elif "overview_polyline" in trip["route"]:
+                                                poly_obj = trip["route"]["overview_polyline"]
+                                                polyline = poly_obj if isinstance(poly_obj, str) else poly_obj.get("points", "")
                             
                             # Alternatif: direction içinde direkt polyline
                             if not polyline and "polyline" in direction:
@@ -303,6 +325,8 @@ async def create_courier_route_serpapi(driver_id: str, order_id: str):
                 status_code=500, 
                 detail="No directions found in SerpAPI response (leg1)"
             )
+        
+        
         
         total_distance += dist1
         total_duration += dur1
