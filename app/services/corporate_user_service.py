@@ -38,20 +38,27 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
         country_id = data.get("countryId")
         state_id = data.get("stateId")
         city_id = data.get("cityId")
+        tax_office = data.get("tax_office")
+        tax_number = data.get("tax_number")
+        iban = data.get("iban")
+        resume = data.get("resume")
+        
         row = await fetch_one("""
             INSERT INTO corporate_users (
                 email, password_hash, 
                 phone, first_name, last_name, commission_rate,
                 country_id, state_id, city_id,
-                address_line1, address_line2
+                address_line1, address_line2,
+                tax_office, tax_number, iban, resume
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-            RETURNING id, email, phone, first_name, last_name, is_active, commission_rate, country_id, state_id, city_id, address_line1, address_line2, created_at;
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            RETURNING id, email, phone, first_name, last_name, is_active, commission_rate, country_id, state_id, city_id, address_line1, address_line2, tax_office, tax_number, iban, resume, created_at;
         """,
         data["email"], password_hash,
         data["phone"], data["first_name"], data["last_name"], commission_rate,
         country_id, state_id, city_id,
-        address_line1, address_line2
+        address_line1, address_line2,
+        tax_office, tax_number, iban, resume
         )
         
         return True, {
@@ -65,6 +72,12 @@ async def create_corporate_user(data: Dict[str, Any]) -> Tuple[bool, str | Dict[
             "countryId": int(row["country_id"]) if row.get("country_id") is not None else None,
             "stateId": int(row["state_id"]) if row.get("state_id") is not None else None,
             "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
+            "addressLine1": row.get("address_line1"),
+            "addressLine2": row.get("address_line2"),
+            "tax_office": row.get("tax_office"),
+            "tax_number": row.get("tax_number"),
+            "iban": row.get("iban"),
+            "resume": row.get("resume"),
             "created_at": row["created_at"].isoformat() if row["created_at"] else None
         }
     except Exception as e:
@@ -90,6 +103,10 @@ async def list_corporate_users(limit: int = 50, offset: int = 0) -> Tuple[bool, 
                 city_id,
                 address_line1,
                 address_line2,
+                tax_office,
+                tax_number,
+                iban,
+                resume,
                 created_at
             FROM corporate_users
             WHERE (deleted IS NULL OR deleted = FALSE)
@@ -112,6 +129,10 @@ async def list_corporate_users(limit: int = 50, offset: int = 0) -> Tuple[bool, 
                 "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
                 "addressLine1": row.get("address_line1"),
                 "addressLine2": row.get("address_line2"),
+                "tax_office": row.get("tax_office"),
+                "tax_number": row.get("tax_number"),
+                "iban": row.get("iban"),
+                "resume": row.get("resume"),
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None
             })
         
@@ -139,6 +160,10 @@ async def get_corporate_user(user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
                 city_id,
                 address_line1,
                 address_line2,
+                tax_office,
+                tax_number,
+                iban,
+                resume,
                 created_at
             FROM corporate_users
             WHERE id = $1
@@ -161,6 +186,10 @@ async def get_corporate_user(user_id: str) -> Tuple[bool, Dict[str, Any] | str]:
             "cityId": int(row["city_id"]) if row.get("city_id") is not None else None,
             "addressLine1": row.get("address_line1"),
             "addressLine2": row.get("address_line2"),
+            "tax_office": row.get("tax_office"),
+            "tax_number": row.get("tax_number"),
+            "iban": row.get("iban"),
+            "resume": row.get("resume"),
             "created_at": row["created_at"].isoformat() if row["created_at"] else None
         }
     except Exception as e:
@@ -214,7 +243,11 @@ async def update_corporate_user(user_id: str, fields: Dict[str, Any]) -> Tuple[b
             "stateId": "state_id",
             "cityId": "city_id",
             "addressLine1": "address_line1",
-            "addressLine2": "address_line2"
+            "addressLine2": "address_line2",
+            "tax_office": "tax_office",
+            "tax_number": "tax_number",
+            "iban": "iban",
+            "resume": "resume"
         }
         
         sets: List[str] = []
@@ -287,7 +320,8 @@ async def get_corporate_profile(user_id: str) -> Optional[Dict[str, Any]]:
                 address_line1, address_line2,
                 country_id, state_id, city_id,
                 commission_rate, commission_description,
-                latitude, longitude
+                latitude, longitude,
+                tax_office, tax_number, iban, resume
             FROM corporate_users 
             WHERE id = $1
               AND (deleted IS NULL OR deleted = FALSE);
@@ -315,6 +349,10 @@ async def get_corporate_profile(user_id: str) -> Optional[Dict[str, Any]]:
             "commissionDescription": row.get("commission_description"),
             "latitude": float(row["latitude"]) if row.get("latitude") is not None else None,
             "longitude": float(row["longitude"]) if row.get("longitude") is not None else None,
+            "tax_office": row.get("tax_office"),
+            "tax_number": row.get("tax_number"),
+            "iban": row.get("iban"),
+            "resume": row.get("resume"),
         }
     except Exception as e:
         print(f"Error getting corporate profile: {e}")
@@ -334,6 +372,10 @@ async def update_corporate_profile(
     city_id: Optional[int] = None,
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
+    tax_office: Optional[str] = None,
+    tax_number: Optional[str] = None,
+    iban: Optional[str] = None,
+    resume: Optional[str] = None,
 ) -> Tuple[bool, Optional[str]]:
     """Kurumsal kullanıcı profil bilgilerini günceller"""
     try:
@@ -400,6 +442,22 @@ async def update_corporate_profile(
         if longitude is not None:
             update_fields.append(f"longitude = ${i}")
             params.append(longitude)
+            i += 1
+        if tax_office is not None:
+            update_fields.append(f"tax_office = ${i}")
+            params.append(tax_office)
+            i += 1
+        if tax_number is not None:
+            update_fields.append(f"tax_number = ${i}")
+            params.append(tax_number)
+            i += 1
+        if iban is not None:
+            update_fields.append(f"iban = ${i}")
+            params.append(iban)
+            i += 1
+        if resume is not None:
+            update_fields.append(f"resume = ${i}")
+            params.append(resume)
             i += 1
 
         if not update_fields:

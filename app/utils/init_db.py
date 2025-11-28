@@ -843,6 +843,12 @@ ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS address_line2 TEXT;
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS latitude DECIMAL(9,6);
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS longitude DECIMAL(9,6);
 
+-- Corporate Users vergi ve finansal bilgiler
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS tax_office TEXT;
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS tax_number TEXT;
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS iban TEXT;
+ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS resume TEXT;
+
 -- Dealers commission_rate ve commission_description kolonları
 ALTER TABLE dealers ADD COLUMN IF NOT EXISTS commission_rate DECIMAL(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
 ALTER TABLE dealers ADD COLUMN IF NOT EXISTS commission_description TEXT;

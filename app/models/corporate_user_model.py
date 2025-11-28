@@ -16,6 +16,10 @@ class CorporateUserCreate(BaseModel):
     addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
     addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
     fullAddress: Optional[str] = Field(None, description="Tam adres (addressLine1/2 yerine)")
+    tax_office: Optional[str] = Field(None, description="Vergi dairesi")
+    tax_number: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
     
     @field_validator('commissionRate')
     @classmethod
@@ -40,6 +44,10 @@ class CorporateUserUpdate(BaseModel):
     addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
     addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
     fullAddress: Optional[str] = Field(None, alias="fullAddress", description="Tam adres (addressLine1/2 yerine)")
+    tax_office: Optional[str] = Field(None, description="Vergi dairesi")
+    tax_number: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
     
     @field_validator('commissionRate')
     @classmethod
@@ -64,6 +72,10 @@ class CorporateUserResponse(BaseModel):
     cityId: Optional[int] = Field(None, description="İlçe ID")
     addressLine1: Optional[str] = Field(None, description="Adres satırı 1")
     addressLine2: Optional[str] = Field(None, description="Adres satırı 2")
+    tax_office: Optional[str] = Field(None, description="Vergi dairesi")
+    tax_number: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
     created_at: str
 
 
@@ -96,6 +108,10 @@ class CorporateProfileResponse(BaseModel):
     commissionDescription: Optional[str] = Field(None, description="Komisyon oranı açıklaması")
     latitude: Optional[float] = Field(None, description="Enlem")
     longitude: Optional[float] = Field(None, description="Boylam")
+    tax_office: Optional[str] = Field(None, description="Vergi dairesi")
+    tax_number: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
 
 
 class CorporateProfileUpdateReq(BaseModel):
@@ -110,6 +126,10 @@ class CorporateProfileUpdateReq(BaseModel):
     cityId: Optional[int] = Field(None, ge=1, description="İlçe ID")
     latitude: Optional[float] = Field(None, ge=-90, le=90, description="Enlem (-90 ile 90 arası)")
     longitude: Optional[float] = Field(None, ge=-180, le=180, description="Boylam (-180 ile 180 arası)")
+    tax_office: Optional[str] = Field(None, description="Vergi dairesi")
+    tax_number: Optional[str] = Field(None, description="Vergi numarası")
+    iban: Optional[str] = Field(None, description="IBAN")
+    resume: Optional[str] = Field(None, description="Özgeçmiş")
     
     model_config = ConfigDict(
         extra="forbid",
