@@ -68,6 +68,13 @@ def get_filestack_api_key() -> str:
         return "dummy-key-for-testing"
     return key
 
+def get_serpapi_key() -> str:
+    """SerpAPI key alır, yoksa hata fırlatır."""
+    key = os.getenv("SERPAPI_KEY", "")
+    if not key:
+        raise RuntimeError("SERPAPI_KEY environment variable must be set")
+    return key
+
 
 
 APP_ENV = get_app_env()
