@@ -174,8 +174,11 @@ async def corporate_get_jobs(corporate_id: str, limit: int = 50, offset: int = 0
             j.created_at AS "createdAt",
             j.image_file_ids AS "imageFileIds",
             j.delivery_date AS "deliveryDate",
-            j.delivery_time AS "deliveryTime"
+            j.delivery_time AS "deliveryTime",
+            cu.commission_rate AS "commissionRate",
+            cu.commission_description AS "commissionDescription"
         FROM admin_jobs j
+        LEFT JOIN corporate_users cu ON j.corporate_id = cu.id
         {where_clause}
         ORDER BY j.created_at DESC
         LIMIT ${i} OFFSET ${i + 1};
@@ -191,6 +194,9 @@ async def corporate_get_jobs(corporate_id: str, limit: int = 50, offset: int = 0
                 row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
             if row_dict.get("deliveryTime"):
                 row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
+            # Komisyon oranını float'a çevir (eğer varsa)
+            if row_dict.get("commissionRate") is not None:
+                row_dict["commissionRate"] = float(row_dict["commissionRate"])
             formatted_rows.append(row_dict)
         
         return True, formatted_rows
