@@ -1,6 +1,7 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 from uuid import UUID
 from app.utils.database import db_cursor
+from app.utils.database_async import fetch_all, fetch_one
 from app.utils.security import hash_pwd  # parolayı hashlemek için
 
 
@@ -371,3 +372,59 @@ async def update_dealer_profile(
         return {"success": True, "message": "Profil başarıyla güncellendi", "data": {}}
     except Exception as e:
         return {"success": False, "message": str(e), "data": {}}
+
+
+# === GET DEALER COURIERS GPS ===
+async def get_dealer_couriers_gps(dealer_id: str) -> Tuple[bool, Optional[List[Dict[str, Any]]], Optional[str]]:
+    """
+    Bayinin kendi kuryelerinin canlı GPS konumlarını getirir.
+    Returns: (success, couriers_gps_list_or_none, error_message)
+    """
+    try:
+        # Bayi kontrolü
+        dealer = await fetch_one("SELECT id FROM dealers WHERE id = $1", dealer_id)
+        if not dealer:
+            return False, None, "Bayi bulunamadı"
+        
+        # Bayinin kendi kuryelerinin GPS verilerini getir (driver_onboarding tablosundan)
+        rows = await fetch_all("""
+            SELECT 
+                d.id as courier_id,
+                CONCAT(d.first_name, ' ', d.last_name) as courier_name,
+                d.phone as courier_phone,
+                d.email as courier_email,
+                d.is_active,
+                d.deleted,
+                COALESCE(ds.online, FALSE) AS is_online,
+                g.latitude,
+                g.longitude,
+                g.updated_at as location_updated_at,
+                ob.vehicle_type,
+                ob.vehicle_capacity,
+                ob.state_id
+            FROM driver_onboarding ob
+            INNER JOIN drivers d ON d.id = ob.driver_id
+            LEFT JOIN gps_table g ON g.driver_id = d.id
+            LEFT JOIN driver_status ds ON ds.driver_id = d.id
+            WHERE ob.dealer_id = $1::uuid
+              AND (d.deleted IS NULL OR d.deleted = FALSE)
+            ORDER BY g.updated_at DESC NULLS LAST
+        """, dealer_id)
+        
+        # asyncpg.Record objelerini dict'e çevir ve UUID'leri string'e çevir
+        result = []
+        if rows:
+            for row in rows:
+                row_dict = dict(row)
+                # UUID'leri string'e çevir
+                if row_dict.get("courier_id"):
+                    row_dict["courier_id"] = str(row_dict["courier_id"])
+                # Timestamp'leri ISO formatına çevir
+                if row_dict.get("location_updated_at"):
+                    row_dict["location_updated_at"] = row_dict["location_updated_at"].isoformat() if hasattr(row_dict["location_updated_at"], "isoformat") else str(row_dict["location_updated_at"])
+                result.append(row_dict)
+        
+        return True, result, None
+        
+    except Exception as e:
+        return False, None, str(e)

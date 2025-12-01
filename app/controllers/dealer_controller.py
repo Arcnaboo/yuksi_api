@@ -50,3 +50,21 @@ async def update_dealer_profile(dealer_id: UUID, req) -> Dict[str, Any]:
         latitude=getattr(req, "latitude", None),
         longitude=getattr(req, "longitude", None),
     )
+
+
+async def get_dealer_couriers_gps(dealer_id: str) -> Dict[str, Any]:
+    """Bayinin kendi kuryelerinin GPS konumlarını getir controller"""
+    success, couriers_gps, error = await dealer_service.get_dealer_couriers_gps(dealer_id)
+    
+    if not success:
+        return {
+            "success": False,
+            "message": error or "Kurye GPS konumları getirilemedi",
+            "data": {"couriers": []}
+        }
+    
+    return {
+        "success": True,
+        "message": "Bayi kuryelerinin GPS konumları başarıyla getirildi",
+        "data": {"couriers": couriers_gps if couriers_gps else []}
+    }

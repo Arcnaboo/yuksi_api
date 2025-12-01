@@ -42,3 +42,19 @@ async def update_profile(
         raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
     return await ctrl.update_dealer_profile(UUID(dealer_id), req)
 
+
+@router.get(
+    "/couriers/gps",
+    summary="Bayi Kuryelerinin Canlı GPS Konumları",
+    description="Bayinin kendi kuryelerinin anlık GPS konumlarını getirir. Token'dan bayi ID'si alınır.",
+    dependencies=[Depends(require_roles(["Dealer", "Admin"]))]
+)
+async def get_dealer_couriers_gps(
+    claims: dict = Depends(require_roles(["Dealer", "Admin"]))
+):
+    """Bayinin kendi kuryelerinin canlı GPS konumlarını getir endpoint"""
+    dealer_id = claims.get("userId") or claims.get("sub")
+    if not dealer_id:
+        raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
+    
+    return await ctrl.get_dealer_couriers_gps(str(dealer_id))
