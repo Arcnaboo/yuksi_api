@@ -9,7 +9,6 @@ class CorporateUserCreate(BaseModel):
     phone: str = Field(..., min_length=7, description="Telefon numarası")
     first_name: str = Field(..., min_length=1, description="Ad")
     last_name: str = Field(..., min_length=1, description="Soyad")
-    commissionRate: Optional[float] = Field(None, ge=0, le=100, description="Komisyon oranı (yüzde, 0-100 arası)")
     countryId: Optional[int] = Field(None, ge=1, description="Ülke ID")
     stateId: Optional[int] = Field(None, ge=1, description="İl ID")
     cityId: Optional[int] = Field(None, ge=1, description="İlçe ID")
@@ -20,13 +19,6 @@ class CorporateUserCreate(BaseModel):
     tax_number: Optional[str] = Field(None, description="Vergi numarası")
     iban: Optional[str] = Field(None, description="IBAN")
     resume: Optional[str] = Field(None, description="Özgeçmiş")
-    
-    @field_validator('commissionRate')
-    @classmethod
-    def validate_commission_rate(cls, v):
-        if v is not None and (v < 0 or v > 100):
-            raise ValueError('Komisyon oranı 0-100 arasında olmalıdır')
-        return v
     
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
