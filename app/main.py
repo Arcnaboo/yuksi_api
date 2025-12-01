@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.routes import contact, general_setting,dealer ,notification, package, restaurant_menu
 from .routes import (auth,admin,campaign,company_package,extra_service, admin_job,driver,courier_package ,jobs, city_price,payments, system,restaurant_package_price,support_ticket,courier,carrier_type, geo, file, restaurant, subsection, 
-                     cargotype, banner,company, paytr_route,order, gps_route, courier_rating,courier_package_subscriptions, map, restaurant_job, dealer_job, dealer_restaurant, dealer_profile, message_route, pool, user, corporate, corporate_job, corporate_profile, vehicle_product, user_job)
+                     cargotype, banner,company, paytr_route,order, gps_route, courier_rating,courier_package_subscriptions, map, restaurant_job, dealer_job, dealer_restaurant, dealer_profile, message_route, pool, user, corporate, corporate_job, corporate_profile, vehicle_product, user_job, websocket)
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
 import logging
@@ -71,6 +71,14 @@ async def on_startup():
         # Başlangıçta veritabanı init hatasını görünür kılalım
         print(f"[BOOT][ERROR] init_db başarısız: {e}")
         raise
+    
+    # Periyodik rota kontrolü task'ını başlat (yedek mekanizma)
+    try:
+        from app.services.periodic_route_check import start_periodic_check
+        asyncio.create_task(start_periodic_check(interval_seconds=60))
+        print("[BOOT] Periodic route check started")
+    except Exception as e:
+        print(f"[BOOT][WARNING] Periodic route check failed to start: {e}")
 app.mount(
     "/paytr",
     StaticFiles(directory=str(PAYTR_DIR), html=True),
@@ -126,6 +134,7 @@ app.include_router(support_ticket.router)
 app.include_router(user.router)
 app.include_router(user_job.router)
 app.include_router(vehicle_product.router)
+app.include_router(websocket.router)
 
 setup_console_logging()
 
