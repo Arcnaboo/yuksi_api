@@ -227,6 +227,7 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
             
             # Yük için bir order oluştur (paket_servis tipinde, teslim_edildi durumunda)
             # Bu order sadece paket sayısını azaltmak için - mesafeye göre paket sayısı hesaplanacak
+            vehicle_type_value = vehicle_type_string or 'motorcycle'
             await execute("""
                 INSERT INTO orders (
                     restaurant_id, code, type, status, amount, 
@@ -239,10 +240,10 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
                     $1, $2, 'paket_servis', 'teslim_edildi', 0,
                     'Restaurant Yük', '0000000000', 'Yük Teslimatı', 'Yük Teslimatı',
                     $3, $4, $5, $6,
-                    'kurye', vehicle_type_string or 'motorcycle',
+                    'kurye', $7,
                     NOW(), NOW()
                 )
-            """, restaurant_id, order_code, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng)
+            """, restaurant_id, order_code, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, vehicle_type_value)
 
         return True, job_id
 
