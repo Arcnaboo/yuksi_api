@@ -174,8 +174,11 @@ async def dealer_get_jobs(dealer_id: str, limit: int = 50, offset: int = 0, deli
             j.created_at AS "createdAt",
             j.image_file_ids AS "imageFileIds",
             j.delivery_date AS "deliveryDate",
-            j.delivery_time AS "deliveryTime"
+            j.delivery_time AS "deliveryTime",
+            d.commission_rate AS "commissionRate",
+            d.commission_description AS "commissionDescription"
         FROM admin_jobs j
+        LEFT JOIN dealers d ON j.dealer_id = d.id
         {where_clause}
         ORDER BY j.created_at DESC
         LIMIT ${i} OFFSET ${i + 1};
@@ -191,6 +194,9 @@ async def dealer_get_jobs(dealer_id: str, limit: int = 50, offset: int = 0, deli
                 row_dict["deliveryDate"] = row_dict["deliveryDate"].strftime("%d.%m.%Y")
             if row_dict.get("deliveryTime"):
                 row_dict["deliveryTime"] = row_dict["deliveryTime"].strftime("%H:%M")
+            # Commission rate'i float'a çevir (None ise None kalır)
+            if row_dict.get("commissionRate") is not None:
+                row_dict["commissionRate"] = float(row_dict["commissionRate"])
             formatted_rows.append(row_dict)
         
         return True, formatted_rows
