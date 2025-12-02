@@ -12,6 +12,17 @@ async def upload_file(
     # Tüm iş mantığı controller'da
     return await handle_upload(user_id=user_id, file=file)
 
+@router.post("/upload-multiple")
+async def upload_multiple_files(
+    user_id: str = Form(...),
+    files: list[UploadFile] = File(...),
+):
+    results = []
+    for file in files:
+        result = await handle_upload(user_id=user_id, file=file)
+        results.append(result)
+    return results
+
 @router.get("/{file_id}")
 async def get_file_by_id(
     file_id: UUID = Path(..., description="File ID (UUID)")
