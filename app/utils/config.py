@@ -75,6 +75,13 @@ def get_serpapi_key() -> str:
         raise RuntimeError("SERPAPI_KEY environment variable must be set")
     return key
 
+def get_openai_api_key() -> str:
+    """OpenAI API key alır, yoksa hata fırlatır."""
+    key = os.getenv("OPENAI_API_KEY", "")
+    if not key:
+        raise RuntimeError("OPENAI_API_KEY environment değişkeni tanımlanmalıdır (.env dosyasına ekleyin)")
+    return key
+
 
 
 APP_ENV = get_app_env()
