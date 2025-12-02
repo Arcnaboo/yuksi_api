@@ -372,3 +372,52 @@ async def user_delete_job(job_id: str, user_id: str) -> Tuple[bool, Optional[str
     except Exception as e:
         return False, str(e)
 
+
+# --- CARGO SCAN (Geçici Fotoğraf Analizi) ---
+async def user_cargo_scan_temporary(file_data: bytes, filename: str, mimetype: str) -> Tuple[bool, Dict[str, Any] | str]:
+    """
+    Geçici fotoğraf yükleme ve AI ile araç tipi analizi.
+    Fotoğraf DB'ye kaydedilmez, sadece analiz için kullanılır.
+    
+    Args:
+        file_data: Yüklenen dosyanın byte verisi
+        filename: Dosya adı
+        mimetype: Dosya MIME tipi
+        
+    Returns:
+        Tuple[bool, dict | str]: (success, result veya error_message)
+    """
+    try:
+        # Filestack'e geçici yükleme (DB'ye kaydetme)
+        from app.services.filestack_service import FilestackService
+        
+        fs = FilestackService()
+        meta = fs.upload_bytes(
+            data=file_data,
+            filename=filename,
+            mimetype=mimetype or "image/jpeg",
+        )
+        
+        image_url = meta["url"]
+        
+        # AI analizi
+        from app.services.ai_cargo_service import analyze_cargo
+        analysis = await analyze_cargo(image_url)
+        
+        # Başarılı response
+        return True, {
+            "vehicleTemplate": analysis["vehicle"],
+            "confidence": analysis["confidence"],
+            "reason": analysis["reason"],
+            "original_vehicle": analysis["original_vehicle"]
+        }
+        
+    except Exception as e:
+        error_msg = str(e)
+        # OpenAI API hatası mı kontrol et
+        if "OpenAI" in error_msg or "openai" in error_msg.lower():
+            return False, f"AI analiz servisi hatası: {error_msg}"
+        elif "Filestack" in error_msg or "filestack" in error_msg.lower():
+            return False, f"Dosya yükleme hatası: {error_msg}"
+        else:
+            return False, f"Yük analizi başarısız: {error_msg}"

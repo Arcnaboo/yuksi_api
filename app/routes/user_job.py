@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Path, Body, Depends
+from fastapi import APIRouter, Query, Path, Body, Depends, UploadFile, File
 from typing import Any
 from app.controllers import user_job_controller as ctrl
 from app.models.user_job_model import UserJobUpdateReq, UserJobCreate
@@ -48,6 +48,32 @@ async def get_user_jobs(
 ):
     user_id = claims.get("userId") or claims.get("sub")
     return await ctrl.user_get_jobs(str(user_id), limit, offset, deliveryType)
+
+# === CARGO SCAN (Yük Tarat - Araç Tipi Öner) ===
+@router.post(
+    "/cargo-scan",
+    summary="Yük Tarat - Araç Tipi Öner (Bireysel Kullanıcı)",
+    description="Yük fotoğrafını analiz eder ve uygun araç tipini önerir. Fotoğraf sisteme kaydedilmez, sadece analiz için kullanılır.",
+)
+async def cargo_scan(
+    file: UploadFile = File(..., description="Yük fotoğrafı"),
+    claims: dict = Depends(require_roles(["Default"]))
+):
+    """
+    Yük fotoğrafını AI ile analiz eder ve uygun araç tipini önerir.
+    
+    **Kullanım:**
+    1. Kullanıcı fotoğraf yükler
+    2. AI analiz eder ve araç tipi önerir (örnek: "panelvan")
+    3. Frontend job formunda `vehicleTemplate` alanını otomatik doldurur
+    4. Kullanıcı isterse değiştirebilir
+    
+    **Response:**
+    - `vehicleTemplate`: Önerilen araç tipi (motorcycle, minivan, panelvan, kamyonet, kamyon)
+    - `confidence`: Güven seviyesi (0-100)
+    - `reason`: Öneri nedeni
+    """
+    return await ctrl.user_cargo_scan(file)
 
 # === GET (tek kayıt) ===
 @router.get(
