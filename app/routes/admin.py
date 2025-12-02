@@ -130,3 +130,23 @@ async def get_all_users_commissions(
         offset=offset,
         user_type=user_type
     )
+
+@router.get(
+    "/all-jobs",
+    summary="Tüm İşleri Getir (Admin)",
+    description="Admin tarafından tüm işleri getirir. İş durumu ve arama parametreleri ile filtreleme yapılabilir. SADECE ADMIN ERİŞEBİLİR.",
+    dependencies=[Depends(require_roles(["Admin"]))]
+)
+async def get_all_jobs(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    deliveryType: str | None = Query(None)
+):
+    """
+    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
+    """
+    return await admin_controller.get_all_jobs(
+        limit=limit,
+        offset=offset,
+        delivery_type=deliveryType
+    )

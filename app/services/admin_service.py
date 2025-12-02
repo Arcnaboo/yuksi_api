@@ -35,3 +35,77 @@ async def register_admin(first_name: str, last_name: str, email: str, password: 
 
     except Exception as e:
         return None, str(e)
+
+async def get_all_jobs(limit: int = 50, offset: int = 0, delivery_type: str | None = None) -> Tuple[Optional[list], Optional[str]]:
+    """Tüm işleri getirir"""
+    try:
+        filters = []
+        params = []
+        i = 1
+
+        if delivery_type:
+            filters.append(f"delivery_type = ${i}")
+            params.append(delivery_type)
+            i += 1
+
+        where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+        params.extend([limit, offset])
+
+        jobs: list[dict[str, Any]] = []
+
+        admin_query = f"""
+            SELECT
+                j.id,
+                j.delivery_type AS "deliveryType",
+                j.carrier_type AS "carrierType",
+                j.vehicle_type AS "vehicleType",
+                j.pickup_address AS "pickupAddress",
+                j.dropoff_address AS "dropoffAddress",
+                j.special_notes AS "specialNotes",
+                j.total_price AS "totalPrice",
+                j.payment_method AS "paymentMethod",
+                j.created_at AS "createdAt",
+                j.image_file_ids AS "imageFileIds",
+                j.delivery_date AS "deliveryDate",
+                j.delivery_time AS "deliveryTime",
+                j.pickup_coordinates AS "pickupCoordinates",
+                j.dropoff_coordinates AS "dropoffCoordinates"
+            FROM admin_jobs j
+            {where_clause}
+            ORDER BY j.created_at DESC
+            LIMIT ${i} OFFSET ${i + 1};
+        """
+
+        admin_rows = await db.fetch_all(admin_query, *params)
+
+        user_query = f"""
+            SELECT
+                j.id,
+                j.delivery_type AS "deliveryType",
+                j.carrier_type AS "carrierType",
+                j.vehicle_type AS "vehicleType",
+                j.pickup_address AS "pickupAddress",
+                j.dropoff_address AS "dropoffAddress",
+                j.special_notes AS "specialNotes",
+                j.total_price AS "totalPrice",
+                j.payment_method AS "paymentMethod",
+                j.created_at AS "createdAt",
+                j.image_file_ids AS "imageFileIds",
+                j.delivery_date AS "deliveryDate",
+                j.delivery_time AS "deliveryTime",
+                j.pickup_coordinates AS "pickupCoordinates",
+                j.dropoff_coordinates AS "dropoffCoordinates"
+            FROM user_jobs j
+            {where_clause}
+            ORDER BY j.created_at DESC
+            LIMIT ${i} OFFSET ${i + 1};
+        """
+
+        user_rows = await db.fetch_all(user_query, *params)
+
+        combined_rows = admin_rows + user_rows
+        combined_rows.sort(key=lambda x: x["createdAt"], reverse=True)
+        jobs = combined_rows[:limit]
+        return jobs, None
+    except Exception as e:
+        return None, str(e)
