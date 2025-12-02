@@ -50,3 +50,44 @@ async def login(email: str, password: str) -> Dict[str, Any]:
         "data": result
     }
 
+
+async def get_user_profile(user_id: str) -> Dict[str, Any]:
+    """Bireysel kullanıcı profil görüntüleme controller"""
+    profile = await user_service.get_user_profile(user_id)
+    if not profile:
+        return {
+            "success": False,
+            "message": "Kullanıcı bulunamadı",
+            "data": {}
+        }
+    return {
+        "success": True,
+        "message": "Profil başarıyla getirildi",
+        "data": profile
+    }
+
+
+async def update_user_profile(user_id: str, req) -> Dict[str, Any]:
+    """Bireysel kullanıcı profil güncelleme controller"""
+    ok, err = await user_service.update_user_profile(
+        user_id,
+        email=getattr(req, "email", None),
+        phone=getattr(req, "phone", None),
+        first_name=getattr(req, "firstName", None),
+        last_name=getattr(req, "lastName", None),
+    )
+    
+    if not ok:
+        return {
+            "success": False,
+            "message": err or "Profil güncellenemedi",
+            "data": {}
+        }
+    
+    # Güncellenmiş profili getir
+    updated_profile = await user_service.get_user_profile(user_id)
+    return {
+        "success": True,
+        "message": "Profil başarıyla güncellendi",
+        "data": updated_profile or {}
+    }
