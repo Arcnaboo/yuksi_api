@@ -93,7 +93,6 @@ async def delete_courier_user(user_id: UUID):
 
 
 async def update_courier_profile(user_id: str, req):
-    claims = req
     err = await svc.update_courier_profile(
         driver_id=user_id,
         first_name=req.firstName,
@@ -104,7 +103,21 @@ async def update_courier_profile(user_id: str, req):
     )
     if err:
         return {"success": False, "message": err, "data": {}}
-    return {"success": True, "message": "Courier profile updated", "data": {}}
+    
+    # Güncellenmiş profili getir
+    updated_profile = await svc.get_courier(user_id)
+    if not updated_profile:
+        return {
+            "success": True,
+            "message": "Courier profile updated",
+            "data": {}
+        }
+    
+    return {
+        "success": True,
+        "message": "Courier profile updated",
+        "data": updated_profile
+    }
 
 async def get_dealers_by_state(state_id: int):
     dealers = await svc.get_dealers_by_state(state_id)
