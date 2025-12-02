@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Path, Body, Depends
+from fastapi import APIRouter, Path, Body, Depends, HTTPException
 from fastapi.params import Query
 from ..models.courier_model import (
     CourierOrderStatusChangeReq,
@@ -245,9 +245,9 @@ async def courier_register3(
 
 
 @router.get(
-    "/{user_id}/profile",
+    "/profile",
     summary="Get Courier Profile",
-    description="Fetches the profile information of a courier by user ID.",
+    description="Kurye profil bilgilerini getirir. Token'dan kurye ID'si alınır.",
     responses={
         200: {
             "description": "Courier profile retrieved successfully.",
@@ -295,10 +295,13 @@ async def courier_register3(
     },
 )
 async def get_courier_profile(
-    user_id: str = Path(..., description="The UUID of the courier user"),
-    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
+    claims: dict = Depends(auth_controller.require_roles(["Courier"]))
 ):
-    return await ctrl.get_courier_profile(user_id)
+    """Kurye profil görüntüleme - Token'dan kurye ID'si alınır"""
+    courier_id = claims.get("userId") or claims.get("sub")
+    if not courier_id:
+        raise HTTPException(status_code=403, detail="Token'da kurye ID bulunamadı")
+    return await ctrl.get_courier_profile(str(courier_id))
 
 
 @router.get(
@@ -534,9 +537,9 @@ async def delete_courier_user(
     return await ctrl.delete_courier_user(user_id)
 
 @router.put(
-    "/{user_id}/profile/update",
+    "/profile",
     summary="Update Courier Profile",
-    description="Updates the profile information of a courier by user ID.",
+    description="Kurye profil bilgilerini günceller. Token'dan kurye ID'si alınır.",
     responses={
         200: {
             "description": "Courier profile updated successfully.",
@@ -566,11 +569,14 @@ async def delete_courier_user(
     },
 )
 async def update_courier_profile(
-    user_id: str = Path(..., description="The UUID of the courier user"),
     req: CourierProfileUpdateReq = Body(...),
-    _claims = Depends(auth_controller.require_roles(["Courier","Admin"]))
+    claims: dict = Depends(auth_controller.require_roles(["Courier"]))
 ):
-    return await ctrl.update_courier_profile(user_id, req)
+    """Kurye profil güncelleme - Token'dan kurye ID'si alınır"""
+    courier_id = claims.get("userId") or claims.get("sub")
+    if not courier_id:
+        raise HTTPException(status_code=403, detail="Token'da kurye ID bulunamadı")
+    return await ctrl.update_courier_profile(str(courier_id), req)
 
 
 @router.get(

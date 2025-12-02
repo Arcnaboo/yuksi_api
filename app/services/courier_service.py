@@ -377,34 +377,44 @@ async def update_courier_profile(
         if dup:
             return "Bu telefon numarası zaten kullanılıyor"
 
-    sets = []
-    params = []
+    # Drivers tablosunu güncelle
+    driver_sets = []
+    driver_params = []
     i = 1
 
     if first_name is not None:
-        sets.append(f"first_name = ${i}"); params.append(first_name.strip()); i += 1
+        driver_sets.append(f"first_name = ${i}"); driver_params.append(first_name.strip()); i += 1
     if last_name is not None:
-        sets.append(f"last_name  = ${i}"); params.append(last_name.strip());  i += 1
+        driver_sets.append(f"last_name  = ${i}"); driver_params.append(last_name.strip());  i += 1
     if email is not None:
-        sets.append(f"email      = ${i}"); params.append(email.strip().lower()); i += 1
+        driver_sets.append(f"email      = ${i}"); driver_params.append(email.strip().lower()); i += 1
     if phone is not None:
-        sets.append(f"phone      = ${i}"); params.append(phone.strip()); i += 1
+        driver_sets.append(f"phone      = ${i}"); driver_params.append(phone.strip()); i += 1
+
+    # Drivers tablosunda güncellenecek alan varsa güncelle
+    if driver_sets:
+        driver_sql = f"""
+        UPDATE drivers
+        SET {', '.join(driver_sets)}
+        WHERE id = ${i}::uuid
+        """
+        driver_params.append(driver_id)
+        await execute(driver_sql, *driver_params)
+
+    # Country_id varsa driver_onboarding tablosunu güncelle
     if country_id is not None:
-        sets.append(f"country_id = ${i}"); params.append(country_id); i += 1
+        await execute(
+            """INSERT INTO driver_onboarding (driver_id, country_id)
+               VALUES ($1::uuid, $2)
+               ON CONFLICT (driver_id) DO UPDATE
+                 SET country_id = EXCLUDED.country_id;""",
+            driver_id, country_id
+        )
 
-    if not sets:
-        return None  
+    # Hiçbir alan güncellenmediyse
+    if not driver_sets and country_id is None:
+        return None
 
-    sets.append("updated_at = NOW()")
-
-    sql = f"""
-    UPDATE drivers
-    SET {', '.join(sets)}
-    WHERE id = ${i}::uuid
-    """
-    params.append(driver_id)
-
-    await execute(sql, *params)
     return None
 
 async def get_dealers_by_state(state_id: int) -> List[Dict[str, Any]]:
