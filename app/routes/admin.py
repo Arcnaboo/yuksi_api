@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, Depends, HTTPException, Path, Body
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 from app.models.admin_model import AdminRegisterReq
 from app.models.corporate_user_model import CommissionRateSet
@@ -140,7 +140,8 @@ async def get_all_users_commissions(
 async def get_all_jobs(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    deliveryType: str | None = Query(None)
+    deliveryType: str | None = Query(None),
+    job_type: Literal["User", "Restaurant", "Dealer", "Corporate"] | None = Query(None)
 ):
     """
     Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
@@ -148,5 +149,6 @@ async def get_all_jobs(
     return await admin_controller.get_all_jobs(
         limit=limit,
         offset=offset,
-        delivery_type=deliveryType
+        delivery_type=deliveryType,
+        job_type=job_type
     )
