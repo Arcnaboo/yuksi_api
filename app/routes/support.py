@@ -5,7 +5,7 @@ from app.models.support_model import SupportUserCreate, SupportUserUpdate
 from app.controllers import support_user_controller, support_permission_controller
 from app.controllers.auth_controller import require_roles
 
-router = APIRouter(prefix="/api/support", tags=["Support"])
+router = APIRouter(prefix="/api/admin/support", tags=["Support"])
 
 @router.post(
     "",
@@ -34,6 +34,42 @@ async def create_support_user(
         phone=req.phone,
         access=req.access
     )
+
+@router.get(
+    "",
+    summary="Tüm Çağrı Merkezi Üyelerini Getir (Admin)",
+    description="Admin tarafından tüm çağrı merkezi üyelerini listeler.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+)
+async def get_all_support_users(
+    limit: int = Query(50, ge=1, le=200, description="Maksimum kayıt sayısı"),
+    offset: int = Query(0, ge=0, description="Sayfalama offset"),
+    claims: dict = Depends(require_roles(["Admin"]))
+):
+    """
+    Tüm çağrı merkezi üyelerini getirir.
+    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
+    """
+    return await support_permission_controller.get_all_support_permissions(
+        limit=limit,
+        offset=offset
+    )
+
+@router.get(
+    "/{user_id}",
+    summary="Support Üyesi Getir (Admin)",
+    description="Admin tarafından support kullanıcısının bilgilerini getirir.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+)
+async def get_support_user(
+    user_id: UUID = Path(..., description="Support kullanıcı ID'si"),
+    claims: dict = Depends(require_roles(["Admin"]))
+):
+    """
+    Support kullanıcısının bilgilerini getirir.
+    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
+    """
+    return await support_permission_controller.get_support_permissions(str(user_id))
 
 @router.put(
     "/{user_id}",
@@ -70,46 +106,10 @@ async def update_support_user(
         access=req.access
     )
 
-@router.get(
-    "/permissions",
-    summary="Tüm Çağrı Merkezi Üyelerinin Yetkilerini Getir (Admin)",
-    description="Admin tarafından tüm çağrı merkezi üyelerinin yetkilerini listeler.",
-    dependencies=[Depends(require_roles(["Admin"]))],
-)
-async def get_all_support_permissions(
-    limit: int = Query(50, ge=1, le=200, description="Maksimum kayıt sayısı"),
-    offset: int = Query(0, ge=0, description="Sayfalama offset"),
-    claims: dict = Depends(require_roles(["Admin"]))
-):
-    """
-    Tüm çağrı merkezi üyelerinin yetkilerini getirir.
-    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
-    """
-    return await support_permission_controller.get_all_support_permissions(
-        limit=limit,
-        offset=offset
-    )
-
-@router.get(
-    "/{user_id}/permissions",
-    summary="Support Üyesi Yetkilerini Getir (Admin)",
-    description="Admin tarafından support kullanıcısının yetkilerini getirir.",
-    dependencies=[Depends(require_roles(["Admin"]))],
-)
-async def get_support_permissions(
-    user_id: UUID = Path(..., description="Support kullanıcı ID'si"),
-    claims: dict = Depends(require_roles(["Admin"]))
-):
-    """
-    Support kullanıcısının yetkilerini getirir.
-    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
-    """
-    return await support_permission_controller.get_support_permissions(str(user_id))
-
 @router.delete(
     "/{user_id}",
-    summary="Support Üyesi Sil (Admin - Soft Delete)",
-    description="Admin tarafından support kullanıcısı silinir (soft delete). Kullanıcı veritabanından tamamen silinmez, sadece deleted=True olarak işaretlenir.",
+    summary="Support Üyesi Sil (Admin)",
+    description="Admin tarafından support kullanıcısı silinir.",
     dependencies=[Depends(require_roles(["Admin"]))],
 )
 async def delete_support_user(
@@ -117,15 +117,8 @@ async def delete_support_user(
     claims: dict = Depends(require_roles(["Admin"]))
 ):
     """
-    Support kullanıcısını siler (soft delete).
+    Support kullanıcısını siler.
     Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
-    
-    **Soft Delete:**
-    - Kullanıcı veritabanından tamamen silinmez
-    - `deleted = TRUE` ve `is_active = FALSE` olarak işaretlenir
-    - `deleted_at` tarihi kaydedilir
-    - Silinen kullanıcılar login yapamaz
-    - Silinen kullanıcılar listeleme endpoint'lerinde görünmez
     """
     return await support_user_controller.delete_support_user(str(user_id))
 
