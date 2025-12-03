@@ -32,7 +32,7 @@ tags_metadata = [
     },
 ]
 '''
-
+# ornek comment
 def setup_console_logging():
     root = logging.getLogger()
     if root.hasHandlers():
