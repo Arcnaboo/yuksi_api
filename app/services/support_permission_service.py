@@ -18,11 +18,11 @@ async def update_support_permissions(
     try:
         # Kullanıcı var mı kontrol et
         user = await fetch_one(
-            "SELECT id FROM support_users WHERE id = $1;",
+            "SELECT id FROM support_users WHERE id = $1 AND (deleted IS NULL OR deleted = FALSE);",
             support_user_id
         )
         if not user:
-            return False, "Support kullanıcısı bulunamadı."
+            return False, "Support kullanıcısı bulunamadı veya silinmiş."
         
         # Access validasyonu (1-7 arası olmalı)
         if access is None:
@@ -82,7 +82,7 @@ async def get_support_permissions(
             """
             SELECT id, first_name, last_name, email, phone, is_active, access, created_at, updated_at
             FROM support_users
-            WHERE id = $1;
+            WHERE id = $1 AND (deleted IS NULL OR deleted = FALSE);
             """,
             support_user_id
         )
@@ -127,7 +127,7 @@ async def check_support_module(
     """
     try:
         row = await fetch_one(
-            "SELECT access FROM support_users WHERE id = $1 AND is_active = TRUE;",
+            "SELECT access FROM support_users WHERE id = $1 AND is_active = TRUE AND (deleted IS NULL OR deleted = FALSE);",
             support_user_id
         )
         
@@ -162,6 +162,7 @@ async def get_all_support_permissions(
             """
             SELECT id, first_name, last_name, email, phone, is_active, access, created_at, updated_at
             FROM support_users
+            WHERE (deleted IS NULL OR deleted = FALSE)
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2;
             """,

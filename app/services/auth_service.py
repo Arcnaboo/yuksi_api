@@ -152,10 +152,10 @@ async def login(email: str, password: str):
 
     # Support (support_users table)
     s = await fetch_one(
-        "SELECT id, email, password_hash, is_active FROM support_users WHERE email=$1;", email
+        "SELECT id, email, password_hash, is_active, deleted FROM support_users WHERE email=$1 AND (deleted IS NULL OR deleted = FALSE);", email
     )
     if s and verify_pwd(password, s["password_hash"]):
-        if not s.get("is_active", True):
+        if s.get("deleted") or not s.get("is_active", True):
             return "banned"
         return await _generate_tokens_net_style(
             user_id=str(s["id"]),

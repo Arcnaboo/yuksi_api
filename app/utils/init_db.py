@@ -413,6 +413,8 @@ CREATE TABLE IF NOT EXISTS support_users (
     phone          TEXT NOT NULL,
     is_active      BOOLEAN DEFAULT TRUE,
     access         INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    deleted        BOOLEAN DEFAULT FALSE,
+    deleted_at     TIMESTAMPTZ,
     created_at     TIMESTAMPTZ DEFAULT NOW(),
     updated_at     TIMESTAMPTZ DEFAULT NOW()
 );
@@ -420,6 +422,12 @@ CREATE TABLE IF NOT EXISTS support_users (
 -- Support users access kolonu (mevcut tablolara eklemek için)
 ALTER TABLE support_users
     ADD COLUMN IF NOT EXISTS access INTEGER[] DEFAULT ARRAY[]::INTEGER[];
+
+-- Support users soft delete kolonları (mevcut tablolara eklemek için)
+ALTER TABLE support_users
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN DEFAULT FALSE;
+ALTER TABLE support_users
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS packages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
