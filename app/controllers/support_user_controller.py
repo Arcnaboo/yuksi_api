@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from app.services import support_user_service as svc
 
 async def create_support_user(
@@ -6,7 +6,8 @@ async def create_support_user(
     last_name: str,
     email: str,
     password: str,
-    phone: str
+    phone: str,
+    access: List[int] = None
 ) -> Dict[str, Any]:
     """
     Çağrı merkezi üyesi oluşturma controller'ı
@@ -16,7 +17,8 @@ async def create_support_user(
         last_name=last_name,
         email=email,
         password=password,
-        phone=phone
+        phone=phone,
+        access=access or []
     )
     
     if not success:

@@ -412,9 +412,14 @@ CREATE TABLE IF NOT EXISTS support_users (
     password_hash  TEXT NOT NULL,
     phone          TEXT NOT NULL,
     is_active      BOOLEAN DEFAULT TRUE,
+    access         INTEGER[] DEFAULT ARRAY[]::INTEGER[],
     created_at     TIMESTAMPTZ DEFAULT NOW(),
     updated_at     TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Support users access kolonu (mevcut tablolara eklemek için)
+ALTER TABLE support_users
+    ADD COLUMN IF NOT EXISTS access INTEGER[] DEFAULT ARRAY[]::INTEGER[];
 
 CREATE TABLE IF NOT EXISTS packages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

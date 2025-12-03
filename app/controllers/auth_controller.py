@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status, status,Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from ..utils.security import decode_jwt
 from ..services import auth_service
+from ..services import support_permission_service as support_perm_svc
 
 http_bearer = HTTPBearer(auto_error=False)
 
@@ -69,3 +70,64 @@ async def logout(refresh_token: str):
     if not ok:
         return {"success": False, "message": "Refresh token already invalid or not found", "data": {}}
     return {"success": True, "message": "Logged out", "data": {}}
+
+
+def require_support_module(module_number: int):
+    """
+    Support kullanıcısının belirli bir modüle erişim yetkisi var mı kontrol eder.
+    
+    Args:
+        module_number: Modül numarası (1-7)
+            - 1: Kuryeler
+            - 2: Yükler (Bayiler, Kurumsal, Bireysel)
+            - 3: Restoranlar
+            - 4: Ödemeler
+            - 5: Taşıyıcılar
+            - 6: Siparişler
+            - 7: Ticari kısım
+    
+    Returns:
+        Async dependency function that checks module access
+    """
+    async def _dep(credentials: HTTPAuthorizationCredentials = Security(http_bearer)):
+        if not credentials or not credentials.credentials:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
+        token = credentials.credentials
+        payload = decode_jwt(token)
+        if not payload:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+        # Support rolü kontrolü
+        roles = payload.get("role") or payload.get("roles") or []
+        if isinstance(roles, str):
+            roles = [roles]
+        
+        if "Support" not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bu endpoint'e sadece Support kullanıcıları erişebilir"
+            )
+        
+        # Support kullanıcı ID'si
+        support_user_id = payload.get("userId") or payload.get("sub")
+        if not support_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token'da kullanıcı ID bulunamadı"
+            )
+        
+        # Modül yetkisi kontrolü (async)
+        has_permission = await support_perm_svc.check_support_module(
+            support_user_id=str(support_user_id),
+            module_number=module_number
+        )
+        
+        if not has_permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Bu modüle ({module_number}) erişim yetkiniz bulunmamaktadır"
+            )
+        
+        return payload
+    
+    return _dep
