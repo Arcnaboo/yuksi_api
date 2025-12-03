@@ -3,7 +3,8 @@ from typing import Literal, Optional
 from uuid import UUID
 from app.models.admin_model import AdminRegisterReq
 from app.models.corporate_user_model import CommissionRateSet
-from app.controllers import admin_controller, admin_user_controller
+from app.models.support_model import SupportUserCreate
+from app.controllers import admin_controller, admin_user_controller, support_user_controller
 from app.controllers.auth_controller import require_roles
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
@@ -11,6 +12,33 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 @router.post("/register")
 async def admin_register(req: AdminRegisterReq):
     return await admin_controller.register_admin(req.first_name,req.last_name, req.email, req.password)
+
+@router.post(
+    "/support",
+    summary="Çağrı Merkezi Üyesi Oluştur (Admin)",
+    description="Admin tarafından çağrı merkezi için yeni bir üye oluşturulur. Bu üye daha sonra login yapabilir ve 'Support' rolü ile sisteme erişebilir.",
+    dependencies=[Depends(require_roles(["Admin"]))],
+)
+async def create_support_user(
+    req: SupportUserCreate = Body(...),
+    claims: dict = Depends(require_roles(["Admin"]))
+):
+    """
+    Çağrı merkezi üyesi oluşturma endpoint'i.
+    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
+    
+    **Oluşturulan üye:**
+    - Email ve şifre ile login yapabilir
+    - Rolü: "Support" olacak
+    - Sadece çağrı merkezi yetkileri olacak
+    """
+    return await support_user_controller.create_support_user(
+        first_name=req.first_name,
+        last_name=req.last_name,
+        email=req.email,
+        password=req.password,
+        phone=req.phone
+    )
 
 @router.get(
     "/users/all",

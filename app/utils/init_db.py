@@ -404,6 +404,18 @@ CREATE TABLE IF NOT EXISTS system_admins (
 
 );
 
+CREATE TABLE IF NOT EXISTS support_users (
+    id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    first_name     TEXT NOT NULL,
+    last_name      TEXT NOT NULL,
+    email          TEXT UNIQUE NOT NULL,
+    password_hash  TEXT NOT NULL,
+    phone          TEXT NOT NULL,
+    is_active      BOOLEAN DEFAULT TRUE,
+    created_at     TIMESTAMPTZ DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS packages (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     carrier TEXT NOT NULL,
