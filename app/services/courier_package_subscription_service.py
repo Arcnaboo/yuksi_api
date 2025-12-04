@@ -19,8 +19,8 @@ async def create_subscription(data: dict) -> Dict[str, Any]:
 
             cur.execute("""
                 INSERT INTO courier_subscription_requests
-                (courier_id, package_id, start_date, end_date, payment_status)
-                VALUES (%(courier_id)s, %(package_id)s, %(start)s, %(end)s, 'pending')
+                (courier_id, package_id, start_date, end_date, payment_status, is_active)
+                VALUES (%(courier_id)s, %(package_id)s, %(start)s, %(end)s, 'pending', FALSE)
                 RETURNING id;
             """, {
                 "courier_id": data["courier_id"],
@@ -45,7 +45,8 @@ async def create_subscription(data: dict) -> Dict[str, Any]:
             "message": "Request created",
             "data": {
                 "request_id": request_id,
-                "merchant_oid": merchant_oid
+                "merchant_oid": merchant_oid,
+                "package_details": await get_package_by_id(data["package_id"])
             }
         }
 

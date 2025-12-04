@@ -590,7 +590,8 @@ CREATE TABLE IF NOT EXISTS courier_subscription_requests (
 
     merchant_oid TEXT UNIQUE,
     payment_status TEXT DEFAULT 'pending',
-    payment_date TIMESTAMPTZ,
+
+    is_active BOOLEAN DEFAULT TRUE,
 
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
