@@ -580,6 +580,21 @@ CREATE TABLE IF NOT EXISTS courier_packages (
     duration_days INT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS courier_subscription_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    courier_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    package_id UUID NOT NULL REFERENCES courier_packages(id) ON DELETE CASCADE,
+
+    start_date TIMESTAMPTZ NOT NULL,
+    end_date   TIMESTAMPTZ NOT NULL,
+
+    merchant_oid TEXT UNIQUE,
+    payment_status TEXT DEFAULT 'pending',
+    payment_date TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS courier_package_subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     courier_id UUID REFERENCES drivers(id) ON DELETE CASCADE,
