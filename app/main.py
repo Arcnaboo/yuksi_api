@@ -3,7 +3,7 @@ from fastapi import FastAPI,Request,HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.routes import contact, general_setting,dealer ,notification, package, restaurant_menu
-from .routes import (auth,admin,campaign,company_package,extra_service, admin_job,driver,courier_package ,jobs, city_price,payments, system,restaurant_package_price,support_ticket,support,courier,carrier_type, geo, file, restaurant, subsection, 
+from .routes import (auth,admin,campaign,company_package,extra_service, admin_job,driver,courier_package ,jobs, city_price,payments, system,restaurant_package_price,support_ticket,support,support_module,courier,carrier_type, geo, file, restaurant, subsection, 
                      cargotype, banner,company, paytr_route,order, gps_route, courier_rating,courier_package_subscriptions, map, restaurant_job, dealer_job, dealer_restaurant, dealer_profile, message_route, pool, user, corporate, corporate_job, corporate_profile, vehicle_product, user_job, websocket)
 from .utils.init_db import init_db
 from app.utils.config import APP_ENV, get_database_url
@@ -131,6 +131,7 @@ app.include_router(restaurant_menu.router)
 app.include_router(restaurant_package_price.router)
 app.include_router(subsection.router)
 app.include_router(support.router)
+app.include_router(support_module.router)
 app.include_router(support_ticket.router)
 app.include_router(user.router)
 app.include_router(user_job.router)
