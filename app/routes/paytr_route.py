@@ -8,6 +8,6 @@ router = APIRouter(prefix="/api/Paytr", tags=["PayTR"])
 def create_payment(req: PaymentRequest = Body(...)):
     return ctrl.init_payment(req)
 
-@router.post("/Callback", summary="Handle PayTR callback")
+@router.post("/allback", summary="Handle PayTR callback")
 async def callback(request: Request):
     return await ctrl.handle_callback(request)
