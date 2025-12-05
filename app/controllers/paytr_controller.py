@@ -59,6 +59,13 @@ async def handle_callback(request: Request):
                 "start": row["start_date"],
                 "end": row["end_date"],
             })
+            row2 = cur.fetchone()
+            request_id = row2["id"]
+            cur.execute("""
+                UPDATE courier_subscription_requests
+                SET payment_status = "completed", is_active = TRUE
+                WHERE id = %s
+            """, {request_id})
         return "OK"
     else:
         logging.info(f"callback failed")
