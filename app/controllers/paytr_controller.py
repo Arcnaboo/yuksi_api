@@ -7,7 +7,7 @@ import logging
 from app.utils.database import db_cursor
 from datetime import datetime, date, time, timedelta
 from zoneinfo import ZoneInfo
-from app.services.courier_package_service import get_package_by_id
+from fastapi import Response
 load_dotenv()
 
 def get_config() -> PaytrConfig:
@@ -80,4 +80,4 @@ async def handle_callback(request: Request):
         print("hata")
         logging.info("callback failed")
 
-    return "OK"
+    return Response(content="OK", media_type="text/plain")
