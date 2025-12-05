@@ -125,7 +125,7 @@ class PaytrService:
                 "non_3d": int(req.non_3d),
                 "merchant_ok_url": self.config.ok_url,
                 "merchant_fail_url": self.config.fail_url,
-                "user_basket": self.config.basket_json,
+                "user_basket": req.basket_json,
                 "paytr_token": token_hash,
                 "no_installment": int(getattr(req, "no_installment", 0)),
                 "max_installment": int(getattr(req, "max_installment", 12)),
@@ -133,8 +133,8 @@ class PaytrService:
                 "user_name": _ensure_str(getattr(req, "user_name", None), "Test Kullanıcı"),
                 "user_address": _ensure_str(getattr(req, "user_address", None), "Ankara, Türkiye"),
                 "user_phone": _ensure_str(getattr(req, "user_phone", None), "+905551112233"),
-                "expiry_month":int(req.expiry_month),
-                "expiry_year": int(req.expiry_year),
+                "expiry_month":_ensure_str(getattr(req, "expiry_month", None), ""),
+                "expiry_year": _ensure_str(getattr(req, "expiry_year", None), ""),
                 "cc_owner": req.cc_owner,
                 "card_number": req.card_number,
                 "cvv":req.cvv
@@ -223,7 +223,6 @@ def get_config() -> PaytrConfig:
         fail_url=values["PAYTR_FAIL_URL"],
         callback_url=values["PAYTR_CALLBACK_URL"],
         test_mode=int(values.get("PAYTR_TEST_MODE") or "1"),
-        basket_json="W1siSXRlbSIsICI1MC4wMCIsIDFdXQ=="
     )
 
 

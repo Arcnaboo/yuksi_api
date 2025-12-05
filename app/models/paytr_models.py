@@ -7,7 +7,6 @@ class PaytrConfig(BaseModel):
     merchant_key: str
     merchant_salt: str
     ok_url: str
-    basket_json: str
     fail_url: str
     callback_url: str
     test_mode: int = 1
