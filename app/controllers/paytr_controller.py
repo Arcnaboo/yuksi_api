@@ -26,6 +26,7 @@ def init_payment(req: PaymentRequest):
     return service.create_payment(req)
 
 async def handle_callback(request: Request):
+    print("CALLBACK")
     logging.info(f"PAYTR CALLBACK {request}")
     form = await request.form()
 
@@ -42,8 +43,9 @@ async def handle_callback(request: Request):
     verified = service.verify_callback(callback)
 
     if verified and callback.status == "success":
+        print("başarı")
         # SUB-uuid → uuid
-        sub_id = callback.merchant_oid.removeprefix("SUB-").removeprefix("SUB")
+        sub_id = callback.merchant_oid.removeprefix("SUB")
 
         with db_cursor(dict_cursor=True) as cur:
             # 1) Request kaydını çek
@@ -53,36 +55,29 @@ async def handle_callback(request: Request):
             """, {"id": sub_id})
             row = cur.fetchone()
 
-            if not row:
-                logging.error("REQUEST ROW NOT FOUND")
-                return "FAIL"
-
             # 2) Yeni subscription INSERT
             cur.execute("""
                 INSERT INTO courier_package_subscriptions
-                (id, courier_id, package_id, start_date, end_date, is_active)
+                (courier_id, package_id, start_date, end_date, is_active)
                 VALUES
-                (%(id)s, %(courier_id)s, %(package_id)s, %(start)s, %(end)s, TRUE)
+                (%(courier_id)s, %(package_id)s, %(start)s, %(end)s, TRUE)
                 RETURNING id;
             """, {
-                "id": sub_id,
                 "courier_id": row["courier_id"],
                 "package_id": row["package_id"],
                 "start": row["start_date"],
                 "end": row["end_date"],
             })
 
-            new_row = cur.fetchone()
-            new_id = new_row["id"]
-
             # 3) Ödeme durumunu güncelle
             cur.execute("""
                 UPDATE courier_subscription_requests
                 SET payment_status = 'completed', is_active = TRUE
                 WHERE id = %(id)s
-            """, {"id": new_id})
+            """, {"id": sub_id})
 
-        return "OK"
+    else:    
+        print("hata")
+        logging.info("callback failed")
 
-    logging.info("callback failed")
-    return "FAIL"
+    return "OK"
