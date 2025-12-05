@@ -60,9 +60,9 @@ async def handle_callback(request: Request):
             # 2) Yeni subscription INSERT
             cur.execute("""
                 INSERT INTO courier_package_subscriptions
-                (id, courier_id, package_id, start_date, end_date, payment_status, is_active)
+                (id, courier_id, package_id, start_date, end_date, is_active)
                 VALUES
-                (%(id)s, %(courier_id)s, %(package_id)s, %(start)s, %(end)s, 'pending', TRUE)
+                (%(id)s, %(courier_id)s, %(package_id)s, %(start)s, %(end)s, TRUE)
                 RETURNING id;
             """, {
                 "id": sub_id,
