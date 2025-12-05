@@ -109,6 +109,8 @@ class PaytrService:
     def create_payment(self, req: PaymentRequest) -> PaymentResponse:
         logger.info("[create_payment] oid=%s amount=%s", req.merchant_oid, req.payment_amount)
 
+        req.merchant_oid = re.sub(r"[^A-Za-z0-9]", "", req.merchant_oid)
+
         token_hash = self._create_hash(req)
         try:
         # Build payload – ensure NOTHING is empty
@@ -161,12 +163,21 @@ class PaytrService:
             logger.exception("[create_payment] network error: %s", exc)
             return PaymentResponse(status="error", reason=str(exc))
 
-        # PayTR returns HTML for both success and failure 
-        html = rsp.text# bu html yi kullaniciya link olarak vermeliyiz
-        with open(f"public/paytr/{req.id}.html", "w") as file:
-            file.write(html)
+        # PayTR returns HTML for both success and failure
+        html = rsp.text
 
-        print(f"{req.id}.html generated")        
+        # Mutlak yol
+        _ensure_public_dir()
+        html_path = PAYTR_PUBLIC_DIR / f"{req.id}.html"
+
+        try:
+            with open(html_path, "w", encoding="utf-8") as file:
+                file.write(html)
+        except Exception as e:
+            logger.error("[create_payment] HTML yazılırken hata: %s", e)
+            return PaymentResponse(status="error", reason="Dosya yazılamadı")
+
+        logger.info(f"{html_path} generated")      
 
 
         if rsp.status_code == 200 and "İşlem başarısız" not in html:
