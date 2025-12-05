@@ -26,47 +26,63 @@ def init_payment(req: PaymentRequest):
     return service.create_payment(req)
 
 async def handle_callback(request: Request):
-    logging.info(f"PAYTR CALLBACK {request} ")
+    logging.info(f"PAYTR CALLBACK {request}")
     form = await request.form()
+
     callback = CallbackData(
         merchant_oid=form.get("merchant_oid"),
         status=form.get("status"),
         total_amount=int(form.get("total_amount", "0")),
-        hash=form.get("hash")
+        hash=form.get("hash"),
     )
+
     logging.info(f"callback data {callback}")
+
     service = paytr_service
     verified = service.verify_callback(callback)
 
     if verified and callback.status == "success":
-        id = callback.merchant_oid.removeprefix("SUB")
-        with db_cursor(dict_cursor=True) as cur:
-            cur.execute(""" SELECT * FROM courier_subscription_requests WHERE id=%(id)s """, {
-                "id": id
-            })
+        # SUB-uuid → uuid
+        sub_id = callback.merchant_oid.removeprefix("SUB-").removeprefix("SUB")
 
+        with db_cursor(dict_cursor=True) as cur:
+            # 1) Request kaydını çek
+            cur.execute("""
+                SELECT * FROM courier_subscription_requests
+                WHERE id = %(id)s
+            """, {"id": sub_id})
             row = cur.fetchone()
 
+            if not row:
+                logging.error("REQUEST ROW NOT FOUND")
+                return "FAIL"
+
+            # 2) Yeni subscription INSERT
             cur.execute("""
                 INSERT INTO courier_package_subscriptions
-                (id,courier_id, package_id, start_date, end_date, is_active)
-                VALUES (%(id)s,%(courier_id)s, %(package_id)s, %(start)s, %(end)s, 'pending', TRUE)
+                (id, courier_id, package_id, start_date, end_date, payment_status, is_active)
+                VALUES
+                (%(id)s, %(courier_id)s, %(package_id)s, %(start)s, %(end)s, 'pending', TRUE)
                 RETURNING id;
             """, {
-                "id": id,
+                "id": sub_id,
                 "courier_id": row["courier_id"],
                 "package_id": row["package_id"],
                 "start": row["start_date"],
                 "end": row["end_date"],
             })
-            row2 = cur.fetchone()
-            request_id = row2["id"]
+
+            new_row = cur.fetchone()
+            new_id = new_row["id"]
+
+            # 3) Ödeme durumunu güncelle
             cur.execute("""
                 UPDATE courier_subscription_requests
-                SET payment_status = "completed", is_active = TRUE
-                WHERE id = %s
-            """, {request_id})
+                SET payment_status = 'completed', is_active = TRUE
+                WHERE id = %(id)s
+            """, {"id": new_id})
+
         return "OK"
-    else:
-        logging.info(f"callback failed")
-        return "FAIL"
+
+    logging.info("callback failed")
+    return "FAIL"
