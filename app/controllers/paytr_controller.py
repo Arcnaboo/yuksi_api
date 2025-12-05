@@ -56,7 +56,7 @@ async def handle_callback(request: Request):
                 "id": id,
                 "courier_id": row["courier_id"],
                 "package_id": row["package_id"],
-                "start": row["start_date"],,
+                "start": row["start_date"],
                 "end": row["end_date"],
             })
         return "OK"

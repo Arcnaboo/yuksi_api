@@ -11,3 +11,11 @@ def create_payment(req: PaymentRequest = Body(...)):
 @router.post("/Callback", summary="Handle PayTR callback")
 async def callback(request: Request):
     return await ctrl.handle_callback(request)
+
+@router.get("/Ok", summary="Successful payment")
+def ok():
+    return "Ödeme Başarılı"
+
+@router.get("/Fail", summary="Failed  payment")
+def fail():
+    return "Ödeme Başarısız"
