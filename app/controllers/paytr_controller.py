@@ -1,15 +1,25 @@
 import os
 from dotenv import load_dotenv
-from fastapi import Request, Response
+from fastapi import Request
 from app.models.paytr_models import PaytrConfig, PaymentRequest, CallbackData
 from app.services.paytr_service import paytr_service
 import logging
-from app.utils.database import db_cursor
-# Diğer importlar...
-
 load_dotenv()
 
-# ... (get_config ve init_payment fonksiyonları aynı kalabilir) ...
+def get_config() -> PaytrConfig:
+    return PaytrConfig(
+        merchant_id=os.getenv("PAYTR_MERCHANT_ID"),
+        merchant_key=os.getenv("PAYTR_MERCHANT_KEY"),
+        merchant_salt=os.getenv("PAYTR_MERCHANT_SALT"),
+        ok_url=os.getenv("PAYTR_OK_URL"),
+        fail_url=os.getenv("PAYTR_FAIL_URL"),
+        callback_url=os.getenv("PAYTR_CALLBACK_URL"),
+        test_mode=1
+    )
+
+def init_payment(req: PaymentRequest):
+    service = paytr_service
+    return service.create_payment(req)
 
 async def handle_callback(request: Request):
     # 1. Loglamayı detaylandıralım
