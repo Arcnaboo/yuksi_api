@@ -75,11 +75,12 @@ async def handle_callback(request: Request):
                     # 2) Yeni subscription INSERT
                     cur.execute("""
                         INSERT INTO courier_package_subscriptions
-                        (courier_id, package_id, start_date, end_date, is_active)
+                        (id,courier_id, package_id, start_date, end_date, is_active)
                         VALUES
-                        (%(courier_id)s, %(package_id)s, %(start)s, %(end)s, TRUE)
+                        (%(sub_id)s,%(courier_id)s, %(package_id)s, %(start)s, %(end)s, TRUE)
                         RETURNING id;
                     """, {
+                        "sub_id": sub_id,
                         "courier_id": row["courier_id"],
                         "package_id": row["package_id"],
                         "start": row["start_date"],
