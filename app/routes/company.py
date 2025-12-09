@@ -16,7 +16,7 @@ async def create_company(req: CompanyCreate = Body(...)):
     return await ctrl.create_company(req.model_dump())
 
 # LIST
-@router.get("", dependencies=[Depends(require_roles(["Admin"]))])
+@router.get("", dependencies=[Depends(require_roles(["Admin", "Dealer"]))])
 async def list_companies(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
