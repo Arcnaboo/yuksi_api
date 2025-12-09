@@ -1,7 +1,7 @@
 from app.utils.database_async import fetch_one, fetch_all, execute
 from typing import Optional
 
-
+#Deprecated
 # === UPSERT VEHICLE ===
 async def upsert_vehicle(driver_id: str, make: str, model: str, year: int, plate: str):
     query = """

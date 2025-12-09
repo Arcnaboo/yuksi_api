@@ -1,5 +1,6 @@
 from ..services import driver_service
 
+# Deprecated 
 async def save_vehicle(driver, req):
     await driver_service.upsert_vehicle(driver["id"], req.make, req.model, req.year, req.plate)
     return {"success": True, "message": "Vehicle saved", "data": {}}

@@ -1,34 +1,25 @@
+from typing import List
 from uuid import UUID
 from pydantic import BaseModel
 
 class VehicleRequest(BaseModel):
     year: int
     model: str
-    licance_plate: str
-    color: str | None
+    make: str
+    plate: str
+    type: str
+    features: List[str]
     driver_id: str | None
-    vehicle_volume: str
-    weight_capacity: str
-    is_shared: bool
-    vehicle_type: str
-    alias: str | None
-    files: dict[str, str]
-    features: list[str]
 
 class VehicleResponse(BaseModel):
     id: str
     year: int
     model: str
-    licance_plate: str
-    color: str | None
-    driver_id: str | None
-    vehicle_volume: str
-    weight_capacity: str
-    is_shared: bool
-    vehicle_type: str
-    alias: str | None
-    files: dict[str, str]
-    features: list[str]
+    make: str
+    plate: str
+    driver_id: str
+    type: str
+    features: List[str]
 
 class VehicleTypeRequest(BaseModel):
     type: str
@@ -43,11 +34,9 @@ class VehicleTypeResponse(BaseModel):
 class VehicleFeatureRequest(BaseModel):
     feature: str
     description: str
-    vehicle_types: list[str] | None
 
 class VehicleFeatureResponse(BaseModel):
     id: str
     feature: str
     description: str
-    vehicle_types: list[str] | None
     created_at: str

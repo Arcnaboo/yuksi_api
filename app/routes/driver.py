@@ -4,7 +4,8 @@ from ..controllers import auth_controller, driver_controller
 
 router = APIRouter(prefix="/driver", tags=["Driver"])
 
-@router.post("/vehicle")
+# Deprecated method
+@router.post("/vehicle", deprecated= True)
 async def save_vehicle(req: VehicleReq, driver=Depends(auth_controller.get_current_driver)):
     return await driver_controller.save_vehicle(driver, req)
 

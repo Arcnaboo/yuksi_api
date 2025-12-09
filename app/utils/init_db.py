@@ -173,6 +173,21 @@ CREATE TABLE IF NOT EXISTS cities (
 );
 
 -- Uygulama tabloları
+
+CREATE TABLE IF NOT EXISTS vehicle_types (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    type TEXT UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_features (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    feature TEXT UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS vehicles (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     driver_id       UUID REFERENCES drivers(id) ON DELETE CASCADE,
@@ -180,8 +195,16 @@ CREATE TABLE IF NOT EXISTS vehicles (
     model           TEXT,
     year            INT,
     plate           TEXT UNIQUE,
+    vehicle_type    TEXT REFERENCES vehicle_types(type) ON DELETE CASCADE,
+    vehicle_features JSONB DEFAULT '[]',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_vehicles_driver_id ON vehicles(driver_id);
+CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_type ON vehicles(vehicle_type);
+CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_features_gin ON vehicles USING GIN (vehicle_features jsonb_path_ops);
+CREATE INDEX IF NOT EXISTS idx_vehicle_types_type ON vehicle_types(type);
+CREATE INDEX IF NOT EXISTS idx_vehicle_types_type ON vehicle_types(type);
 
 CREATE TABLE IF NOT EXISTS documents (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -852,8 +875,6 @@ CREATE TABLE IF NOT EXISTS corporate_users (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS vehicles
-
 -- Corporate Users commission_rate kolonu (opsiyonel, yüzde formatında 0-100)
 ALTER TABLE corporate_users ADD COLUMN IF NOT EXISTS commission_rate DECIMAL(5,2) CHECK (commission_rate IS NULL OR (commission_rate >= 0 AND commission_rate <= 100));
 
@@ -1060,9 +1081,9 @@ def init_db():
                 VALUES
                     ('Default', 'Bireysel Kullanici'),
                     ('Admin', 'Sistem yöneticisi'),
-                    ('Driver', 'Courier hesabı'),
+                    ('Courier', 'Courier hesabı'),
                     ('Dealer', 'Bayi hesabı'),
-                    ('Restoran', 'Restoran hesabı')
+                    ('Restaurant', 'Restoran hesabı')
                 ON CONFLICT (name) DO NOTHING;
             """)
             logging.info("[INIT] Roles table seeded with default values.")
