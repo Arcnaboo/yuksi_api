@@ -109,6 +109,8 @@ class PaytrService:
     def create_payment(self, req: PaymentRequest) -> PaymentResponse:
         logger.info("[create_payment] oid=%s amount=%s", req.merchant_oid, req.payment_amount)
 
+        req.merchant_oid = re.sub(r"[^A-Za-z0-9]", "", req.merchant_oid)
+
         token_hash = self._create_hash(req)
         try:
         # Build payload – ensure NOTHING is empty
@@ -125,7 +127,7 @@ class PaytrService:
                 "non_3d": int(req.non_3d),
                 "merchant_ok_url": self.config.ok_url,
                 "merchant_fail_url": self.config.fail_url,
-                "user_basket": self.config.basket_json,
+                "user_basket": req.basket_json,
                 "paytr_token": token_hash,
                 "no_installment": int(getattr(req, "no_installment", 0)),
                 "max_installment": int(getattr(req, "max_installment", 12)),
@@ -133,8 +135,8 @@ class PaytrService:
                 "user_name": _ensure_str(getattr(req, "user_name", None), "Test Kullanıcı"),
                 "user_address": _ensure_str(getattr(req, "user_address", None), "Ankara, Türkiye"),
                 "user_phone": _ensure_str(getattr(req, "user_phone", None), "+905551112233"),
-                "expiry_month":int(req.expiry_month),
-                "expiry_year": int(req.expiry_year),
+                "expiry_month":_ensure_str(getattr(req, "expiry_month", None), ""),
+                "expiry_year": _ensure_str(getattr(req, "expiry_year", None), ""),
                 "cc_owner": req.cc_owner,
                 "card_number": req.card_number,
                 "cvv":req.cvv
@@ -161,12 +163,21 @@ class PaytrService:
             logger.exception("[create_payment] network error: %s", exc)
             return PaymentResponse(status="error", reason=str(exc))
 
-        # PayTR returns HTML for both success and failure 
-        html = rsp.text# bu html yi kullaniciya link olarak vermeliyiz
-        with open(f"public/paytr/{req.id}.html", "w") as file:
-            file.write(html)
+        # PayTR returns HTML for both success and failure
+        html = rsp.text
 
-        print(f"{req.id}.html generated")        
+        # Mutlak yol
+        _ensure_public_dir()
+        html_path = PAYTR_PUBLIC_DIR / f"{req.id}.html"
+
+        try:
+            with open(html_path, "w", encoding="utf-8") as file:
+                file.write(html)
+        except Exception as e:
+            logger.error("[create_payment] HTML yazılırken hata: %s", e)
+            return PaymentResponse(status="error", reason="Dosya yazılamadı")
+
+        logger.info(f"{html_path} generated")      
 
 
         if rsp.status_code == 200 and "İşlem başarısız" not in html:
@@ -223,7 +234,6 @@ def get_config() -> PaytrConfig:
         fail_url=values["PAYTR_FAIL_URL"],
         callback_url=values["PAYTR_CALLBACK_URL"],
         test_mode=int(values.get("PAYTR_TEST_MODE") or "1"),
-        basket_json="W1siSXRlbSIsICI1MC4wMCIsIDFdXQ=="
     )
 
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Depends, Path, Body
+from fastapi import APIRouter, Query, Depends, Path, Body, HTTPException
 from typing import Optional
 from uuid import UUID
 from app.models.support_model import SupportUserCreate, SupportUserUpdate
@@ -56,19 +56,22 @@ async def get_all_support_users(
     )
 
 @router.get(
-    "/{user_id}",
-    summary="Support Üyesi Getir (Admin)",
-    description="Admin tarafından support kullanıcısının bilgilerini getirir.",
-    dependencies=[Depends(require_roles(["Admin"]))],
+    "/me",
+    summary="Support Üyesi Getir",
+    description="Token'dan kullanıcı ID'si alınarak support kullanıcısının bilgilerini getirir.",
+    dependencies=[Depends(require_roles(["Admin", "Support"]))],
 )
 async def get_support_user(
-    user_id: UUID = Path(..., description="Support kullanıcı ID'si"),
-    claims: dict = Depends(require_roles(["Admin"]))
+    claims: dict = Depends(require_roles(["Admin", "Support"]))
 ):
     """
     Support kullanıcısının bilgilerini getirir.
-    Sadece Admin rolüne sahip kullanıcılar bu endpoint'e erişebilir.
+    Token'dan kullanıcı ID'si otomatik olarak alınır.
+    Admin veya Support rolüne sahip kullanıcılar bu endpoint'e erişebilir.
     """
+    user_id = claims.get("userId") or claims.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=403, detail="Token'da kullanıcı ID bulunamadı")
     return await support_permission_controller.get_support_permissions(str(user_id))
 
 @router.put(

@@ -10,28 +10,46 @@ async def create_subscription(data: dict) -> Dict[str, Any]:
         get_package = await get_package_by_id(data["package_id"])
         if not get_package["success"]:
             return {"success": False, "message": "Invalid package ID", "data": {}}
-        
-        duration_days = get_package["data"].get("durationdays")
-        if duration_days is None:
-            return {"success": False, "message": "Package missing duration (days)", "data": {}}
 
-        duration_days = int(duration_days)
+        duration_days = int(get_package["data"]["durationdays"])
         now_tr = datetime.now(ZoneInfo("Europe/Istanbul")).replace(microsecond=0)
         calc_end_date = now_tr + timedelta(days=duration_days)
-        params = {
-            "courier_id": data["courier_id"],   
-            "package_id": data["package_id"],
-            "now_tr": now_tr,
-            "calc_end_date": calc_end_date
-        }
+
         with db_cursor(dict_cursor=True) as cur:
+
             cur.execute("""
-                INSERT INTO courier_package_subscriptions (courier_id, package_id, start_date, end_date, is_active)
-                VALUES (%(courier_id)s, %(package_id)s, %(now_tr)s, %(calc_end_date)s, FALSE)
+                INSERT INTO courier_subscription_requests
+                (courier_id, package_id, start_date, end_date, payment_status, is_active)
+                VALUES (%(courier_id)s, %(package_id)s, %(start)s, %(end)s, 'pending', FALSE)
                 RETURNING id;
-            """, params)
+            """, {
+                "courier_id": data["courier_id"],
+                "package_id": data["package_id"],
+                "start": now_tr,
+                "end": calc_end_date
+            })
+
             row = cur.fetchone()
-        return {"success": True, "message": "Subscription created successfully", "data": row}
+            request_id = row["id"]
+
+            merchant_oid = f"SUB-{request_id}"
+
+            cur.execute("""
+                UPDATE courier_subscription_requests
+                SET merchant_oid = %s
+                WHERE id = %s
+            """, (merchant_oid, request_id))
+
+        return {
+            "success": True,
+            "message": "Request created",
+            "data": {
+                "request_id": request_id,
+                "merchant_oid": merchant_oid,
+                "package_details": await get_package_by_id(data["package_id"])
+            }
+        }
+
     except Exception as e:
         return {"success": False, "message": str(e), "data": {}}
     
