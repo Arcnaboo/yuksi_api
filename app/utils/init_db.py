@@ -759,6 +759,14 @@ CREATE TABLE IF NOT EXISTS dealer_restaurants (
     UNIQUE(dealer_id, restaurant_id)
 );
 
+CREATE TABLE IF NOT EXISTS dealer_companies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    dealer_id UUID NOT NULL REFERENCES dealers(id) ON DELETE CASCADE,
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(company_id)  -- Bir şirket sadece bir bayide olabilir
+);
+
 CREATE TABLE IF NOT EXISTS extra_services (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     carrier_type TEXT NOT NULL DEFAULT 'courier',

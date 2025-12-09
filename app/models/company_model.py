@@ -22,19 +22,19 @@ class CompanyCreate(BaseModel):
 
 
 class CompanyUpdate(BaseModel):
-    companyTrackingNo: Optional[str]
-    assignedKilometers: Optional[int]
-    consumedKilometers: Optional[int]
-    specialCommissionRate: Optional[float]
-    isVisible: Optional[bool]
-    canReceivePayments: Optional[bool]
-    cityId: Optional[int]
-    stateId: Optional[int]
-    location: Optional[str]
-    companyName: Optional[str]
-    companyPhone: Optional[str]
-    description: Optional[str]
-    status: Optional[CompanyStatus]
+    companyTrackingNo: Optional[str] = None
+    assignedKilometers: Optional[int] = None
+    consumedKilometers: Optional[int] = None
+    specialCommissionRate: Optional[float] = None
+    isVisible: Optional[bool] = None
+    canReceivePayments: Optional[bool] = None
+    cityId: Optional[int] = None
+    stateId: Optional[int] = None
+    location: Optional[str] = None
+    companyName: Optional[str] = None
+    companyPhone: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[CompanyStatus] = None
 
     model_config = ConfigDict(extra="forbid")
 
