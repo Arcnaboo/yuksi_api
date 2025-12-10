@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Tuple, Optional
 from app.utils.database_async import fetch_one, fetch_all, execute
 from app.services import restaurant_service
+from app.services import restaurant_package_price_service
 
 
 async def dealer_create_and_link_restaurant(
@@ -151,8 +152,30 @@ async def dealer_get_restaurants(
             for row in rows:
                 row_dict = dict(row)
                 # UUID'leri string'e çevir
-                if row_dict.get("id"):
-                    row_dict["id"] = str(row_dict["id"])
+                restaurant_id = str(row_dict["id"]) if row_dict.get("id") else None
+                if restaurant_id:
+                    row_dict["id"] = restaurant_id
+                
+                # Paket bilgilerini ekle
+                package_success, package_data, package_error = await restaurant_package_price_service.get_restaurant_package_status(restaurant_id)
+                if package_success and package_data:
+                    row_dict["package"] = {
+                        "max_package": package_data.get("max_package"),
+                        "delivered_count": package_data.get("delivered_count"),
+                        "remaining_packages": package_data.get("remaining_packages"),
+                        "has_package_left": package_data.get("has_package_left"),
+                        "total_count": package_data.get("total_count")
+                    }
+                else:
+                    # Paket tanımı yoksa null döndür
+                    row_dict["package"] = {
+                        "max_package": None,
+                        "delivered_count": 0.0,
+                        "remaining_packages": None,
+                        "has_package_left": None,
+                        "total_count": 0
+                    }
+                
                 result.append(row_dict)
         
         return True, result
