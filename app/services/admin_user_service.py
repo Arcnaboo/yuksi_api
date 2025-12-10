@@ -12,7 +12,7 @@ async def get_all_users(
     Admin tarafından tüm kullanıcıları getirir (Courier, Restaurant, Admin, Dealer)
     
     Args:
-        user_type: 'courier', 'restaurant', 'admin', 'dealer', 'all' (varsayılan: 'all')
+        user_type: 'courier', 'restaurant', 'admin', 'dealer', support, 'all' (varsayılan: 'all')
         search: Email, name, phone üzerinde arama
         limit: Her tip için maksimum kayıt sayısı
         offset: Her tip için offset
@@ -25,13 +25,15 @@ async def get_all_users(
             "couriers": [],
             "restaurants": [],
             "admins": [],
-            "dealers": []
+            "dealers": [],
+            "supports":[]
         }
         totals = {
             "couriers": 0,
             "restaurants": 0,
             "admins": 0,
             "dealers": 0,
+            "supports":0,
             "total": 0
         }
 
@@ -361,8 +363,79 @@ async def get_all_users(
             
             totals["dealers"] = count_row.get("count", 0) if count_row else 0
 
+        #Support Users
+        if not user_type or user_type == "all" or user_type == "support":
+            support_query = """
+                SELECT
+                    id AS userId,
+                    first_name AS firstName,
+                    last_name AS lastName,
+                    email,
+                    phone,
+                    is_active AS isActive,
+                    access,
+                    created_at AS createdAt
+                FROM support_users
+                WHERE (deleted IS NULL OR deleted = FALSE)
+            """
+            params = []
+            
+            # Apply search filter
+            if search:
+                support_query += """
+                    AND (
+                        LOWER(email) LIKE $1 OR
+                        LOWER(first_name) LIKE $1 OR
+                        LOWER(last_name) LIKE $1 OR
+                        LOWER(phone) LIKE $1
+                    )
+                """
+                params.append(f"%{search.lower()}%")
+                support_query += f" ORDER BY created_at DESC LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}"
+                params.extend([limit, offset])
+
+            else:
+                support_query += " ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+                params = [limit, offset]
+            
+            support_rows = await fetch_all(support_query, *params)
+            
+            result["supportUsers"] = [
+                {
+                    "userId": str(r["userid"]),
+                    "firstName": r.get("firstname"),
+                    "lastName": r.get("lastname"),
+                    "fullName": f"{r.get('firstname', '')} {r.get('lastname', '')}".strip(),
+                    "email": r.get("email"),
+                    "phone": r.get("phone"),
+                    "isActive": r.get("isactive"),
+                    "access": r.get("access"),
+                    "createdAt": r.get("createdat").isoformat() if r.get("createdat") else None
+                }
+                for r in (support_rows or [])
+            ]
+            
+            # --- Count query for support users ---
+            if search:
+                count_query = """
+                    SELECT COUNT(*) AS count FROM support_users
+                    WHERE (deleted IS NULL OR deleted = FALSE)
+                      AND (
+                        LOWER(email) LIKE $1 OR
+                        LOWER(first_name) LIKE $1 OR
+                        LOWER(last_name) LIKE $1 OR
+                        LOWER(phone) LIKE $1
+                      )
+                """
+                count_params = [f"%{search.lower()}%"]
+                count_row = await fetch_one(count_query, *count_params)
+            else:
+                count_row = await fetch_one("SELECT COUNT(*) AS count FROM support_users WHERE (deleted IS NULL OR deleted = FALSE)")
+            
+            totals["supportUsers"] = count_row.get("count", 0) if count_row else 0
+
         # Total count
-        totals["total"] = totals["couriers"] + totals["restaurants"] + totals["admins"] + totals["dealers"]
+        totals["total"] = totals["couriers"] + totals["restaurants"] + totals["admins"] + totals["dealers"] + totals["supportUsers"]
 
         return True, {
             "users": result,

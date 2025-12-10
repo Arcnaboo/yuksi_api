@@ -19,7 +19,7 @@ async def admin_register(req: AdminRegisterReq):
     dependencies=[Depends(require_roles(["Admin"]))],
 )
 async def get_all_users(
-    type: Optional[str] = Query(None, description="Filtreleme: 'courier', 'restaurant', 'admin', 'dealer', 'all' (varsayılan: 'all')"),
+    type: Optional[str] = Query(None, description="Filtreleme: 'courier', 'restaurant', 'admin', 'dealer', support, 'all' (varsayılan: 'all')"),
     search: Optional[str] = Query(None, description="Arama: Email, name, phone üzerinde arama yapar"),
     limit: int = Query(50, ge=1, le=200, description="Her tip için maksimum kayıt sayısı"),
     offset: int = Query(0, ge=0, description="Her tip için offset"),
