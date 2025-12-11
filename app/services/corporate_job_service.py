@@ -39,7 +39,7 @@ async def corporate_create_job(data: Dict[str, Any], corporate_id: str) -> Tuple
             vehicle_type_string = template
             
         else:
-            vehicle_type_string = data.get("vehicleType", "motorsiklet_2")
+            vehicle_type_string = data.get("vehicleType", "2_teker_motosiklet")
         
         # Fiyat hesaplama
         total_price = data.get("totalPrice")
