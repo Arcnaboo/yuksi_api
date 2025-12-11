@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/Vehicle", tags=["Vehicle"])
     "",
     summary="Tüm araçları getirir",
     description="Tüm araçları özellikleri ile listeler.",
-    dependencies= [Depends(require_roles(["Admin"]))]
+    #dependencies= [Depends(require_roles(["Admin"]))]
 )
 async def get_all_vehicles(size: int = Query(50), offset: int = Query(0), vehicle_type: str = Query(None), vehicle_features: list[str] = Query(None)):
     return await ctrl.get_all_vehicles(size, offset, vehicle_type, vehicle_features)
@@ -19,7 +19,7 @@ async def get_all_vehicles(size: int = Query(50), offset: int = Query(0), vehicl
     "/get/{vehicle_id}",
     summary="Belirli aracı getirir",
     description="Tüm araçları özellikleri ile listeler.",
-    dependencies= [Depends(require_roles(["Admin", "Courier"]))]
+    #dependencies= [Depends(require_roles(["Admin", "Courier"]))]
 )
 async def get_vehicle(vehicle_id: str, _claims: dict = Depends(require_roles(["Admin", "Courier"]))):
     return await ctrl.get_vehicle(vehicle_id, _claims)
@@ -48,7 +48,7 @@ async def update_vehicle(vehicle_id: str ,req: VehicleRequest, _claims: dict = D
     "/Type",
     summary="Tüm araç tiplerini getirir.",
     description="Veri tabanındaki araç tiplerini getirir.",
-    dependencies= [Depends(require_roles(["Admin"]))]
+    #dependencies= [Depends(require_roles(["Admin"]))]
 )
 async def get_vehicle_types():
     return await ctrl.get_vehicle_types()
@@ -77,7 +77,7 @@ async def delete_vehicle_type(type: str):
     "/Feature",
     summary="Tüm araç özelliklerini getirir.",
     description="Veri tabanındaki araç özelliklerini getirir.",
-    dependencies= [Depends(require_roles(["Admin"]))]
+    #dependencies= [Depends(require_roles(["Admin"]))]
 )
 async def get_vehicle_features():
     return await ctrl.get_vehicle_features()

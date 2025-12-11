@@ -12,7 +12,7 @@ async def get_all_users(
     Admin tarafından tüm kullanıcıları getirir (Courier, Restaurant, Admin, Dealer)
     
     Args:
-        user_type: 'courier', 'restaurant', 'admin', 'dealer', support, 'all' (varsayılan: 'all')
+        user_type: 'courier', 'restaurant', 'admin', 'dealer', 'support', 'corporate' 'all' (varsayılan: 'all')
         search: Email, name, phone üzerinde arama
         limit: Her tip için maksimum kayıt sayısı
         offset: Her tip için offset
@@ -26,7 +26,8 @@ async def get_all_users(
             "restaurants": [],
             "admins": [],
             "dealers": [],
-            "supports":[]
+            "supports":[],
+            "corporates":[]
         }
         totals = {
             "couriers": 0,
@@ -34,6 +35,7 @@ async def get_all_users(
             "admins": 0,
             "dealers": 0,
             "supports":0,
+            "corporates":0,
             "total": 0
         }
 
@@ -400,7 +402,7 @@ async def get_all_users(
             
             support_rows = await fetch_all(support_query, *params)
             
-            result["supportUsers"] = [
+            result["supports"] = [
                 {
                     "userId": str(r["userid"]),
                     "firstName": r.get("firstname"),
@@ -432,10 +434,101 @@ async def get_all_users(
             else:
                 count_row = await fetch_one("SELECT COUNT(*) AS count FROM support_users WHERE (deleted IS NULL OR deleted = FALSE)")
             
-            totals["supportUsers"] = count_row.get("count", 0) if count_row else 0
+            totals["supports"] = count_row.get("count", 0) if count_row else 0
+
+        # Corporate (Kurumsal Kullanıcılar)
+        if not user_type or user_type == "all" or user_type == "corporate":
+            corporate_query = """
+                SELECT
+                    id AS userId,
+                    email,
+                    phone,
+                    first_name AS firstName,
+                    last_name AS lastName,
+                    is_active AS isActive,
+                    commission_rate AS commissionRate,
+                    country_id AS countryId,
+                    state_id AS stateId,
+                    city_id AS cityId,
+                    address_line1 AS addressLine1,
+                    address_line2 AS addressLine2,
+                    latitude,
+                    longitude,
+                    tax_office AS taxOffice,
+                    tax_number AS taxNumber,
+                    iban,
+                    resume,
+                    created_at AS createdAt
+                FROM corporate_users
+                WHERE (deleted IS NULL OR deleted = FALSE)
+            """
+            params = []
+            
+            if search:
+                corporate_query += """
+                    AND (
+                        LOWER(email) LIKE $1 OR
+                        LOWER(first_name) LIKE $1 OR
+                        LOWER(last_name) LIKE $1 OR
+                        LOWER(phone) LIKE $1 OR
+                    )
+                """
+                params.append(f"%{search.lower()}%")
+                corporate_query += f" ORDER BY created_at DESC LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}"
+                params.extend([limit, offset])
+            else:
+                corporate_query += " ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+                params = [limit, offset]
+            
+            corporate_rows = await fetch_all(corporate_query, *params)
+            
+            result["corporates"] = [
+                {
+                    "userId": str(r["userid"]),
+                    "email": r.get("email"),
+                    "name": r.get("name"),
+                    "contactPerson": r.get("contactperson"),
+                    "taxNumber": r.get("taxnumber"),
+                    "phone": r.get("phone"),
+                    "addressLine1": r.get("addressline1"),
+                    "addressLine2": r.get("addressline2"),
+                    "fullAddress": f"{r.get('addressline1') or ''} {r.get('addressline2') or ''}".strip(),
+                    "latitude": float(r["latitude"]) if r.get("latitude") is not None else None,
+                    "longitude": float(r["longitude"]) if r.get("longitude") is not None else None,
+                    "openingHour": r.get("openinghour").strftime("%H:%M") if r.get("openinghour") else None,
+                    "closingHour": r.get("closinghour").strftime("%H:%M") if r.get("closinghour") else None,
+                    "createdAt": r.get("createdat").isoformat() if r.get("createdat") else None
+                }
+                for r in (corporate_rows or [])
+            ]
+            
+            # Count query for corporate users
+            if search:
+                count_query = """
+                    SELECT COUNT(*) AS count FROM corporate_users
+                    WHERE (deleted IS NULL OR deleted = FALSE)
+                      AND (
+                        LOWER(email) LIKE $1 OR
+                        LOWER(name) LIKE $1 OR
+                        LOWER(phone) LIKE $1 OR
+                        LOWER(contact_person) LIKE $1
+                      )
+                """
+                count_params = [f"%{search.lower()}%"]
+                count_row = await fetch_one(count_query, *count_params)
+            else:
+                count_row = await fetch_one("SELECT COUNT(*) AS count FROM corporate_users WHERE (deleted IS NULL OR deleted = FALSE)")
+            
+            totals["corporates"] = count_row.get("count", 0) if count_row else 0
 
         # Total count
-        totals["total"] = totals["couriers"] + totals["restaurants"] + totals["admins"] + totals["dealers"] + totals["supportUsers"]
+        # Bu kod kısım yerine başka kod yazıldı
+        #totals["total"] = totals["couriers"] + totals["restaurants"] + totals["admins"] + totals["dealers"] + totals["supportUsers"] 
+        
+        totals["total"] = 0, t_count = 0
+        for key in totals:
+            t_count += totals[key]
+        totals["total"] = t_count
 
         return True, {
             "users": result,
