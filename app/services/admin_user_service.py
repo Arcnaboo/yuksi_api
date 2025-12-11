@@ -525,7 +525,8 @@ async def get_all_users(
         # Bu kod kısım yerine başka kod yazıldı
         #totals["total"] = totals["couriers"] + totals["restaurants"] + totals["admins"] + totals["dealers"] + totals["supportUsers"] 
         
-        totals["total"] = 0, t_count = 0
+        totals["total"] = 0
+        t_count = 0
         for key in totals:
             t_count += totals[key]
         totals["total"] = t_count
