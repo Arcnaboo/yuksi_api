@@ -47,7 +47,7 @@ async def get_all_vehicles(
                     EXISTS (
                         SELECT 1
                         FROM vehicle_features_map vfm
-                        WHERE vfm.vehicle_id = v.id;,i
+                        WHERE vfm.vehicle_id = v.id
                         AND vfm.feature_name = ${len(params) + 1}
                     )
                 """)
