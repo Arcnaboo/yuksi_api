@@ -137,8 +137,8 @@ async def courier_register2(
     req: CourierRegisterStep2Req = Body(
         ...,
         examples={
-            "working_courier": {"summary": "Kurye çalışma tipi", "value": {"workingType": 1}},
-            "part_time": {"summary": "Part-time", "value": {"workingType": 2}},
+            "courier": {"summary": "Kurye (workingType=1)", "value": {"workingType": 1}},
+            "carrier": {"summary": "Taşıyıcı (workingType=0)", "value": {"workingType": 0}},
         },
     ),
 ):
@@ -182,8 +182,8 @@ async def courier_register3(
     req: CourierRegisterStep3Req = Body(
         ...,
         openapi_examples={
-            "with_dealer": {
-                "summary": "Bayi ile (dealer_id gönderilir)",
+            "courier_with_dealer": {
+                "summary": "Kurye - Bayi ile",
                 "value": {
                     "vehicleType": 0,
                     "vehicleCapacity": 100,
@@ -201,8 +201,8 @@ async def courier_register3(
                     ]
                 },
             },
-            "without_dealer": {
-                "summary": "Bayi olmadan (alanı hiç gönderme)",
+            "courier_without_dealer": {
+                "summary": "Kurye - Bayi olmadan",
                 "value": {
                     "vehicleType": 1,
                     "vehicleCapacity": 80,
@@ -219,22 +219,37 @@ async def courier_register3(
                     ]
                 },
             },
-            "dealer_null": {
-                "summary": "Bayi null (opsiyonel/nullable alan)",
+            "carrier": {
+                "summary": "Taşıyıcı - Tüm alanlar zorunlu",
                 "value": {
-                    "vehicleType": 2,
-                    "vehicleCapacity": 120,
-                    "stateId": 35,
-                    "vehicleYear": 2022,
-                    "dealer_id": None,
+                    "vehicleType": 3,
+                    "vehicleCapacity": 5000,
+                    "stateId": 34,
+                    "vehicleYear": 2020,
+                    "username": "mehmet_demir",
+                    "supportReference": "REF-12345",
+                    "companyName": "ABC Taşımacılık Ltd.",
+                    "companyAddress": "İstanbul, Türkiye",
+                    "companyNumber": "1234567890",
+                    "cityId": 6,
+                    "fullAddress": "Osmangazi, Bursa, Türkiye",
+                    "vehicleMake": "Mercedes",
+                    "vehicleModel": "Sprinter",
+                    "plate": "34ABC123",
+                    "vehicleFeatures": ["frigolu", "tenteli", "kapalı"],
                     "documents": [
-                        {"docType": "VergiLevhasi", "fileId": "c9c9e6f4-9db9-4b1a-8f90-7c0f1fb2a4cd"},
-                        {"docType": "EhliyetOn",  "fileId": "5b2b1f16-6e87-4f2b-9d9e-1e0b0d0a1f22"},
-                        {"docType": "EhliyetArka","fileId": "3a1a2b3c-4d5e-6f70-8g90-1h2i3j4k5l6m"},
-                        {"docType": "RuhsatOn",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
-                        {"docType": "RuhsatArka",  "fileId": "7n8o9p0q-1r2s-3t4u-5v6w-7x8y9z0a1b2c"},
-                        {"docType": "KimlikOn","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
-                        {"docType": "KimlikArka","fileId": "d3e4f5g6-h7i8-j9k0-l1m2-n3o4p5q6r7s8"},
+                        {"docType": "VergiLevhasi", "fileId": "550e8400-e29b-41d4-a716-446655440000"},
+                        {"docType": "EhliyetOn", "fileId": "550e8400-e29b-41d4-a716-446655440001"},
+                        {"docType": "EhliyetArka", "fileId": "550e8400-e29b-41d4-a716-446655440002"},
+                        {"docType": "RuhsatOn", "fileId": "550e8400-e29b-41d4-a716-446655440003"},
+                        {"docType": "RuhsatArka", "fileId": "550e8400-e29b-41d4-a716-446655440004"},
+                        {"docType": "KimlikOn", "fileId": "550e8400-e29b-41d4-a716-446655440005"},
+                        {"docType": "KimlikArka", "fileId": "550e8400-e29b-41d4-a716-446655440006"},
+                        {"docType": "AdliSicil", "fileId": "550e8400-e29b-41d4-a716-446655440007"},
+                        {"docType": "SRC", "fileId": "550e8400-e29b-41d4-a716-446655440008"},
+                        {"docType": "Psikoteknik", "fileId": "550e8400-e29b-41d4-a716-446655440009"},
+                        {"docType": "KBelgesi", "fileId": "550e8400-e29b-41d4-a716-446655440010"},
+                        {"docType": "P1Belgesi", "fileId": "550e8400-e29b-41d4-a716-446655440011"}
                     ]
                 },
             },

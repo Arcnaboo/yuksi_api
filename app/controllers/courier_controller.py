@@ -33,6 +33,18 @@ async def courier_register3(user_id: str, req):
         req.dealer_id,
         req.vehicleYear,
         req.documents,
+        # Taşıyıcı için ek alanlar
+        username=req.username,
+        support_reference=req.supportReference,
+        company_name=req.companyName,
+        company_address=req.companyAddress,
+        company_number=req.companyNumber,
+        city_id=req.cityId,
+        full_address=req.fullAddress,
+        vehicle_make=req.vehicleMake,
+        vehicle_model=req.vehicleModel,
+        plate=req.plate,
+        vehicle_features=req.vehicleFeatures,
     )
     if err:
         return {"success": False, "message": err, "data": {}}

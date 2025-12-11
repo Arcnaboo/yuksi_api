@@ -24,8 +24,44 @@ DO $$ BEGIN
         'RuhsatOn',
         'RuhsatArka',
         'KimlikOn',
-        'KimlikArka'
+        'KimlikArka',
+        'SRC',
+        'Psikoteknik',
+        'KBelgesi',
+        'P1Belgesi',
+        'AdliSicil'
     );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Mevcut enum'a yeni değerleri ekle (eğer yoksa)
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'SRC' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'courier_doc_type')) THEN
+        ALTER TYPE courier_doc_type ADD VALUE 'SRC';
+    END IF;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'Psikoteknik' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'courier_doc_type')) THEN
+        ALTER TYPE courier_doc_type ADD VALUE 'Psikoteknik';
+    END IF;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'KBelgesi' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'courier_doc_type')) THEN
+        ALTER TYPE courier_doc_type ADD VALUE 'KBelgesi';
+    END IF;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'P1Belgesi' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'courier_doc_type')) THEN
+        ALTER TYPE courier_doc_type ADD VALUE 'P1Belgesi';
+    END IF;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'AdliSicil' AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'courier_doc_type')) THEN
+        ALTER TYPE courier_doc_type ADD VALUE 'AdliSicil';
+    END IF;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -973,6 +1009,25 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id, us
 CREATE INDEX IF NOT EXISTS ix_banners_active ON banners(active);
 CREATE INDEX IF NOT EXISTS ix_banners_priority ON banners(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_presence_driver_time ON driver_presence_events (driver_id, at_utc);
+
+-- Driver Onboarding user_type kolonu
+ALTER TABLE driver_onboarding ADD COLUMN IF NOT EXISTS user_type TEXT CHECK (user_type IN ('courier', 'carrier'));
+
+-- Driver Onboarding city_id ve full_address kolonları (taşıyıcı için)
+ALTER TABLE driver_onboarding ADD COLUMN IF NOT EXISTS city_id BIGINT;
+ALTER TABLE driver_onboarding ADD COLUMN IF NOT EXISTS full_address TEXT;
+
+-- Drivers tablosuna taşıyıcı için kolonlar
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS username TEXT;
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS customer_service_reference TEXT;
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS city_id BIGINT;
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS full_address TEXT;
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS company_name TEXT;
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS company_address TEXT;
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS company_number TEXT;
+
+-- Vehicles tablosuna vehicle_details JSONB kolonu
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_details JSONB DEFAULT '{}';
 """
 
 # SQL dump dosyaları burada beklenir: app/sql/10_countries.sql vb.

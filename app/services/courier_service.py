@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional, Tuple, Dict, Any, List
+import json
 
 from fastapi import HTTPException, status   
 from app.models.courier_model import CourierHistoryRes, CourierHistory
@@ -64,17 +65,35 @@ async def courier_register_step1(
 
 # === STEP 2 ===
 async def courier_register_step2(driver_id: str, working_type: int) -> Optional[str]:
-    exists = await fetch_one("SELECT 1 FROM drivers WHERE id=$1", driver_id)
+    exists = await fetch_one("SELECT 1 FROM drivers WHERE id=$1::uuid", driver_id)
     if not exists:
         return "User not found"
+    
+    # working_type kontrolü: 0=Taşıyıcı, 1=Kurye
+    if working_type not in [0, 1]:
+        return "Invalid workingType. Must be 0 (carrier) or 1 (courier)"
+    
+    # user_type belirleme
+    user_type = 'carrier' if working_type == 0 else 'courier'
 
-    await execute(
-        """INSERT INTO driver_onboarding (driver_id, step, working_type)
-           VALUES ($1, 2, $2)
-           ON CONFLICT (driver_id) DO UPDATE
-             SET working_type=EXCLUDED.working_type, step=2;""",
-        driver_id, working_type
+    # Step 1'de zaten kayıt var, sadece UPDATE yap
+    result = await execute(
+        """UPDATE driver_onboarding 
+           SET working_type=$1, 
+               user_type=$2,
+               step=2
+           WHERE driver_id=$3::uuid;""",
+        working_type, user_type, driver_id
     )
+    
+    # Eğer hiçbir satır güncellenmediyse (Step 1'de kayıt oluşturulmamışsa), INSERT yap
+    if result == "UPDATE 0":
+        await execute(
+            """INSERT INTO driver_onboarding (driver_id, step, working_type, user_type)
+               VALUES ($1::uuid, 2, $2, $3);""",
+            driver_id, working_type, user_type
+        )
+    
     return None
 
 
@@ -86,41 +105,141 @@ async def courier_register_step3(
     state_id: int,
     dealer_id: Optional[UUID],
     vehicle_year: int,
-    documents: Optional[List[Dict[str, Any]]] = None
+    documents: Optional[List[Dict[str, Any]]] = None,
+    # Taşıyıcı için ek alanlar
+    username: Optional[str] = None,
+    support_reference: Optional[str] = None,
+    company_name: Optional[str] = None,
+    company_address: Optional[str] = None,
+    company_number: Optional[str] = None,
+    city_id: Optional[int] = None,
+    full_address: Optional[str] = None,
+    vehicle_make: Optional[str] = None,
+    vehicle_model: Optional[str] = None,
+    plate: Optional[str] = None,
+    vehicle_features: Optional[List[str]] = None
 ) -> Optional[str]:
-    exists = await fetch_one("SELECT 1 FROM drivers WHERE id=$1", driver_id)
+    exists = await fetch_one("SELECT 1 FROM drivers WHERE id=$1::uuid", driver_id)
     if not exists:
         return "User not found"
-
-    if dealer_id is not None:
+    
+    # user_type kontrolü
+    onboarding = await fetch_one("SELECT user_type, step FROM driver_onboarding WHERE driver_id=$1::uuid", driver_id)
+    if not onboarding:
+        return "User onboarding not found. Please complete step 2 first."
+    
+    # asyncpg Record objesini dict'e çevir
+    onboarding_dict = dict(onboarding) if not isinstance(onboarding, dict) else onboarding
+    user_type = onboarding_dict.get("user_type")
+    step = onboarding_dict.get("step")
+    
+    # Step 2 kontrolü - step değeri integer olarak kontrol et
+    if step is None or (isinstance(step, (int, float)) and int(step) != 2):
+        return f"Please complete step 2 first. Current step: {step}, user_type: {user_type}"
+    
+    # user_type kontrolü
+    if not user_type or user_type not in ['courier', 'carrier']:
+        return f"Invalid user_type. Please complete step 2 first. Current user_type: {user_type}, step: {step}"
+    
+    # Kurye için dealer kontrolü
+    if user_type == 'courier' and dealer_id is not None:
         dealer_exists = await fetch_one("SELECT 1 FROM dealers WHERE id=$1", str(dealer_id))
         if not dealer_exists:
             return "Dealer not found"
-        
     
+    # Taşıyıcı için dealer_id olmamalı
+    if user_type == 'carrier' and dealer_id is not None:
+        return "Dealer ID should not be provided for carriers"
+    
+    # Taşıyıcı için zorunlu alan kontrolü
+    if user_type == 'carrier':
+        required_fields = {
+            'username': username,
+            'support_reference': support_reference,
+            'company_name': company_name,
+            'company_address': company_address,
+            'company_number': company_number,
+            'city_id': city_id,
+            'full_address': full_address,
+            'vehicle_make': vehicle_make,
+            'vehicle_model': vehicle_model,
+            'plate': plate
+        }
+        missing = [k for k, v in required_fields.items() if not v]
+        if missing:
+            return f"Missing required fields for carrier: {', '.join(missing)}"
+        
+        # AdliSicil belgesi kontrolü
+        if documents:
+            has_adli_sicil = any(
+                (doc.get("docType") if isinstance(doc, dict) else getattr(doc, "docType", None)) == "AdliSicil"
+                for doc in documents
+            )
+            if not has_adli_sicil:
+                return "AdliSicil document is required for carriers"
+    
+    # driver_onboarding güncelleme
     await execute(
         """
         INSERT INTO driver_onboarding
-            (driver_id, vehicle_type, vehicle_capacity, state_id, dealer_id, vehicle_year, step)
+            (driver_id, vehicle_type, vehicle_capacity, state_id, dealer_id, vehicle_year, step, city_id, full_address)
         VALUES
-            ($1::uuid, $2, $3, $4, $5::uuid, $6, 3)
+            ($1::uuid, $2, $3, $4, $5::uuid, $6, 3, $7, $8)
         ON CONFLICT (driver_id) DO UPDATE SET
             vehicle_type      = EXCLUDED.vehicle_type,
             vehicle_capacity  = EXCLUDED.vehicle_capacity,
             state_id          = EXCLUDED.state_id,
             dealer_id         = EXCLUDED.dealer_id,
             vehicle_year      = EXCLUDED.vehicle_year,
+            city_id           = EXCLUDED.city_id,
+            full_address      = EXCLUDED.full_address,
             step              = 3;
         """,
-        driver_id, vehicle_type, vehicle_capacity, state_id, dealer_id, vehicle_year
+        driver_id, vehicle_type, vehicle_capacity, state_id, dealer_id, vehicle_year, city_id, full_address
     )
+    
+    # Taşıyıcı için drivers tablosuna ek bilgiler
+    if user_type == 'carrier':
+        await execute(
+            """
+            UPDATE drivers SET
+                username = $1,
+                customer_service_reference = $2,
+                company_name = $3,
+                company_address = $4,
+                company_number = $5,
+                city_id = $6
+            WHERE id = $7::uuid;
+            """,
+            username, support_reference, company_name, company_address, company_number, city_id, driver_id
+        )
+        
+        # Vehicles tablosuna araç bilgileri
+        vehicle_details_json = {}
+        if vehicle_features:
+            vehicle_details_json = {"features": vehicle_features}
+        
+        await execute(
+            """
+            INSERT INTO vehicles (driver_id, make, model, year, plate, vehicle_details)
+            VALUES ($1::uuid, $2, $3, $4, $5, $6::jsonb)
+            ON CONFLICT (plate) DO UPDATE SET
+                make = EXCLUDED.make,
+                model = EXCLUDED.model,
+                year = EXCLUDED.year,
+                vehicle_details = EXCLUDED.vehicle_details;
+            """,
+            driver_id, vehicle_make, vehicle_model, vehicle_year, plate, json.dumps(vehicle_details_json)
+        )
 
+    # Belgeler işleme
     if not documents:
         return None
 
     allowed_types = {
         "VergiLevhasi", "EhliyetOn", "EhliyetArka", "RuhsatOn",
-        "RuhsatArka", "KimlikOn", "KimlikArka"
+        "RuhsatArka", "KimlikOn", "KimlikArka", "SRC", "Psikoteknik",
+        "KBelgesi", "P1Belgesi", "AdliSicil"
     }
 
     for doc in documents:
