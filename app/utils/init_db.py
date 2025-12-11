@@ -205,7 +205,6 @@ CREATE TABLE IF NOT EXISTS vehicle_features_map (
     PRIMARY KEY (vehicle_id, feature_name)
 );
 
-
 CREATE INDEX IF NOT EXISTS idx_vehicles_driver_id ON vehicles(driver_id);
 CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_type ON vehicles(vehicle_type);
 CREATE INDEX IF NOT EXISTS idx_vehicle_types_type ON vehicle_types(type);
@@ -785,7 +784,7 @@ CREATE TABLE IF NOT EXISTS vehicle_products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     product_name TEXT NOT NULL,
     product_code TEXT UNIQUE NOT NULL,
-    vehicle_type TEXT REFERENCES vehicle_types(type) ON DELETE CASCADE,
+    product_template TEXT REFERENCES vehicle_types(type) ON DELETE CASCADE,
     vehicle_features JSONB DEFAULT '[]',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -805,7 +804,7 @@ CREATE TABLE IF NOT EXISTS vehicle_capacity_options (
 );
 
 -- Index'ler
-CREATE INDEX IF NOT EXISTS idx_vehicle_products_template ON vehicle_products(vehicle_type);
+CREATE INDEX IF NOT EXISTS idx_vehicle_products_template ON vehicle_products(product_template);
 CREATE INDEX IF NOT EXISTS idx_vehicle_products_active ON vehicle_products(is_active);
 CREATE INDEX IF NOT EXISTS idx_vehicle_products_code ON vehicle_products(product_code);
 CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_product ON vehicle_capacity_options(vehicle_product_id);
