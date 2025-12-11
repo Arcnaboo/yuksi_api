@@ -9,27 +9,78 @@ from fastapi import HTTPException, status
 import app.utils.database_async as db
 from app.models.vehicles_models import VehicleResponse
 
-def parse_features(features_value: str):
-    if isinstance(features_value, str):
-        features_value = json.loads(features_value)
-    return features_value
-
-async def get_all_vehicles(size: int, offset: int) -> List[VehicleResponse]:
+async def _get_vehicle_features(vehicle_id: str):
     try:
+        query = """
+            SELECT vf.feature
+            FROM vehicle_features_map vfm
+            JOIN vehicle_features vf ON vf.feature = vfm.feature_name
+            WHERE vfm.vehicle_id = $1
+        """
+    
+        rows = await db.fetch_all(query, vehicle_id)
+        return [r["feature"] for r in rows]
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"_get_vehicle_features: {e}")
+
+async def get_all_vehicles(
+    size: int,
+    offset: int,
+    vehicle_type: str | None = None,
+    vehicle_features: list[str] | None = None,
+) -> List[VehicleResponse]:
+    try:
+        params = [size, offset]
+        where_clauses = []
+
+        # vehicle_type filtresi
+        if vehicle_type:
+            where_clauses.append(f"v.vehicle_type = ${len(params) + 1}")
+            params.append(vehicle_type)
+
+        # vehicle_features listesi filtresi (AND mantığı)
+        if vehicle_features and len(vehicle_features) > 0:
+            # Her feature için EXISTS ekle
+            for feature in vehicle_features:
+                where_clauses.append(f"""
+                    EXISTS (
+                        SELECT 1
+                        FROM vehicle_features_map vfm
+                        WHERE vfm.vehicle_id = v.id;,i
+                        AND vfm.feature_name = ${len(params) + 1}
+                    )
+                """)
+                params.append(feature)
+
+        where_sql = ""
+        if where_clauses:
+            where_sql = "WHERE " + " AND ".join(where_clauses)
+
         query = f"""
-            SELECT v.id, v.year, v.model, v.plate, v.driver_id, v.make,
-                   vt.type AS vehicle_type,
-                   v.vehicle_features
+            SELECT
+                v.id,
+                v.year,
+                v.model,
+                v.plate,
+                v.driver_id,
+                v.make,
+                vt.type AS vehicle_type
             FROM vehicles v
             LEFT JOIN vehicle_types vt ON vt.type = v.vehicle_type
+            {where_sql}
             ORDER BY v.created_at DESC
             LIMIT $1 OFFSET $2
         """
 
-        rows = await db.fetch_all(query, size, offset)
+        rows = await db.fetch_all(query, *params)
 
-        return [
-            VehicleResponse(
+        vehicles: List[VehicleResponse] = []
+
+        for r in rows:
+            features = await _get_vehicle_features(str(r["id"]))
+
+            vehicles.append(VehicleResponse(
                 id=str(r["id"]),
                 year=r["year"],
                 model=r["model"],
@@ -37,10 +88,11 @@ async def get_all_vehicles(size: int, offset: int) -> List[VehicleResponse]:
                 plate=r["plate"],
                 driver_id=str(r["driver_id"]),
                 type=r["vehicle_type"],
-                features=parse_features(r["vehicle_features"]),
-            )
-            for r in rows
-        ]
+                features=features
+            ))
+
+        return vehicles
+
     except HTTPException:
         raise
     except Exception as e:
@@ -53,11 +105,10 @@ async def create_vehicle(req: VehicleRequest, driver_id: str) -> VehicleResponse
             "SELECT id FROM drivers WHERE id = $1",
             driver_id
         )
-
         if not driver:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Driver is not found"
+                status_code=404,
+                detail="Driver not found"
             )
 
         type_row = await db.fetch_one(
@@ -66,79 +117,100 @@ async def create_vehicle(req: VehicleRequest, driver_id: str) -> VehicleResponse
         )
         if not type_row:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="Vehicle type not found"
             )
-
         type_value = type_row["type"]
 
+        # Feature doğrulama
         if req.features:
             feature_rows = await db.fetch_all(
                 "SELECT feature FROM vehicle_features WHERE feature = ANY($1)",
                 req.features
             )
-            features = [r["feature"] for r in feature_rows]
+            valid_features = {r["feature"] for r in feature_rows}
+            invalid = [f for f in req.features if f not in valid_features]
+
+            if invalid:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid features: {invalid}"
+                )
         else:
-            features = []
+            valid_features = set()
 
-        features_json = json.dumps(features)
-
+        # Insert vehicle
         query = """
-            INSERT INTO vehicles (year, model, make, plate, driver_id, vehicle_type, vehicle_features)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
-            RETURNING id, year, model, make, plate, driver_id, vehicle_type, vehicle_features;
+            INSERT INTO vehicles (year, model, make, plate, driver_id, vehicle_type)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id, year, model, make, plate, driver_id, vehicle_type
         """
 
         row = await db.fetch_one(
             query,
-            req.year,
-            req.model,
-            req.make,
-            req.plate,
-            driver_id,
-            type_value,
-            features_json,
+            req.year, req.model, req.make,
+            req.plate, driver_id, type_value
         )
 
+        vehicle_id = str(row["id"])
+
+        # Insert map table
+        if valid_features:
+            insert_map = """
+                INSERT INTO vehicle_features_map (vehicle_id, feature_name)
+                VALUES ($1, $2)
+            """
+            for feature in valid_features:
+                await db.execute(insert_map, vehicle_id, feature)
+
+        features = await _get_vehicle_features(vehicle_id)
+
         return VehicleResponse(
-            id=str(row["id"]),
+            id=vehicle_id,
             year=row["year"],
             model=row["model"],
             make=row["make"],
             plate=row["plate"],
             driver_id=str(row["driver_id"]),
             type=row["vehicle_type"],
-            features=parse_features(row["vehicle_features"])
+            features=features
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"create_vehicle: {e}")
-    
+        raise HTTPException(500, f"create_vehicle: {e}")
 
 async def get_vehicle(vehicle_id: str) -> VehicleResponse:
     try:
         query = """
-            SELECT id, year, model, make, plate, vehicle_type, vehicle_features, driver_id FROM vehicles WHERE id = $1
+            SELECT id, year, model, make, plate, vehicle_type, driver_id
+            FROM vehicles
+            WHERE id = $1
         """
 
         r = await db.fetch_one(query, vehicle_id)
+        if not r:
+            raise HTTPException(404, "Vehicle not found")
+
+        features = await _get_vehicle_features(vehicle_id)
 
         return VehicleResponse(
-                id=str(r["id"]),
-                year=r["year"],
-                model=r["model"],
-                make=r["make"],
-                plate=r["plate"],
-                driver_id=str(r["driver_id"]),
-                type=r["vehicle_type"],
-                features=parse_features(r["vehicle_features"]),
+            id=str(r["id"]),
+            year=r["year"],
+            model=r["model"],
+            make=r["make"],
+            plate=r["plate"],
+            driver_id=str(r["driver_id"]),
+            type=r["vehicle_type"],
+            features=features
         )
+
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"get_vehicle: {e}")
+        raise HTTPException(500, f"get_vehicle: {e}")
+
 
 async def update_vehicle(vehicle_id: str, req: VehicleRequest, driver_id: str) -> VehicleResponse:
     try:
@@ -146,65 +218,71 @@ async def update_vehicle(vehicle_id: str, req: VehicleRequest, driver_id: str) -
             "SELECT id FROM drivers WHERE id = $1",
             driver_id
         )
-
         if not driver:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Driver is not found"
-            )
-        
+            raise HTTPException(404, "Driver not found")
+
         type_row = await db.fetch_one(
             "SELECT type FROM vehicle_types WHERE type = $1",
             req.type
         )
         if not type_row:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Vehicle type not found"
-            )
+            raise HTTPException(400, "Vehicle type not found")
 
-        type = type_row["type"]
+        type_value = type_row["type"]
 
+        # Feature validation
         if req.features:
-            feature_rows = await db.fetch_all(
+            rows = await db.fetch_all(
                 "SELECT feature FROM vehicle_features WHERE feature = ANY($1)",
                 req.features
             )
-            features = [str(r["feature"]) for r in feature_rows]
-        else:
-            features = []
+            valid = {r["feature"] for r in rows}
+            invalid = [f for f in req.features if f not in valid]
 
+            if invalid:
+                raise HTTPException(400, f"Invalid features: {invalid}")
+        else:
+            valid = set()
+
+        # Update vehicle
         query = """
             UPDATE vehicles
             SET year = $1,
                 model = $2,
-                make = $8,
-                plate = $3,
-                driver_id = $4,
-                vehicle_type = $5,
-                vehicle_features = $6::jsonb
+                make = $3,
+                plate = $4,
+                driver_id = $5,
+                vehicle_type = $6
             WHERE id = $7
-            RETURNING id, year, model, make, plate, driver_id, vehicle_type, vehicle_features;
+            RETURNING id, year, model, make, plate, driver_id, vehicle_type
         """
 
-        features_json = json.dumps(features) 
-
-        row = await db.fetch_one(query,
-            req.year,
-            req.model,
-            req.plate,
-            driver_id,
-            type,
-            features_json,
-            vehicle_id,
-            req.make
+        row = await db.fetch_one(
+            query,
+            req.year, req.model, req.make,
+            req.plate, driver_id,
+            type_value, vehicle_id
         )
 
         if not row:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Vehicle not found"
-            )
+            raise HTTPException(404, "Vehicle not found")
+
+        # Reset feature map
+        await db.execute(
+            "DELETE FROM vehicle_features_map WHERE vehicle_id = $1",
+            vehicle_id
+        )
+
+        # Insert updated features
+        if valid:
+            insert_map = """
+                INSERT INTO vehicle_features_map (vehicle_id, feature_name)
+                VALUES ($1, $2)
+            """
+            for feature in valid:
+                await db.execute(insert_map, vehicle_id, feature)
+
+        features = await _get_vehicle_features(vehicle_id)
 
         return VehicleResponse(
             id=str(row["id"]),
@@ -214,14 +292,13 @@ async def update_vehicle(vehicle_id: str, req: VehicleRequest, driver_id: str) -
             plate=row["plate"],
             driver_id=str(row["driver_id"]),
             type=row["vehicle_type"],
-            features=parse_features(row["vehicle_features"])
+            features=features
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"update_vehicle: {e}")
-
+        raise HTTPException(500, f"update_vehicle: {e}")
 
 async def get_vehicle_types() -> List[VehicleTypeResponse]:
     try:

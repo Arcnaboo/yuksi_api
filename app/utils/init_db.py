@@ -196,13 +196,18 @@ CREATE TABLE IF NOT EXISTS vehicles (
     year            INT,
     plate           TEXT UNIQUE,
     vehicle_type    TEXT REFERENCES vehicle_types(type) ON DELETE CASCADE,
-    vehicle_features JSONB DEFAULT '[]',
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS vehicle_features_map (
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+    feature_name TEXT NOT NULL REFERENCES vehicle_features(feature) ON DELETE CASCADE,
+    PRIMARY KEY (vehicle_id, feature_name)
+);
+
+
 CREATE INDEX IF NOT EXISTS idx_vehicles_driver_id ON vehicles(driver_id);
 CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_type ON vehicles(vehicle_type);
-CREATE INDEX IF NOT EXISTS idx_vehicles_vehicle_features_gin ON vehicles USING GIN (vehicle_features jsonb_path_ops);
 CREATE INDEX IF NOT EXISTS idx_vehicle_types_type ON vehicle_types(type);
 CREATE INDEX IF NOT EXISTS idx_vehicle_types_type ON vehicle_types(type);
 
@@ -787,31 +792,6 @@ CREATE TABLE IF NOT EXISTS vehicle_products (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE OR REPLACE FUNCTION check_vehicle_product_features()
-RETURNS trigger AS $$
-BEGIN
-    IF jsonb_typeof(NEW.vehicle_features) <> 'array' THEN
-        RAISE EXCEPTION 'vehicle_features must be a JSON array';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements_text(NEW.vehicle_features) AS f(code)
-        LEFT JOIN vehicle_features vf ON vf.feature_code = f.code
-        WHERE vf.feature_code IS NULL
-    ) THEN
-        RAISE EXCEPTION 'Invalid feature_code inside vehicle_features JSONB array';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_check_vehicle_product_features
-BEFORE INSERT OR UPDATE ON vehicle_products
-FOR EACH ROW
-EXECUTE FUNCTION check_vehicle_product_features();
-
 -- Araç kapasite seçenekleri tablosu
 CREATE TABLE IF NOT EXISTS vehicle_capacity_options (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -825,7 +805,7 @@ CREATE TABLE IF NOT EXISTS vehicle_capacity_options (
 );
 
 -- Index'ler
-CREATE INDEX IF NOT EXISTS idx_vehicle_products_template ON vehicle_products(product_template);
+CREATE INDEX IF NOT EXISTS idx_vehicle_products_template ON vehicle_products(vehicle_type);
 CREATE INDEX IF NOT EXISTS idx_vehicle_products_active ON vehicle_products(is_active);
 CREATE INDEX IF NOT EXISTS idx_vehicle_products_code ON vehicle_products(product_code);
 CREATE INDEX IF NOT EXISTS idx_vehicle_capacity_product ON vehicle_capacity_options(vehicle_product_id);

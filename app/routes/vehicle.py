@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/Vehicle", tags=["Vehicle"])
     description="Tüm araçları özellikleri ile listeler.",
     dependencies= [Depends(require_roles(["Admin"]))]
 )
-async def get_all_vehicles(size: int = Query(50), offset: int = Query(0)):
+async def get_all_vehicles(size: int = Query(50), offset: int = Query(0), vehicle_type: str = Query(None), vehicle_features: list[str] = Query(None)):
     return await ctrl.get_all_vehicles(size, offset)
 
 @router.get(

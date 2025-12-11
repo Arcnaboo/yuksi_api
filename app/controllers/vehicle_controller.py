@@ -16,8 +16,8 @@ def _check_permissions(claims: dict):
     
     return claims.get("userId"), roles
 
-async def get_all_vehicles(size: int, offset: int) -> Dict[str, Any]:
-    result = await svc.get_all_vehicles(size=size, offset=offset)
+async def get_all_vehicles(size: int, offset: int, vehicle_type: str, vehicle_features: list[str]) -> Dict[str, Any]:
+    result = await svc.get_all_vehicles(size=size, offset=offset, vehicle_type=vehicle_type, vehicle_features=vehicle_features)
     return {"success":True, "message": "Fecthed all vehicles.", "data": result}
 
 async def create_vehicle(req: VehicleRequest, claims: dict) -> Dict[str, Any]:
