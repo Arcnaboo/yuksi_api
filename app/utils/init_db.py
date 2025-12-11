@@ -787,6 +787,31 @@ CREATE TABLE IF NOT EXISTS vehicle_products (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE OR REPLACE FUNCTION check_vehicle_product_features()
+RETURNS trigger AS $$
+BEGIN
+    IF jsonb_typeof(NEW.vehicle_features) <> 'array' THEN
+        RAISE EXCEPTION 'vehicle_features must be a JSON array';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(NEW.vehicle_features) AS f(code)
+        LEFT JOIN vehicle_features vf ON vf.feature_code = f.code
+        WHERE vf.feature_code IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Invalid feature_code inside vehicle_features JSONB array';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_check_vehicle_product_features
+BEFORE INSERT OR UPDATE ON vehicle_products
+FOR EACH ROW
+EXECUTE FUNCTION check_vehicle_product_features();
+
 -- Araç kapasite seçenekleri tablosu
 CREATE TABLE IF NOT EXISTS vehicle_capacity_options (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
