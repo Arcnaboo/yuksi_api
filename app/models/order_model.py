@@ -45,7 +45,7 @@ class OrderCreateReq(BaseModel):
     type: DeliveryType = Field(..., description="Teslimat tipi")
     amount: float = Field(..., gt=0, description="Toplam tutar")
     carrier_type: str = Field(default="kurye", description="Taşıyıcı tipi")
-    vehicle_type: str = Field(default="2_teker_motosiklet", description="Taşıyıcı aracı")
+    vehicle_type: str = Field(..., description="Taşıyıcı aracı")
     cargo_type: Optional[str] = Field(None, description="Yük tipi")
     special_requests: Optional[str] = Field(None, description="Özel talepler")
     items: List[OrderItemCreate] = Field(..., min_items=1, description="Sipariş ürünleri")

@@ -86,7 +86,7 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
             if error or not vehicle_product:
                 return False, f"Araç ürünü bulunamadı: {error}"
             vehicle_product_id = data["vehicleProductId"]
-            vehicle_type_string = vehicle_product.get("productTemplate", "motorcycle")
+            vehicle_type_string = vehicle_product.get("productTemplate", "motorsiklet_2")
             
         elif data.get("vehicleTemplate"):
             # Yöntem 2: Template + Features + Capacity
@@ -109,7 +109,7 @@ async def restaurant_create_job(data: Dict[str, Any], restaurant_id: Optional[st
             
         else:
             # Yöntem 3: Eski sistem (backward compatibility)
-            vehicle_type_string = data.get("vehicleType", "motorcycle")
+            vehicle_type_string = data.get("vehicleType", "motorsiklet_2")
         
         # Fiyat hesaplama (eğer totalPrice gönderilmemişse)
         total_price = data.get("totalPrice")

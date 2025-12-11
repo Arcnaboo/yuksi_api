@@ -31,7 +31,7 @@ async def create_order(
     order_type: str,
     amount: float,
     carrier_type: str = "kurye",
-    vehicle_type: str = "2_teker_motosiklet",
+    vehicle_type: str = "motosiklet_2",
     cargo_type: Optional[str] = None,
     special_requests: Optional[str] = None,
     items: Optional[List[Dict[str, Any]]] = None,

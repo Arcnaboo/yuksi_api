@@ -18,7 +18,7 @@ async def corporate_create_job(data: Dict[str, Any], corporate_id: str) -> Tuple
             if error or not vehicle_product:
                 return False, f"Araç ürünü bulunamadı: {error}"
             vehicle_product_id = data["vehicleProductId"]
-            vehicle_type_string = vehicle_product.get("productTemplate", "motorcycle")
+            vehicle_type_string = vehicle_product.get("productTemplate", "motosiklet_2")
             
         elif data.get("vehicleTemplate"):
             from app.services.vehicle_product_service import find_vehicle_product_by_selection
@@ -39,7 +39,7 @@ async def corporate_create_job(data: Dict[str, Any], corporate_id: str) -> Tuple
             vehicle_type_string = template
             
         else:
-            vehicle_type_string = data.get("vehicleType", "motorcycle")
+            vehicle_type_string = data.get("vehicleType", "motorsiklet_2")
         
         # Fiyat hesaplama
         total_price = data.get("totalPrice")
