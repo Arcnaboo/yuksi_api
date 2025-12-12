@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Body, HTTPException
+from fastapi import APIRouter, Depends, Body, HTTPException, Query
 from uuid import UUID
 from typing import Union
 from app.controllers.auth_controller import require_roles
@@ -58,3 +58,22 @@ async def get_dealer_couriers_gps(
         raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
     
     return await ctrl.get_dealer_couriers_gps(str(dealer_id))
+
+
+@router.get(
+    "/carriers",
+    summary="Şehirdeki Taşıyıcılar",
+    description="Bayi'nin şehrindeki (state_id) tüm taşıyıcıları listeler. Taşıyıcıların araç tipi ve ikamet adresi bilgileriyle birlikte döner. Token'dan bayi ID'si alınır.",
+    dependencies=[Depends(require_roles(["Dealer", "Admin"]))]
+)
+async def list_carriers(
+    limit: int = Query(50, ge=1, le=200, description="Maksimum kayıt sayısı"),
+    offset: int = Query(0, ge=0, description="Sayfalama offset"),
+    claims: dict = Depends(require_roles(["Dealer", "Admin"]))
+):
+    """Bayi'nin şehrindeki taşıyıcıları listeler endpoint"""
+    dealer_id = claims.get("userId") or claims.get("sub")
+    if not dealer_id:
+        raise HTTPException(status_code=403, detail="Token'da bayi ID bulunamadı")
+    
+    return await ctrl.list_carriers(UUID(dealer_id), limit, offset)

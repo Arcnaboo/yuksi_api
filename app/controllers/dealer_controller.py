@@ -68,3 +68,21 @@ async def get_dealer_couriers_gps(dealer_id: str) -> Dict[str, Any]:
         "message": "Bayi kuryelerinin GPS konumları başarıyla getirildi",
         "data": {"couriers": couriers_gps if couriers_gps else []}
     }
+
+
+async def list_carriers(dealer_id: UUID, limit: int, offset: int) -> Dict[str, Any]:
+    """Bayi'nin şehrindeki taşıyıcıları listeler controller"""
+    success, result = await dealer_service.list_carriers_by_dealer_state(dealer_id, limit, offset)
+    
+    if not success:
+        return {
+            "success": False,
+            "message": result if isinstance(result, str) else "Taşıyıcılar listelenemedi",
+            "data": []
+        }
+    
+    return {
+        "success": True,
+        "message": "Taşıyıcılar başarıyla listelendi",
+        "data": result if isinstance(result, list) else []
+    }

@@ -428,3 +428,100 @@ async def get_dealer_couriers_gps(dealer_id: str) -> Tuple[bool, Optional[List[D
         
     except Exception as e:
         return False, None, str(e)
+
+
+# ✅ LIST CARRIERS BY DEALER STATE
+async def list_carriers_by_dealer_state(
+    dealer_id: UUID,
+    limit: int = 50,
+    offset: int = 0
+) -> Tuple[bool, List[Dict[str, Any]] | str]:
+    """
+    Bayi'nin şehrindeki (state_id) tüm taşıyıcıları listeler.
+    Taşıyıcıların araç tipi ve ikamet adresi bilgileriyle birlikte döner.
+    """
+    try:
+        # Önce dealer'ın state_id'sini al
+        dealer = await fetch_one(
+            "SELECT state_id FROM dealers WHERE id = $1::uuid",
+            str(dealer_id)
+        )
+        
+        if not dealer:
+            return False, "Dealer not found"
+        
+        dealer_dict = dict(dealer)
+        state_id = dealer_dict.get("state_id")
+        
+        if not state_id:
+            return False, "Dealer state_id not found"
+        
+        # Taşıyıcıları listele (user_type='carrier' ve aynı state_id)
+        sql = """
+            SELECT
+                d.id AS carrier_id,
+                d.first_name,
+                d.last_name,
+                d.email,
+                d.phone,
+                d.username,
+                d.customer_service_reference,
+                d.company_name,
+                d.company_address,
+                d.company_number,
+                d.city_id,
+                d.full_address,
+                ci.name AS city_name,
+                ob.state_id,
+                s.name AS state_name,
+                v.vehicle_type,
+                v.make AS vehicle_make,
+                v.model AS vehicle_model,
+                v.plate AS vehicle_plate,
+                v.year AS vehicle_year,
+                v.vehicle_details,
+                d.created_at,
+                d.is_active
+            FROM drivers d
+            INNER JOIN driver_onboarding ob ON ob.driver_id = d.id
+            LEFT JOIN cities ci ON ci.id = d.city_id
+            LEFT JOIN states s ON s.id = ob.state_id
+            LEFT JOIN vehicles v ON v.driver_id = d.id
+            WHERE ob.user_type = 'carrier'
+              AND ob.state_id = $1
+              AND (d.deleted IS NULL OR d.deleted = FALSE)
+            ORDER BY d.created_at DESC
+            LIMIT $2 OFFSET $3;
+        """
+        
+        rows = await fetch_all(sql, state_id, limit, offset)
+        
+        if not rows:
+            return True, []
+        
+        # Formatla
+        result = []
+        for row in rows:
+            row_dict = dict(row)
+            # UUID'leri string'e çevir
+            if row_dict.get("carrier_id"):
+                row_dict["carrier_id"] = str(row_dict["carrier_id"])
+            # Timestamp'leri ISO formatına çevir
+            if row_dict.get("created_at"):
+                row_dict["created_at"] = row_dict["created_at"].isoformat() if hasattr(row_dict["created_at"], "isoformat") else str(row_dict["created_at"])
+            # JSONB'yi dict'e çevir
+            if row_dict.get("vehicle_details"):
+                if isinstance(row_dict["vehicle_details"], str):
+                    import json
+                    try:
+                        row_dict["vehicle_details"] = json.loads(row_dict["vehicle_details"])
+                    except:
+                        row_dict["vehicle_details"] = {}
+                elif not isinstance(row_dict["vehicle_details"], dict):
+                    row_dict["vehicle_details"] = {}
+            result.append(row_dict)
+        
+        return True, result
+        
+    except Exception as e:
+        return False, str(e)
